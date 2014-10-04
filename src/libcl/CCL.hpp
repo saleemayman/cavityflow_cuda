@@ -18,7 +18,8 @@
 #ifndef CCOMPLANG_HPP
 #define CCOMPLANG_HPP
 
-#include <CL/cl.h>
+#include <CL/cl.h>	// remove this once all OpenCL commands are gone.
+ #include "cuda.h"	// check if it actually reads the definitions from cuda.h
 #include <iostream>
 #include <strings.h>
 #include <string.h>
@@ -55,7 +56,7 @@
 /**
  * \brief OpenCL C++ abstraction class
  */
-class CCL
+class CCUDA
 {
 public:
 
@@ -594,7 +595,8 @@ private:
 	class CMem
 	{
 	public:
-		cl_mem memobj;	///< OpenCL memory object handler
+		//cl_mem memobj;	///< OpenCL memory object handler
+		CUdeviceptr memobj;
 
 		inline CMem()
 		{
@@ -612,14 +614,15 @@ private:
 		/**
 		 * create OpenCL memory buffer
 		 */
+		// TODO: change OpenCL CContext and other API commands here.
 		inline CMem(	CContext&		cContext,	///< context for buffer
-						cl_mem_flags	flags,		///< OpenCL flags
+						unsigned int	flags,		///< CUDA flags
 						size_t			size,		///< Size of memory buffer
 						void*			host_ptr	///< Host pointer to initialize buffer
 			)
 		{
 			memobj = NULL;
-			create(cContext, flags, size, host_ptr);
+			create(cContext, flags, size, host_ptr);	// TODO: change to CUDA context equivalent
 		}
 
 		/**
@@ -628,7 +631,8 @@ private:
 		void release()
 		{
 			if (memobj != NULL)
-				clReleaseMemObject(memobj);
+				//clReleaseMemObject(memobj);
+				cuMemFree(memobj);
 			memobj = NULL;
 		}
 
@@ -646,7 +650,8 @@ private:
 		inline size_t getSize()
 		{
 			size_t mem_size;
-			clGetMemObjectInfo(memobj, CL_MEM_SIZE, sizeof(size_t), &mem_size, NULL);
+			cuMemGetAddressRange(NULL, &mem_size, memobj);
+			//clGetMemObjectInfo(memobj, CL_MEM_SIZE, sizeof(size_t), &mem_size, NULL);
 			return mem_size;
 		}
 
