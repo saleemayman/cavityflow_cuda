@@ -658,6 +658,7 @@ private:
 		/**
 		 * create OpenCL 2D image memory object
 		 */
+		// TODO: Replace this with CUDA texture reference
 		inline void createImage2D(
 									CContext&		cContext,	///< context for buffer
 									cl_mem_flags	flags,		///< OpenCL flags
@@ -681,18 +682,28 @@ private:
 		/**
 		 * create new memory object
 		 */
-		inline void create(
+		/*inline void create(
 						CContext&		cContext,	///< context for buffer
-						cl_mem_flags	flags,		///< OpenCL flags
+						unsigned int	flags,		///< CUDA flags
 						size_t			size,		///< Size of memory buffer
 						void*			host_ptr	///< Host pointer to initialize buffer
 			)
+		{*/
+		inline void create(
+						CContext&		cContext,	///< context for buffer
+						size_t			size		///< Size of memory buffer
+			)
 		{
 			release();
-
+			/*
 			cl_int errcode_ret;
 			memobj = clCreateBuffer(cContext.context, flags, size, host_ptr, &errcode_ret);
 			CL_CHECK_ERROR(errcode_ret);
+			*/
+			
+			//CUdeviceptr *memobj;
+			cuMemAlloc(&memobj, size);
+
 		}
 /*
  * CGlTexture has to be included before CCL.hpp to enable the creation of
