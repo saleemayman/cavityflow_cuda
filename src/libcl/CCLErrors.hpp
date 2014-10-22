@@ -18,6 +18,53 @@
 #ifndef CCOMPLANGERRORS_HH__
 #define CCOMPLANGERRORS_HH__
 
+
+// Define this to turn on error checking
+#define CUDA_ERROR_CHECK
+
+#define CudaCallCheckError( err ) __CudaCallCheckError( err, __FILE__, __LINE__ )
+#define CudaKernelCheckError()    __CudaKernelCheckError( __FILE__, __LINE__ )
+
+inline void __CudaCallCheckError( CUresult err, const char *file, const int line )	// cudaSafeCall
+{
+#ifdef CUDA_ERROR_CHECK
+	if ( cudaSuccess != err )
+	{
+		fprintf(stderr, "CUDA call check failed at %s:%i : %s\n",
+				 file, line, cudaGetErrorString( err ) );
+		exit( -1 );
+	}
+#endif
+
+	return;
+}
+
+inline void __CudaKernelCheckError( const char *file, const int line )	//	cudaCheckError
+{
+#ifdef CUDA_ERROR_CHECK
+	cudaError err = cudaGetLastError();
+	if ( cudaSuccess != err )
+	{
+        fprintf(stderr, "CUDA kernel check failed at %s:%i : %s\n",
+				file, line, cudaGetErrorString( err ) );
+		exit( -1 );
+	}
+
+	// More careful checking. However, this will affect performance.
+	// Comment away if needed.
+	err = cudaDeviceSynchronize();
+	if( cudaSuccess != err )
+	{
+		fprintf(stderr, "cudaCheckError() with sync failed at %s:%i : %s\n",
+				 file, line, cudaGetErrorString( err ) );
+		exit( -1 );
+	}
+#endif
+
+	return;
+}
+
+#if 0
 #include <CL/cl.h>
 
 static const char *cclGetErrorString(cl_int errorNum)
@@ -90,5 +137,8 @@ inline void CL_CHECK_ERROR_(cl_int fun_ret_val)
 	CL_CHECK_ERROR_(fun_ret_val, CL_SUCCESS);
 }
 */
+#endif	// end of OpenCL section
+
+
 
 #endif

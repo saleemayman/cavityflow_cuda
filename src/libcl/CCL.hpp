@@ -56,7 +56,7 @@
 /**
  * \brief OpenCL C++ abstraction class
  */
-class CCUDA
+class CCL
 {
 public:
 
@@ -156,12 +156,13 @@ public:
 	class CDevice
 	{
 	public:
-		cl_device_id	device_id;		///< OpenCL Device ID
+		//cl_device_id	device_id;		///< OpenCL Device ID
+		CUdevice device_id;				///< CUDA Device ID
 
 		/**
 		 * initialize CDevice class with existing device id
 		 */
-		inline CDevice(cl_device_id p_device_id)
+		inline CDevice(CUdevice p_device_id)
 		{
 			device_id = p_device_id;
 		}
@@ -192,7 +193,7 @@ public:
 		/**
 		 * set device_id to p_device_id
 		 */
-		inline void set(cl_device_id p_device_id)
+		inline void set(CUdevice p_device_id)
 		{
 			device_id = p_device_id;
 		}
@@ -207,34 +208,39 @@ public:
 	};
 
 	class CContext;
-
-
 	/**
 	 * \brief Load a list of devices for different OpenCL contexts, platforms and/or types
 	 */
 	class CDevices	: public std::vector<CDevice>
 	{
 	public:
-		cl_context context;			///< OpenCL context
-		cl_device_id *device_ids;	///< array with devices available for the context
+		//cl_context context;			///< OpenCL context
+		//cl_device_id *device_ids;	///< array with devices available for the context
+		CUcontext context;
+		CUdevice *device_ids;
 		uint device_ids_count;		///< number of contexts in device_ids[]
 
 		/**
 		 * load device list belonging to context cContext
 		 * \param cContext	existing context
 		 */
-		inline void load(	CContext &cContext
-		)
+		inline void load(CContext &cContext)
 		{
 			// load device information
-			size_t value_size_ret;
-			CL_CHECK_ERROR(clGetContextInfo(cContext.context, CL_CONTEXT_DEVICES, 0, NULL, &value_size_ret));
-			device_ids_count = value_size_ret / sizeof(cl_device_id);
+			int value_size_ret;
+			//CL_CHECK_ERROR(clGetContextInfo(cContext.context, CL_CONTEXT_DEVICES, 0, NULL, &value_size_ret));
+			CudaCallCheckError( cuDeviceGetCount(&device_ids_count) );
+			//device_ids_count = value_size_ret / sizeof(cl_device_id);
 			if (device_ids_count == 0)	std::cerr << "Warning: no device found!" << std::endl;
 			delete device_ids;
-			device_ids = new cl_device_id[device_ids_count];
+			device_ids = new CUdevice[device_ids_count];
 
-			CL_CHECK_ERROR(clGetContextInfo(cContext.context, CL_CONTEXT_DEVICES, value_size_ret, device_ids, NULL));
+			//CL_CHECK_ERROR(clGetContextInfo(cContext.context, CL_CONTEXT_DEVICES, value_size_ret, device_ids, NULL));
+			/// get a handle for each device available
+			for (int i = 0; i < device_ids_count; i++)
+			{
+				CudaCallCheckError( cuDeviceGet(device_ids[i], i) );	
+			}
 
 			initDeviceVector();
 		}
@@ -243,6 +249,7 @@ public:
 		/**
 		 * load device list of type 'device type' belonging to platform cPlatform
 		 */
+#if 0		 
 		inline void load(	CPlatform &cPlatform,
 							cl_device_type device_type = CL_DEVICE_TYPE_ALL
 		)
@@ -257,7 +264,7 @@ public:
 
 			initDeviceVector();
 		}
-
+#endif
 		/**
 		 * initialize device list with NULL
 		 */
@@ -288,12 +295,13 @@ public:
 		/**
 		 * load device list of type 'device type' belonging to platform cPlatform
 		 */
+#if 0		 
 		inline CDevices(CPlatform &cPlatform, cl_device_type device_type = CL_DEVICE_TYPE_ALL)
 		{
 			initCDevices();
 			load(cPlatform, device_type);
 		}
-
+#endif
 		/**
 		 * deconstructor: free unnecessary device data
 		 */
@@ -309,7 +317,7 @@ public:
 		{
 			//clear();
 			(*this).resize(device_ids_count);
-			for (cl_uint i = 0; i < device_ids_count; i++)
+			for (uint i = 0; i < device_ids_count; i++)
 			{
 				(*this)[i].set(device_ids[i]);
 			}
@@ -330,9 +338,11 @@ public:
 	class CContext
 	{
 	public:
-		CError error;		///< error handler
-		cl_context context;	///< OpenCL context id
+		CUresult error;		///< error handler
+		CUcontext context;	///< OpenCL context id
 
+
+#if 0
 		/**
 		 * load context and device list by platform and type
 		 */
@@ -349,24 +359,33 @@ public:
 
 			retain();
 		}
-
+#endif
 		/**
 		 * load context by platform and device
-		 */
+		 
 		inline void load(	const CPlatform &cPlatform,	///< platform for parameters
 							const CDevice &cDevice		///< OpenCL device
+		)*/
+		inline void load(	const CDevice &cDevice		///< CUDA device
 		)
 		{
 			release();
 
-			cl_int err_ret;
-			cl_context_properties context_properties[] = {CL_CONTEXT_PLATFORM, (cl_context_properties)cPlatform.platform_id, 0, 0};
-			context = clCreateContext(context_properties, 1, &cDevice.device_id, NULL, NULL, &err_ret);
-			CL_CHECK_ERROR(err_ret);
-
+			//cl_int err_ret;
+			CUresult err_ret;
+			err_ret = cuCtxCreate(&context, CU_CTX_SCHED_AUTO, &cDevice.device_id);
+			CudaCallCheckError(err_ret);
+			//cl_context_properties context_properties[] = {CL_CONTEXT_PLATFORM, (cl_context_properties)cPlatform.platform_id, 0, 0};
+			//context = clCreateContext(context_properties, 1, &cDevice.device_id, NULL, NULL, &err_ret);
+			//CL_CHECK_ERROR(err_ret);
+/*
+			cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev);
+*/
 			retain();
 		}
 
+// ask Arash about creating a context from a list of devices!
+#if 0
 		/**
 		 * load context by platform and device list
 		 */
@@ -383,6 +402,7 @@ public:
 
 			retain();
 		}
+#endif
 
 #ifdef C_GL_TEXTURE_HPP
 
@@ -447,6 +467,7 @@ public:
 			context = NULL;
 		}
 
+#if 0
 		/**
 		 * initialize and load context with device_type and platform
 		 */
@@ -457,18 +478,22 @@ public:
 			initCContext();
 			load(cPlatform, device_type);
 		}
-
+#endif
 		/**
-		 * initialize and load context with device_type and platform
-		 */
+		 * initialize and load context with device and platform
+
 		inline CContext(	CPlatform &cPlatform,	///< platform for parameters
 							CDevice &cDevice		///< OpenCL device
+		)*/
+		inline CContext(	CDevice &cDevice		///< OpenCL device
 		)
 		{
-			load(cPlatform, cDevice);
+			//load(cPlatform, cDevice);
+			load(cDevice);
 		}
 
 
+#if 0
 		/**
 		 * load context by platform and device list
 		 */
@@ -479,7 +504,7 @@ public:
 			initCContext();
 			load(cPlatform, cDevices);
 		}
-
+#endif
 		inline ~CContext()
 		{
 			release();
@@ -515,7 +540,8 @@ private:
 		 */
 		inline void retain()
 		{
-			CL_CHECK_ERROR(clRetainContext(context));
+			//CL_CHECK_ERROR(clRetainContext(context));
+			CudaCallCheckError( cuCtxAttach(&context, 0) );
 		}
 
 		/**
@@ -525,7 +551,8 @@ private:
 		{
 			if (context != NULL)
 			{
-				clReleaseContext(context);
+				//clReleaseContext(context);
+				cuCtxDetach(context);
 				context = NULL;
 			}
 		}
@@ -537,16 +564,23 @@ private:
 	class CPlatforms
 	{
 	public:
-		cl_platform_id *platform_ids;	///< array with platform ids
-		cl_uint platform_ids_count;		///< number of platforms in platform array
+		/*cl_platform_id *platform_ids;	///< array with platform ids
+		cl_uint platform_ids_count;		///< number of platforms in platform array*/
+		CUresult err_ret;
 
 		/**
 		 * initialize with NULL values
 		 */
 		inline void initCPlatforms()
 		{
-			platform_ids = NULL;
-			platform_ids_count = 0;
+			err_ret = cuInit(0);
+			if (err_ret != CUDA_SUCCESS)
+			{
+				CudaCallCheckError(err_ret);
+				std::cerr << "Warning: CUDA Driver API not initialized!" << std::endl;
+			}
+			/*platform_ids = NULL;
+			platform_ids_count = 0;*/
 		}
 
 		/**
@@ -556,7 +590,7 @@ private:
 		{
 			initCPlatforms();
 
-			CL_CHECK_ERROR(clGetPlatformIDs(
+			/*CL_CHECK_ERROR(clGetPlatformIDs(
 						0,
 						0,
 						&platform_ids_count
@@ -569,7 +603,7 @@ private:
 						platform_ids_count,
 						platform_ids,
 						NULL
-					));
+					));*/
 		}
 
 		/**
@@ -582,8 +616,8 @@ private:
 
 		inline ~CPlatforms()
 		{
-			if (platform_ids != NULL)
-				delete platform_ids;
+			/*if (platform_ids != NULL)
+				delete platform_ids;*/
 		}
 	};
 
@@ -614,7 +648,6 @@ private:
 		/**
 		 * create OpenCL memory buffer
 		 */
-		// TODO: change OpenCL CContext and other API commands here.
 		inline CMem(	CContext&		cContext,	///< context for buffer
 						unsigned int	flags,		///< CUDA flags
 						size_t			size,		///< Size of memory buffer
@@ -622,7 +655,7 @@ private:
 			)
 		{
 			memobj = NULL;
-			create(cContext, flags, size, host_ptr);	// TODO: change to CUDA context equivalent
+			create(cContext, flags, size, host_ptr);	
 		}
 
 		/**
@@ -632,7 +665,7 @@ private:
 		{
 			if (memobj != NULL)
 				//clReleaseMemObject(memobj);
-				cuMemFree(memobj);
+				CudaCallCheckError( cuMemFree(memobj) );
 			memobj = NULL;
 		}
 
@@ -650,11 +683,12 @@ private:
 		inline size_t getSize()
 		{
 			size_t mem_size;
-			cuMemGetAddressRange(NULL, &mem_size, memobj);
+			CudaCallCheckError( cuMemGetAddressRange(NULL, &mem_size, memobj) );
 			//clGetMemObjectInfo(memobj, CL_MEM_SIZE, sizeof(size_t), &mem_size, NULL);
-			return mem_size;
+			return mem_size;		///< returns the size of memobj in size_t
 		}
 
+#if 0
 		/**
 		 * create OpenCL 2D image memory object
 		 */
@@ -678,7 +712,7 @@ private:
 
 			CL_CHECK_ERROR(errcode_ret);
 		}
-
+#endif
 		/**
 		 * create new memory object
 		 */
@@ -701,8 +735,10 @@ private:
 			CL_CHECK_ERROR(errcode_ret);
 			*/
 			
-			//CUdeviceptr *memobj;
-			cuMemAlloc(&memobj, size);
+			CUresult errcode_ret;
+
+			errcode_ret = cuMemAlloc(&memobj, size);
+			CudaCallCheckError(errcode_ret);
 
 		}
 /*
@@ -1226,10 +1262,15 @@ public:
 	class CCommandQueue
 	{
 	public:
-		CError error;		///< error handler
+		//CError error;		///< error handler
+		cudaError error;	///< cuda error handler
 
-		cl_command_queue command_queue;	///< OpenCL command queue handler
+		//cl_command_queue command_queue;	///< OpenCL command queue handler
+		CUstream cuda_stream;	///< CUDA stream handler
 
+// Ignore code not required for LBM code execution to get a simple example
+// working with no compile or linking bugs.		
+#if 0
 		/**
 		 * increment OpenCL reference counter to command queue
 		 */
@@ -1237,18 +1278,22 @@ public:
 		{
 			CL_CHECK_ERROR(clRetainCommandQueue(command_queue));
 		}
-
+#endif
 		/**
 		 * decrement OpenCL reference counter to command queue
 		 */
 		inline void release()
 		{
-			if (command_queue != 0)
+			if (cuda_stream != 0)	// check if this is correct
 			{
-				CL_CHECK_ERROR(clReleaseCommandQueue(command_queue));
+				//CL_CHECK_ERROR(clReleaseCommandQueue(command_queue));
+				CudaCallCheckError(cuStreamDestroy(cuda_stream));
 			}
 		}
 
+// Ignore code not required for LBM code execution to get a simple example
+// working with no compile or linking bugs.		
+#if 0
 		/**
 		 * initialize existing command queue
 		 */
@@ -1256,11 +1301,11 @@ public:
 							const CDevice &cDevice		///< existing device handler
 		)
 		{
-		  cl_command_queue_properties properties = 0;
+			cl_command_queue_properties properties = 0;
 #if PROFILE
-		  properties |= CL_QUEUE_PROFILING_ENABLE;
-		  CCL::CDeviceInfo cDeviceInfo(cDevice);
-		  printf("device timer resolution: %zu nanoseconds\n", cDeviceInfo.profiling_timer_resolution);
+			properties |= CL_QUEUE_PROFILING_ENABLE;
+			CCL::CDeviceInfo cDeviceInfo(cDevice);
+			printf("device timer resolution: %zu nanoseconds\n", cDeviceInfo.profiling_timer_resolution);
 #endif
 			cl_int errcode_ret;
 			command_queue = clCreateCommandQueue(
@@ -1273,7 +1318,6 @@ public:
 			CL_CHECK_ERROR(errcode_ret);
 			retain();
 		}
-
 
 		/**
 		 * initialize from existing command queue and increment reference counter
@@ -1293,10 +1337,11 @@ public:
 		{
 			init(cContext, cDevice);
 		}
-
+#endif
 		inline CCommandQueue()
 		{
-			command_queue = 0;
+			//command_queue = 0;
+			cuda_stream = 0;
 		}
 
 		inline ~CCommandQueue()
@@ -1309,13 +1354,17 @@ public:
 		 */
 		inline void enqueueBarrier()
 		{
-			cl_int errcode_ret;
-			errcode_ret = clEnqueueBarrier(command_queue);
-			if (errcode_ret != CL_SUCCESS)
-				error << cclGetErrorString(errcode_ret) << std::endl;
+			//cl_int errcode_ret;
+			CUresult errcode_ret;	// cuda error type
+			errcode_ret = cuStreamSynchronize(command_queue);
+			if (errcode_ret != CUDA_SUCCESS)
+				error << cuGetErrorString(errcode_ret) << std::endl;	// CUDA Driver API erro handling
+
 		}
 	
-
+// Ignore code not required for LBM code execution to get a simple example
+// working with no compile or linking bugs.		
+#if 0
 		/**
 		 * copy data from buffer in host memory to CL device
 		 */
@@ -1753,7 +1802,8 @@ public:
 								NULL
 					));
 		}
-
+#endif
+		// start editing from here (17:51 10.10.2014)
 		/**
 		 * enqueue nd range kernel
 		 */
@@ -1764,7 +1814,8 @@ public:
 											const size_t *local_work_size		///< local work size
 		)
 		{
-		  cl_event* event = NULL;
+		  //cl_event* event = NULL;
+			//CUevent *event = NULL;	// cuda event type
 #if PROFILE
 		  event = new cl_event();
 #endif
@@ -1778,6 +1829,20 @@ public:
 								NULL,
 								event
 					));
+
+			CudaCallCheckError( cuLaunchKernel(CUfunction f,
+									unsigned int  	gridDimX,
+									unsigned int  	gridDimY,
+									unsigned int  	gridDimZ,
+									unsigned int  	blockDimX,
+									unsigned int  	blockDimY,
+									unsigned int  	blockDimZ,
+									unsigned int  	sharedMemBytes,
+									CUstream  	hStream,
+									void **  	kernelParams,
+									void **  	extra	 
+									) );
+
 #if PROFILE
 			clWaitForEvents(1, event);
 			char kernel_name[128];
@@ -1793,6 +1858,9 @@ public:
 #endif
 		}
 
+// Ignore code not required for LBM code execution to get a simple example
+// working with no compile or linking bugs.		
+#if 0
 		/**
 		 * enqueue nd range kernel
 		 */
@@ -1838,7 +1906,7 @@ public:
 								&event.event
 					));
 		}
-
+#endif
 		/**
 		 * wait until all enqueued object from command queue are finished
 		 */
