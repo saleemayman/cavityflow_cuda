@@ -786,8 +786,10 @@ private:
 	class CProgram
 	{
 public:
-		CError error;			///< error handler
-		cl_program program;		///< OpenCL program id
+		/*CError error;			///< error handler
+		cl_program program;		///< OpenCL program id*/
+		CUresult error;			///< CUDA error handle
+		CUmodule program;		///< CUDA program id equivalent
 		std::string filepath;	///< string with filename (for debugging purposes)
 
 		inline CProgram()
@@ -822,7 +824,7 @@ public:
 		 * initialize program with source code
 		 */
 		inline CProgram(	CContext &cContext,		// context
-							cl_uint count,			// number of strings
+							uint count,			// number of strings
 							const char **strings,	// source code
 							const size_t *lengths	// length of source code strings. if NULL, the strings are \0 terminated
 		)
@@ -831,19 +833,28 @@ public:
 			load(cContext, count, strings, lengths);
 		}
 
+		/*  21:34 22.10.2014 Continue editing from here.
+		 *	Understand how the OpenCL code is compiled. The .cu
+		 * 	cuda kernels need to be compile with nvcc and -keep option
+		 *	to generate the .cubin or .ptx file; this file has to 
+		 *	the input argument for the cuModuleLoad command.
+		 */
+
 		/**
 		 * load kernel using source given in strings
 		 */
 		inline void load(	CContext &cContext,	// context
-							cl_uint count,		// number of strings
+							uint count,		// number of strings
 							const char **strings,	// source code
 							const size_t *lengths	// length of source code strings. if NULL, the strings are \0 terminated
 		)
 		{
-			cl_int errcode_ret;
-			program = clCreateProgramWithSource(cContext.context, count, strings, lengths, &errcode_ret);
-			if (errcode_ret != CL_SUCCESS)
-				error << cclGetErrorString(errcode_ret) << std::endl;
+			CUresult errcode_ret;
+			//program = clCreateProgramWithSource(cContext.context, count, strings, lengths, &errcode_ret);
+			errcode_ret = cuModuleLoad(&program, strings);
+			if (errcode_ret != CUDA_SUCCESS)
+				CudaCallCheckError(errcode_ret);
+				CudaCallCheckError( cuCtxDetach(*cContext) );
 		}
 
 
@@ -1829,7 +1840,7 @@ public:
 								NULL,
 								event
 					));
-
+/*
 			CudaCallCheckError( cuLaunchKernel(CUfunction f,
 									unsigned int  	gridDimX,
 									unsigned int  	gridDimY,
@@ -1841,7 +1852,7 @@ public:
 									CUstream  	hStream,
 									void **  	kernelParams,
 									void **  	extra	 
-									) );
+									) );*/
 
 #if PROFILE
 			clWaitForEvents(1, event);
