@@ -808,6 +808,7 @@ public:
 			load(cContext, p_filepath);
 		}
 
+#if 0
 		/**
 		 * load program given by p_filepath and place prefix_string before the filecontent
 		 */
@@ -832,29 +833,27 @@ public:
 			CProgram();
 			load(cContext, count, strings, lengths);
 		}
-
-		/*  21:34 22.10.2014 Continue editing from here.
-		 *	Understand how the OpenCL code is compiled. The .cu
-		 * 	cuda kernels need to be compile with nvcc and -keep option
-		 *	to generate the .cubin or .ptx file; this file has to 
-		 *	the input argument for the cuModuleLoad command.
-		 */
-
+#endif
 		/**
 		 * load kernel using source given in strings
 		 */
-		inline void load(	CContext &cContext,	// context
+/*		inline void load(	CContext &cContext,	// context
 							uint count,		// number of strings
 							const char **strings,	// source code
 							const size_t *lengths	// length of source code strings. if NULL, the strings are \0 terminated
+		)	*/
+		inline void load(	CContext &cContext,	// context
+							const char **cudaKernelFileName,	// cuda cubin/ptx source code
 		)
 		{
 			CUresult errcode_ret;
 			//program = clCreateProgramWithSource(cContext.context, count, strings, lengths, &errcode_ret);
-			errcode_ret = cuModuleLoad(&program, strings);
+			errcode_ret = cuModuleLoad(&program, cudaKernelFileName);
 			if (errcode_ret != CUDA_SUCCESS)
+			{
 				CudaCallCheckError(errcode_ret);
 				CudaCallCheckError( cuCtxDetach(*cContext) );
+			}
 		}
 
 
@@ -879,7 +878,8 @@ public:
 
 			const char* strings[] = {source.c_str()};
 			size_t lengths[] = {source.size()};
-			load(cContext, 1, strings, lengths);
+			//load(cContext, 1, strings, lengths);
+			load(cContext, p_filepath);		// for cuda module load
 #else
 			if (!CFile::fileContents(filepath, fileContent, errorLog))
 			{
@@ -893,6 +893,7 @@ public:
 #endif
 		}
 
+#if 0
 		/**
 		 * load kernel source from file
 		 */
@@ -1037,6 +1038,7 @@ public:
 			delete [] binaries_sizes;
 		}
 	};
+#endif
 
 
 	/**
@@ -1045,8 +1047,11 @@ public:
 	class CKernel
 	{
 	public:
-		cl_kernel kernel;	///< OpenCL kernel handler
-		CError error;		///< error handler
+/*		cl_kernel kernel;	///< OpenCL kernel handler
+		CError error;		///< error handler 	*/
+		CUfunction kernel;	///< CUDA funtion handle
+		CUresult error;		///< cuda error handler
+		std::vector<void *> kernelArgs;	///< vector to hold list of kernel input parameters
 
 		/**
 		 * create kernel from OpenCL program
@@ -1057,10 +1062,13 @@ public:
 		{
 			if (error())
 				std::cout << "FUCK" << std::endl;
-			cl_int errcode_ret;
+
+			/*cl_int errcode_ret;
 			kernel = clCreateKernel(program.program, kernel_name, &errcode_ret);
 			if (errcode_ret != CL_SUCCESS)
-				error << cclGetErrorString(errcode_ret) << std::endl;
+				error << cclGetErrorString(errcode_ret) << std::endl;	*/
+
+			CudaCallCheckError( cuModuleGetFunction(kernel_name, *program, kernel_name) );
 		}
 
 		/**
@@ -1095,60 +1103,63 @@ public:
 		 */
 		inline ~CKernel()
 		{
-			if (kernel != NULL)
-				CL_CHECK_ERROR(clReleaseKernel(kernel));
+/*			if (kernel != NULL)
+				CL_CHECK_ERROR(clReleaseKernel(kernel));	*/
 		}
 
 		/**
 		 * set memory object kernel argument
 		 */
-		inline void setArg(	cl_uint arg_index,	///< argument number
-							CMem &cmem			///< OpenCL memory object
+		inline void setArg(	CMem &cmem			///< cuda memory object address
 		)
 		{
-			cl_int ret_val = clSetKernelArg(kernel, arg_index, sizeof(cl_mem), &(cmem.memobj));
+/*			cl_int ret_val = clSetKernelArg(kernel, arg_index, sizeof(cl_mem), &(cmem.memobj));
 
 			if (ret_val != CL_SUCCESS)
-				error << cclGetErrorString(ret_val) << std::endl;
+				error << cclGetErrorString(ret_val) << std::endl;	*/
+			kernelArgs.push_back(cmem);
 		}
 
 		/**
 		 * set cl_float kernel argument
 		 */
-		inline void setArg(	cl_uint arg_index,	///< argument number
-							cl_float &arg		///< reference to float argument
+		inline void setArg(	float &arg		///< reference to float argument
 		)
 		{
-			cl_int ret_val = clSetKernelArg(kernel, arg_index, sizeof(float), &arg);
+/*			cl_int ret_val = clSetKernelArg(kernel, arg_index, sizeof(float), &arg);
 
 			if (ret_val != CL_SUCCESS)
-				error << cclGetErrorString(ret_val) << std::endl;
+				error << cclGetErrorString(ret_val) << std::endl;	*/
+			kernelArgs.push_back(arg);
 		}
 
 		/**
 		 * set cl_double kernel argument
 		 */
-		inline void setArg(	cl_uint arg_index,	///< argument number
-							cl_double &arg		///< reference to float argument
+		inline void setArg(	double &arg		///< reference to float argument
 		)
 		{
-			cl_int ret_val = clSetKernelArg(kernel, arg_index, sizeof(double), &arg);
+/*			cl_int ret_val = clSetKernelArg(kernel, arg_index, sizeof(double), &arg);
 
 			if (ret_val != CL_SUCCESS)
-				error << cclGetErrorString(ret_val) << std::endl;
+				error << cclGetErrorString(ret_val) << std::endl;	*/
+			kernelArgs.push_back(arg);
 		}
 
 		/**
 		 * set cl_int kernel argument
 		 */
-		inline void setArg(cl_uint arg_index, cl_int size)
+		inline void setArg(cl_int &size)
 		{
-			cl_int ret_val = clSetKernelArg(kernel, arg_index, sizeof(cl_int), &size);
+/*			cl_int ret_val = clSetKernelArg(kernel, arg_index, sizeof(cl_int), &size);
 
 			if (ret_val != CL_SUCCESS)
-				error << cclGetErrorString(ret_val) << std::endl;
+				error << cclGetErrorString(ret_val) << std::endl;	*/
+			kernelArgs.push_back(size);
 		}
 
+// this member is not called in CLbmSolver so I am commenting it out for now
+#if 0
 		/**
 		 * return the maximum work group size
 		 * \param cDevice	device where the kernel should be executed
@@ -1159,7 +1170,16 @@ public:
 			clGetKernelWorkGroupInfo(kernel, cDevice.device_id, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &param_value, NULL);
 			return param_value;
 		}
+#endif
 	};
+/**
+ * 00:07 Uhr 05.11.2014
+ * CUDA Drv API only requires the cubin/ptx filename of the kernel to load
+ * the kernel; OpenCL clCreateProgram... uses all the different options
+ * given in the **strings argument(as displayed when the exec was run)
+ * TODO:
+ * 	- load the kernel using CUDA Drv API cuModuleLoad (Done: load(CContext, cudaKernelFileName))
+ */
 
 	/**
 	 * \brief OpenCL event handler
