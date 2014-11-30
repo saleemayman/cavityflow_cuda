@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-#include "lib/CError.hpp"
+#include "CError.hpp"
 #include <errno.h>
 
 

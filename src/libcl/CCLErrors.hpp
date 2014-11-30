@@ -17,33 +17,44 @@
 
 #ifndef CCOMPLANGERRORS_HH__
 #define CCOMPLANGERRORS_HH__
-
+#include </usr/local/cuda/include/cuda.h>
+#include "/home/ayman/CSE/turbulent_lbm_multigpu/src/libcuda/drvapi_error_string.h"
+#include "/home/ayman/CSE/turbulent_lbm_multigpu/src/libcuda/builtin_types.h"
 
 // Define this to turn on error checking
 #define CUDA_ERROR_CHECK
 
 #define CudaCallCheckError( err ) __CudaCallCheckError( err, __FILE__, __LINE__ )
-#define CudaKernelCheckError()    __CudaKernelCheckError( __FILE__, __LINE__ )
+//#define CudaKernelCheckError()    __CudaKernelCheckError( __FILE__, __LINE__ )
 
 inline void __CudaCallCheckError( CUresult err, const char *file, const int line )	// cudaSafeCall
 {
 #ifdef CUDA_ERROR_CHECK
-	if ( cudaSuccess != err )
+	if( err != CUDA_SUCCESS)
 	{
-		fprintf(stderr, "CUDA call check failed at %s:%i : %s\n",
-				 file, line, cudaGetErrorString( err ) );
-		exit( -1 );
+		printf("Error := %s\n", getCudaDrvErrorString( err) );
+		fprintf(stderr, "CUDA Driver API error = %04d from file <%s>, line %i. Error: %s \n",
+						err, file, line, getCudaDrvErrorString( err) );
+		exit(-1);
 	}
 #endif
 
 	return;
 }
 
+/*
 inline void __CudaKernelCheckError( const char *file, const int line )	//	cudaCheckError
 {
 #ifdef CUDA_ERROR_CHECK
+	if( err != CUDA_SUCCESS)
+	{
+		printf("Error := %s\n", getCudaDrvErrorString( err) );
+		fprintf(stderr, "CUDA Driver API error = %04d from file <%s>, line %i. Error: %s \n",
+						err, file, line, getCudaDrvErrorString( err) );
+		exit(-1);
+	}
 	cudaError err = cudaGetLastError();
-	if ( cudaSuccess != err )
+	if ( CUDA_SUCCESS != err )
 	{
         fprintf(stderr, "CUDA kernel check failed at %s:%i : %s\n",
 				file, line, cudaGetErrorString( err ) );
@@ -53,16 +64,18 @@ inline void __CudaKernelCheckError( const char *file, const int line )	//	cudaCh
 	// More careful checking. However, this will affect performance.
 	// Comment away if needed.
 	err = cudaDeviceSynchronize();
-	if( cudaSuccess != err )
+	if( CUDA_SUCCESS != err )
 	{
 		fprintf(stderr, "cudaCheckError() with sync failed at %s:%i : %s\n",
 				 file, line, cudaGetErrorString( err ) );
 		exit( -1 );
 	}
+
 #endif
 
 	return;
 }
+*/
 
 #if 0
 #include <CL/cl.h>

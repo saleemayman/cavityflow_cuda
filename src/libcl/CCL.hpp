@@ -18,8 +18,9 @@
 #ifndef CCOMPLANG_HPP
 #define CCOMPLANG_HPP
 
-#include <CL/cl.h>	// remove this once all OpenCL commands are gone.
- #include "cuda.h"	// check if it actually reads the definitions from cuda.h
+//#include <CL/cl.h>	// remove this once all OpenCL commands are gone.
+#include </usr/local/cuda/include/cuda.h>	// check if it actually reads the definitions from cuda.h
+//#include <helper_cuda_drvapi.h>
 #include <iostream>
 #include <strings.h>
 #include <string.h>
@@ -28,12 +29,15 @@
 #include <sstream>
 #include <vector>
 #include "CCLErrors.hpp"
-#include "lib/CError.hpp"
-#include "lib/CFile.hpp"
-#include "libtools/CProfiler.hpp"
-#include "libmath/CVector.hpp"
-#include "../common.h"
+#include "../lib/CError.hpp"
+#include "../lib/CFile.hpp"
+//#include "../libtools/CProfiler.hpp"
+#include "../libmath/CVector.hpp"
+//#include "../common.h"
 #include <sys/types.h>
+
+// load defaults kernel execution paramters
+#include "../cl_programs/lbm_defaults.h"
 
 #ifdef C_GL_TEXTURE_HPP
 	#if GL3_PROTOTYPES
@@ -52,7 +56,6 @@
 	#include <GL/glx.h>
 #endif
 
-
 /**
  * \brief OpenCL C++ abstraction class
  */
@@ -66,7 +69,7 @@ public:
 	class CPlatform
 	{
 	public:
-		cl_platform_id platform_id;	///< OpenCL platform handler
+		//cl_platform_id platform_id;	///< OpenCL platform handler
 
 		char *profile;	///< profile string
 		char *version;	///< version string
@@ -85,6 +88,12 @@ private:
 			name = NULL;
 			vendor = NULL;
 			extensions = NULL;
+
+			// cuda driver API initialization
+			if (cuInit(0) != CUDA_SUCCESS)
+			{
+				exit(-1);
+			}
 		}
 
 		/**
@@ -100,6 +109,8 @@ private:
 		}
 
 public:
+
+#if 0
 		/**
 		 * load information about platform and store to class
 		 */
@@ -118,7 +129,6 @@ public:
 			loadP(CL_PLATFORM_EXTENSIONS, extensions)
 #undef load
 		}
-
 		/**
 		 * setup platform id to load information for platform_id
 		 */
@@ -137,6 +147,7 @@ public:
 			initCPlatform();
 			load(p_platform_id);
 		}
+#endif
 
 		inline CPlatform()
 		{
@@ -218,7 +229,7 @@ public:
 		//cl_device_id *device_ids;	///< array with devices available for the context
 		CUcontext context;
 		CUdevice *device_ids;
-		uint device_ids_count;		///< number of contexts in device_ids[]
+		int device_ids_count;		///< number of contexts in device_ids[]
 
 		/**
 		 * load device list belonging to context cContext
@@ -227,8 +238,8 @@ public:
 		inline void load(CContext &cContext)
 		{
 			// load device information
-			int value_size_ret;
-			//CL_CHECK_ERROR(clGetContextInfo(cContext.context, CL_CONTEXT_DEVICES, 0, NULL, &value_size_ret));
+//			int value_size_ret;
+//			CL_CHECK_ERROR(clGetContextInfo(cContext.context, CL_CONTEXT_DEVICES, 0, NULL, &value_size_ret));
 			CudaCallCheckError( cuDeviceGetCount(&device_ids_count) );
 			//device_ids_count = value_size_ret / sizeof(cl_device_id);
 			if (device_ids_count == 0)	std::cerr << "Warning: no device found!" << std::endl;
@@ -239,7 +250,7 @@ public:
 			/// get a handle for each device available
 			for (int i = 0; i < device_ids_count; i++)
 			{
-				CudaCallCheckError( cuDeviceGet(device_ids[i], i) );	
+				CudaCallCheckError( cuDeviceGet(&device_ids[i], i) );	
 			}
 
 			initDeviceVector();
@@ -373,7 +384,7 @@ public:
 
 			//cl_int err_ret;
 			CUresult err_ret;
-			err_ret = cuCtxCreate(&context, CU_CTX_SCHED_AUTO, &cDevice.device_id);
+			err_ret = cuCtxCreate(&context, CU_CTX_SCHED_AUTO, cDevice.device_id);
 			CudaCallCheckError(err_ret);
 			//cl_context_properties context_properties[] = {CL_CONTEXT_PLATFORM, (cl_context_properties)cPlatform.platform_id, 0, 0};
 			//context = clCreateContext(context_properties, 1, &cDevice.device_id, NULL, NULL, &err_ret);
@@ -634,7 +645,7 @@ private:
 
 		inline CMem()
 		{
-			memobj = NULL;
+			memobj = '\0';	//NULL;
 		}
 
 		/**
@@ -648,14 +659,18 @@ private:
 		/**
 		 * create OpenCL memory buffer
 		 */
-		inline CMem(	CContext&		cContext,	///< context for buffer
+/*		inline CMem(	CContext&		cContext,	///< context for buffer
 						unsigned int	flags,		///< CUDA flags
 						size_t			size,		///< Size of memory buffer
 						void*			host_ptr	///< Host pointer to initialize buffer
+			)	*/
+		inline CMem(	CContext&		cContext,	///< context for buffer
+						size_t			size		///< Size of memory buffer
 			)
 		{
-			memobj = NULL;
-			create(cContext, flags, size, host_ptr);	
+			memobj = '\0';	//NULL;
+			//create(cContext, flags, size, host_ptr);	
+			create(cContext, size);	
 		}
 
 		/**
@@ -663,10 +678,10 @@ private:
 		 */
 		void release()
 		{
-			if (memobj != NULL)
+			if (memobj != '\0')		//if (memobj != NULL)
 				//clReleaseMemObject(memobj);
 				CudaCallCheckError( cuMemFree(memobj) );
-			memobj = NULL;
+			memobj = '\0';	//NULL;
 		}
 
 		/**
@@ -773,10 +788,7 @@ private:
 			memobj = clCreateFromGLTexture2D(cContext.context, flags, texture.target, 0, texture.textureid, &errcode_ret);
 			CL_CHECK_ERROR(errcode_ret);
 		}
-
 #endif
-
-
 	};
 
 
@@ -805,7 +817,7 @@ public:
 		)
 		{
 			CProgram();
-			load(cContext, p_filepath);
+			load(cContext, p_filepath.c_str() );
 		}
 
 #if 0
@@ -843,7 +855,7 @@ public:
 							const size_t *lengths	// length of source code strings. if NULL, the strings are \0 terminated
 		)	*/
 		inline void load(	CContext &cContext,	// context
-							const char **cudaKernelFileName,	// cuda cubin/ptx source code
+							const char *cudaKernelFileName	// cuda cubin/ptx source code
 		)
 		{
 			CUresult errcode_ret;
@@ -852,7 +864,7 @@ public:
 			if (errcode_ret != CUDA_SUCCESS)
 			{
 				CudaCallCheckError(errcode_ret);
-				CudaCallCheckError( cuCtxDetach(*cContext) );
+				CudaCallCheckError( cuCtxDestroy(cContext.context) );
 			}
 		}
 
@@ -879,7 +891,7 @@ public:
 			const char* strings[] = {source.c_str()};
 			size_t lengths[] = {source.size()};
 			//load(cContext, 1, strings, lengths);
-			load(cContext, p_filepath);		// for cuda module load
+			load(cContext, p_filepath.c_str() );		// for cuda module load
 #else
 			if (!CFile::fileContents(filepath, fileContent, errorLog))
 			{
@@ -1037,9 +1049,12 @@ public:
 			delete [] binaries;
 			delete [] binaries_sizes;
 		}
-	};
 #endif
+	};
 
+/*
+TODO: change all setArg(...) to include the variable index.
+*/
 
 	/**
 	 * \brief Create kernels from CProgram, use and set arguments for them
@@ -1051,7 +1066,8 @@ public:
 		CError error;		///< error handler 	*/
 		CUfunction kernel;	///< CUDA funtion handle
 		CUresult error;		///< cuda error handler
-		std::vector<void *> kernelArgs;	///< vector to hold list of kernel input parameters
+		std::vector<void *> kernelArgsVec;	///< vector to hold list of kernel input parameters
+		//void **kernelArgs;	///< array to send to culaunchKernel
 
 		/**
 		 * create kernel from OpenCL program
@@ -1060,15 +1076,16 @@ public:
 							const char *kernel_name		///< name of kernel function to create kernel from
 			)
 		{
-			if (error())
-				std::cout << "FUCK" << std::endl;
+			// check how to include this. Now it gives a compiler error
+			//if (error())
+			//	std::cout << "FUCK" << std::endl;
 
 			/*cl_int errcode_ret;
 			kernel = clCreateKernel(program.program, kernel_name, &errcode_ret);
 			if (errcode_ret != CL_SUCCESS)
 				error << cclGetErrorString(errcode_ret) << std::endl;	*/
 
-			CudaCallCheckError( cuModuleGetFunction(kernel_name, *program, kernel_name) );
+			CudaCallCheckError( cuModuleGetFunction(&kernel, program.program, kernel_name) );
 		}
 
 		/**
@@ -1108,54 +1125,67 @@ public:
 		}
 
 		/**
+		 * allocate enough space for the kernel arguments in std::vector container
+		 */
+		inline void setArgSize(int size)
+		{
+			kernelArgsVec.reserve(size);
+		}
+		/**
 		 * set memory object kernel argument
 		 */
-		inline void setArg(	CMem &cmem			///< cuda memory object address
+		inline void setArg( int arg_index, ///< argument number
+							CMem &cmem ///< OpenCL memory object
 		)
 		{
 /*			cl_int ret_val = clSetKernelArg(kernel, arg_index, sizeof(cl_mem), &(cmem.memobj));
 
 			if (ret_val != CL_SUCCESS)
 				error << cclGetErrorString(ret_val) << std::endl;	*/
-			kernelArgs.push_back(cmem);
+			//kernelArgsVec.push_back(cmem);
+			kernelArgsVec[arg_index] = &cmem;
 		}
 
 		/**
 		 * set cl_float kernel argument
 		 */
-		inline void setArg(	float &arg		///< reference to float argument
+		inline void setArg(	int arg_index,
+							float &arg		///< reference to float argument
 		)
 		{
 /*			cl_int ret_val = clSetKernelArg(kernel, arg_index, sizeof(float), &arg);
 
 			if (ret_val != CL_SUCCESS)
 				error << cclGetErrorString(ret_val) << std::endl;	*/
-			kernelArgs.push_back(arg);
+			kernelArgsVec[arg_index] = &arg;
 		}
 
 		/**
 		 * set cl_double kernel argument
 		 */
-		inline void setArg(	double &arg		///< reference to float argument
+		inline void setArg(	int arg_index,
+							double &arg		///< reference to float argument
 		)
 		{
 /*			cl_int ret_val = clSetKernelArg(kernel, arg_index, sizeof(double), &arg);
 
 			if (ret_val != CL_SUCCESS)
 				error << cclGetErrorString(ret_val) << std::endl;	*/
-			kernelArgs.push_back(arg);
+			kernelArgsVec[arg_index] = &arg;
 		}
 
 		/**
 		 * set cl_int kernel argument
 		 */
-		inline void setArg(cl_int &size)
+		inline void setArg(int arg_index,
+							int &size
+		)
 		{
 /*			cl_int ret_val = clSetKernelArg(kernel, arg_index, sizeof(cl_int), &size);
 
 			if (ret_val != CL_SUCCESS)
 				error << cclGetErrorString(ret_val) << std::endl;	*/
-			kernelArgs.push_back(size);
+			kernelArgsVec[arg_index] = &size;
 		}
 
 // this member is not called in CLbmSolver so I am commenting it out for now
@@ -1187,7 +1217,8 @@ public:
 	class CEvent
 	{
 	public:
-		cl_event event;	///< openCL event
+		//cl_event event;	///< openCL event
+		CUevent event;		///< CUDA event
 
 		inline CEvent()
 		{
@@ -1201,7 +1232,8 @@ public:
 		{
 			if (event != 0)
 			{
-				CL_CHECK_ERROR(clWaitForEvents(1, &event));
+				//CL_CHECK_ERROR(clWaitForEvents(1, &event));
+				CudaCallCheckError( cuEventSynchronize(event) );
 				release();
 				event = 0;
 			}
@@ -1210,17 +1242,22 @@ public:
 		/**
 		 * return the execution status belonging to the event
 		 */
-		inline cl_int getExecutionStatus()
+		inline CUresult getExecutionStatus()
 		{
-			cl_int param_value;
-			CL_CHECK_ERROR(clGetEventInfo(event, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof(cl_int), &param_value, NULL));
+			//cl_int param_value;
+			//CL_CHECK_ERROR(clGetEventInfo(event, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof(cl_int), &param_value, NULL));
+			CUresult param_value;
+			param_value = cuEventQuery(event);
+			CudaCallCheckError(param_value);
+
 			return param_value;
 		}
 
 		inline ~CEvent()
 		{
 			if (event != 0)
-				clReleaseEvent(event);
+				//clReleaseEvent(event);
+				CudaCallCheckError( cuEventDestroy(event) );
 		}
 
 		/**
@@ -1228,11 +1265,13 @@ public:
 		 */
 		inline void release()
 		{
-			clReleaseEvent(event);
+			//clReleaseEvent(event);
+			CudaCallCheckError( cuEventDestroy(event) );
 			event = 0;
 		}
 	};
 
+#if 0
 	/**
 	 * \brief OpenCL event list management (up to 10 events)
 	 */
@@ -1285,7 +1324,7 @@ public:
 			events[1] = event1.event;
 		}
 	};
-
+#endif
 
 	/**
 	 * \brief OpenCL command queue handler
@@ -1293,14 +1332,13 @@ public:
 	class CCommandQueue
 	{
 	public:
-		//CError error;		///< error handler
-		cudaError error;	///< cuda error handler
+		CError error;		///< error handler
 
 		//cl_command_queue command_queue;	///< OpenCL command queue handler
 		CUstream cuda_stream;	///< CUDA stream handler
 
 // Ignore code not required for LBM code execution to get a simple example
-// working with no compile or linking bugs.		
+// working with no compiler or linking bugs.		
 #if 0
 		/**
 		 * increment OpenCL reference counter to command queue
@@ -1387,9 +1425,9 @@ public:
 		{
 			//cl_int errcode_ret;
 			CUresult errcode_ret;	// cuda error type
-			errcode_ret = cuStreamSynchronize(command_queue);
+			errcode_ret = cuStreamSynchronize(cuda_stream);
 			if (errcode_ret != CUDA_SUCCESS)
-				error << cuGetErrorString(errcode_ret) << std::endl;	// CUDA Driver API erro handling
+				error << getCudaDrvErrorString(errcode_ret) << std::endl;	// CUDA Driver API erro handling
 
 		}
 	
@@ -1834,15 +1872,89 @@ public:
 					));
 		}
 #endif
-		// start editing from here (17:51 10.10.2014)
+		/**
+		 * set the number of grid size and threads per block for GPU
+		 */
+		void setGridAndBlockSize(	dim3 &grid, dim3 &block, unsigned int work_dim,
+									const int grid_size_x, const size_t total_elems, 
+									size_t *local_work_size, size_t *global_work_size
+		)
+		{
+			size_t threads_per_block;
+
+			// if no work-group size specified set it to default defined in lbm_defaults.h
+			if (local_work_size == NULL)
+			{
+				if (work_dim == 1)
+				{
+					block = dim3(LOCAL_WORK_GROUP_SIZE, 1 ,1);
+					global_work_size[0] = total_elems;
+					
+					grid = dim3((total_elems + block.x - 1)/block.x, 1, 1);
+				}
+				else if(work_dim == 2)
+				{
+					block = dim3(LOCAL_WORK_GROUP_SIZE/2, 2, 1);
+
+					global_work_size[0] = grid_size_x * LOCAL_WORK_GROUP_SIZE;
+					global_work_size[1] = total_elems/global_work_size[0];
+
+					grid = dim3(grid_size_x, 
+								(total_elems + global_work_size[0] - 1)/global_work_size[0], 1);
+				}
+				else
+				{
+					block = dim3(LOCAL_WORK_GROUP_SIZE/4, 2 ,2);
+					
+					global_work_size[0] = grid_size_x * LOCAL_WORK_GROUP_SIZE;
+					global_work_size[1] = total_elems/global_work_size[0];
+					global_work_size[2] = 1;
+
+					grid = dim3(grid_size_x, 
+								(total_elems + global_work_size[0] - 1)/global_work_size[0], 1);
+				}
+			}
+			else
+			{
+				block = dim3(local_work_size[0], local_work_size[1], local_work_size[2]);
+				threads_per_block = block.x * block.y * block.z;
+
+				if (work_dim == 1)
+				{
+					global_work_size[0] = total_elems;
+					grid = dim3((total_elems + threads_per_block - 1)/threads_per_block, 1, 1);
+				}
+				else if(work_dim == 2)
+				{
+					global_work_size[0] = grid_size_x * threads_per_block;
+					global_work_size[1] = total_elems/global_work_size[0];
+
+					grid = dim3(grid_size_x, 
+								(total_elems + global_work_size[0] - 1)/global_work_size[0], 1);
+				}
+				else
+				{
+					global_work_size[0] = grid_size_x * threads_per_block;
+					global_work_size[1] = total_elems/global_work_size[0];
+					global_work_size[2] = 1;
+
+					grid = dim3(grid_size_x, 
+								(total_elems + global_work_size[0] - 1)/global_work_size[0], 1);
+				}
+			}
+		}
+
 		/**
 		 * enqueue nd range kernel
 		 */
-		inline void enqueueNDRangeKernel(	CKernel &cKernel,		///< enqueue a OpenCL kernel
-											cl_uint work_dim,		///< number of work dimensions (0, 1 or 2)
+		inline void enqueueNDRangeKernel(	CKernel &cKernel,					///< enqueue a OpenCL kernel
+											unsigned int work_dim,				///< number of work dimensions (0, 1 or 2)
+											const unsigned int grid_size_x,		///< number of blocks in x-direction
+											const size_t total_elements,		///< total number of elements to process
 											const size_t *global_work_offset,	///< global work offset
-											const size_t *global_work_size,		///< global work size
-											const size_t *local_work_size		///< local work size
+											size_t *global_work_size,			///< global work size
+											size_t *local_work_size,			///< local work size
+											std::vector<void *>& kernelParams	///< kernel input arguments
 		)
 		{
 		  //cl_event* event = NULL;
@@ -1850,7 +1962,7 @@ public:
 #if PROFILE
 		  event = new cl_event();
 #endif
-			CL_CHECK_ERROR(	clEnqueueNDRangeKernel(	command_queue,
+/*			CL_CHECK_ERROR(	clEnqueueNDRangeKernel(	command_queue,
 								cKernel.kernel,
 								work_dim,
 								global_work_offset,
@@ -1859,20 +1971,26 @@ public:
 								0,
 								NULL,
 								event
-					));
-/*
-			CudaCallCheckError( cuLaunchKernel(CUfunction f,
-									unsigned int  	gridDimX,
-									unsigned int  	gridDimY,
-									unsigned int  	gridDimZ,
-									unsigned int  	blockDimX,
-									unsigned int  	blockDimY,
-									unsigned int  	blockDimZ,
-									unsigned int  	sharedMemBytes,
-									CUstream  	hStream,
-									void **  	kernelParams,
-									void **  	extra	 
-									) );*/
+					));		*/
+
+			dim3 block; //	threads per grid dimension = dim3(32, 1, 1);
+			dim3 grid;	// 	number of blocks to launch = dim3((size + block.x - 1) / block.x, 1, 1);
+
+			setGridAndBlockSize(grid, block, work_dim, grid_size_x, total_elements, local_work_size, global_work_size);
+
+			CudaCallCheckError( cuLaunchKernel(cKernel.kernel,
+												grid.x,
+												grid.y,
+												grid.z,
+												block.x,
+												block.y,
+												block.z,
+												0,		// sharedMemBytes
+												cuda_stream,
+												&kernelParams[0],
+												0 		// extra	 
+												) );
+// TODO: Check if size_t is a valid argument for cuLaunchKernel() for grid and block variables.
 
 #if PROFILE
 			clWaitForEvents(1, event);
@@ -1943,7 +2061,8 @@ public:
 		 */
 		inline void finish()
 		{
-			CL_CHECK_ERROR(	clFinish(command_queue));
+			//CL_CHECK_ERROR(	clFinish(command_queue));
+			CudaCallCheckError( cuStreamSynchronize(cuda_stream) );
 		}
 
 #ifdef C_GL_TEXTURE_HPP
@@ -1965,7 +2084,8 @@ public:
 #endif
 	};
 
-
+// No CUDA platform concept. Just change it to display device info
+#if 0
 	/**
 	 * output informations about all profiles and devices
 	 */
@@ -1995,7 +2115,7 @@ public:
 			}
 		}
 	}
-
+#endif
 
 	/**
 	 * \brief load information about a specific device
@@ -2003,24 +2123,34 @@ public:
 	class CDeviceInfo : public CDevice
 	{
 	public:
-		cl_device_type device_type;		///< OpenCL device type
-		cl_uint vendor_id;				///< OpenCL vendor id
-		cl_uint max_compute_units;		///< maximum compute units available
-		cl_uint max_work_item_dimensions;	///< maximum number of dimensions
+		//cl_device_type device_type;		///< OpenCL device type
+		//cl_uint vendor_id;				///< OpenCL vendor id
+		int max_compute_units;		///< maximum compute units available
+		int max_work_item_dimensions;	///< maximum number of dimensions
 
 		size_t *max_work_item_sizes;	///< maximum amount of work items
-		size_t max_work_group_size;		///< maximum group size
+		int max_work_group_size;		///< maximum group size
+		int max_clock_frequency;			///< maximum clock frequency
+		int address_bits;					///< address bits for device
+		int global_mem_cache_size;				///< size of global memory cache
+		size_t global_mem_size;					///< size of global memory
 
+		int max_constant_buffer_size;			///< maximum bytes for constant buffer
+		int local_mem_size;						///< size of local memory
+		int available;							///< true, if device available
+		int execution_capabilities;				///< kernel execution capabilities
+		int queue_properties;					///< queue properties
+		
+		char *name;				///< name of device
+		int driver_version;		///< driver version of device
+
+#if 0
 		cl_uint preferred_vector_width_char;	///< preferred vector width for type char
 		cl_uint preferred_vector_width_short;	///< preferred vector width for type short
 		cl_uint preferred_vector_width_int;		///< preferred vector width for type int
 		cl_uint preferred_vector_width_long;	///< preferred vector width for type long
 		cl_uint preferred_vector_width_float;	///< preferred vector width for type float
 		cl_uint preferred_vector_width_double;	///< preferred vector width for type float
-
-		cl_uint max_clock_frequency;			///< maximum clock frequency
-		cl_uint address_bits;					///< address bits for device
-
 		cl_ulong max_mem_alloc_size;			///< maximum number of allocatable bytes
 
 		cl_bool image_support;					///< image support available
@@ -2042,27 +2172,19 @@ public:
 		cl_device_fp_config single_fp_config;	///< single precision floating point capabilities
 		cl_device_mem_cache_type global_mem_cache_type;	///< cache type of global memory
 		cl_uint global_mem_cacheline_size;		///< size of a line of global memory cache
-		cl_ulong global_mem_cache_size;			///< size of global memory cache
-		cl_ulong global_mem_size;				///< size of global memory
 
-		cl_ulong max_constant_buffer_size;		///< maximum bytes for constant buffer
 		cl_uint max_constant_args;				///< maximum number of constant arguments
 		cl_device_local_mem_type local_mem_type;	///< type of local memory
-		cl_ulong local_mem_size;				///< size of local memory
 		cl_bool error_correction;				///< error correction available
 		size_t profiling_timer_resolution;		///< resolution of profiling timer
 		cl_bool endian_little;					///< little endian device
-		cl_bool available;						///< true, if device available
 		cl_bool compiler_available;				///< true, if compiler for device is available
-		cl_device_exec_capabilities execution_capabilities;	///< kernel execution capabilities
-		cl_command_queue_properties queue_properties;	///< queue properties
-
-		char *name;				///< name of device
+		
 		char *vendor;			///< vendor of device
-		char *driver_version;	///< driver version of device
 		char *profile;			///< profile of device
-		char *version;			///< version of device
 		char *extensions;		///< extensions available for device
+		char *version;			///< version of device
+#endif	
 
 		/**
 		 * initialize device information with NULL data
@@ -2072,11 +2194,11 @@ public:
 			max_work_item_sizes = NULL;
 
 			name = NULL;
-			vendor = NULL;
-			driver_version = NULL;
-			profile = NULL;
-			version = NULL;
-			extensions = NULL;
+//			vendor = NULL;
+			driver_version = '\0';	//NULL;
+//			profile = NULL;
+//			version = NULL;
+//			extensions = NULL;
 		}
 
 		inline CDeviceInfo()
@@ -2099,11 +2221,11 @@ public:
 		{
 			delete[] max_work_item_sizes;
 			delete[] name;
-			delete[] vendor;
-			delete[] driver_version;
-			delete[] profile;
-			delete[] version;
-			delete[] extensions;
+//			delete[] vendor;
+//			delete[] driver_version;
+//			delete[] profile;
+//			delete[] version;
+//			delete[] extensions;
 
 		}
 
@@ -2112,6 +2234,9 @@ public:
 		 */
 		inline const char* getTypeString()
 		{
+			return "GPU";
+// CUDA Driver API only deals with device type GPU			
+#if 0
 			switch(device_type)
 			{
 				case CL_DEVICE_TYPE_CPU:	return "CPU";
@@ -2121,6 +2246,7 @@ public:
 				case CL_DEVICE_TYPE_ALL:	return "ALL";
 				default:			return "unknown";
 			}
+#endif
 		}
 
 		/**
@@ -2129,16 +2255,38 @@ public:
 		inline void loadDeviceInfo(const CDevice &cDevice)
 		{
 			set(cDevice.device_id);	// set device id
+	
+			getCudaDrvErrorString( cuDeviceGetCount(&max_compute_units) );
+			max_work_item_dimensions = 3;
 
+			delete max_work_item_sizes;
+			max_work_item_sizes = new size_t[max_work_item_dimensions];
+			
+			getCudaDrvErrorString( cuDeviceGetAttribute(&max_work_group_size, CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK, device_id) );
+			getCudaDrvErrorString( cuDeviceGetAttribute(&max_clock_frequency, CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device_id) );
+			max_clock_frequency = max_clock_frequency * 1e-3f;	// convert to MHz from kHz
+			
+			getCudaDrvErrorString( cuDeviceGetAttribute(&address_bits, CU_DEVICE_ATTRIBUTE_GLOBAL_MEMORY_BUS_WIDTH, device_id) );
+			getCudaDrvErrorString( cuDeviceGetAttribute(&global_mem_cache_size, CU_DEVICE_ATTRIBUTE_L2_CACHE_SIZE, device_id) );
+			getCudaDrvErrorString( cuDeviceTotalMem(&global_mem_size, device_id) );
+			getCudaDrvErrorString( cuDeviceGetAttribute(&max_constant_buffer_size, CU_DEVICE_ATTRIBUTE_TOTAL_CONSTANT_MEMORY, device_id) );
+			getCudaDrvErrorString( cuDeviceGetAttribute(&local_mem_size, CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK, device_id) );
+			getCudaDrvErrorString( cuDeviceGetAttribute(&available, CU_DEVICE_ATTRIBUTE_COMPUTE_MODE, device_id) );
+			getCudaDrvErrorString( cuDeviceComputeCapability(&execution_capabilities, NULL, device_id) );
+			getCudaDrvErrorString( cuDeviceGetAttribute(&queue_properties, CU_DEVICE_ATTRIBUTE_CONCURRENT_KERNELS, device_id) );
+
+			getCudaDrvErrorString( cuDeviceGetName(name, 256, device_id) ); 
+			getCudaDrvErrorString( cuDriverGetVersion(&driver_version) );
+#if 0			
 			CL_CHECK_ERROR(clGetDeviceInfo(	device_id, CL_DEVICE_TYPE,			sizeof(cl_device_type),	&device_type, NULL));
 			CL_CHECK_ERROR(clGetDeviceInfo(	device_id, CL_DEVICE_VENDOR_ID,			sizeof(cl_uint),	&vendor_id,	NULL));
 			CL_CHECK_ERROR(clGetDeviceInfo(	device_id, CL_DEVICE_MAX_COMPUTE_UNITS,		sizeof(cl_uint),	&max_compute_units,	NULL));
 			CL_CHECK_ERROR(clGetDeviceInfo(	device_id, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,	sizeof(cl_uint),	&max_work_item_dimensions,	NULL));
 
-			delete max_work_item_sizes;
-			max_work_item_sizes = new size_t[max_work_item_dimensions];
-
 			CL_CHECK_ERROR(clGetDeviceInfo(	device_id, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_work_group_size),	&max_work_group_size,	NULL));
+			CL_CHECK_ERROR(clGetDeviceInfo(	device_id, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_work_group_size),	&max_work_group_size,	NULL));
+
+			// the role of this function is not clear? TODO: check
 			CL_CHECK_ERROR(clGetDeviceInfo(	device_id, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size_t)*max_work_item_dimensions,	max_work_item_sizes,	NULL));
 
 			CL_CHECK_ERROR(clGetDeviceInfo(	device_id, CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR,	sizeof(size_t),	&preferred_vector_width_char,		NULL));
@@ -2190,6 +2338,8 @@ public:
 			loadDeviceInfoString(device_id, CL_DEVICE_PROFILE, &profile);
 			loadDeviceInfoString(device_id, CL_DEVICE_VERSION, &version);
 			loadDeviceInfoString(device_id, CL_DEVICE_EXTENSIONS, &extensions);
+#endif
+			
 		}
 
 		/**
@@ -2197,7 +2347,35 @@ public:
 		 */
 		inline void printDeviceInfo(std::string sLinePrefix)
 		{
+			std::cout << sLinePrefix << "MAX_COMPUTE_UNITS: " << max_compute_units << std::endl;
+			std::cout << sLinePrefix << "MAX_WORK_ITEM_DIMENSIONS: " << max_work_item_dimensions << std::endl;
 
+			for (int w = 0; w < max_work_item_dimensions; w++)
+			{
+				std::cout << sLinePrefix << "MAX_WORK_ITEM_SIZES[" << w << "]: " << max_work_item_sizes[w] << std::endl;
+			}
+			std::cout << sLinePrefix << "MAX_WORK_GROUP_SIZE: " << max_work_group_size << std::endl;
+			std::cout << sLinePrefix << std::endl;
+
+
+			std::cout << sLinePrefix << "MAX_CCLOCK_FREQUENCY: " << max_clock_frequency << std::endl;
+			std::cout << sLinePrefix << "ADDRESS_BITS: " << address_bits << std::endl;
+			std::cout << sLinePrefix << std::endl;
+
+			std::cout << sLinePrefix << "GLOBAL_MEM_CACHE_SIZE: " << global_mem_cache_size << std::endl;
+			std::cout << sLinePrefix << "GLOBAL_MEM_SIZE: " << global_mem_size << " (" << (global_mem_size >> 20) << "MB)" << std::endl;
+			std::cout << sLinePrefix << std::endl;
+			std::cout << sLinePrefix << "MAX_CONSTANT_BUFFER_SIZE: " << max_constant_buffer_size << std::endl;
+
+
+			std::cout << sLinePrefix << "LOCAL_MEM_SIZE: " << local_mem_size << std::endl;
+			std::cout << sLinePrefix << "AVAILABLE: " << available << std::endl;
+			std::cout << sLinePrefix << "COMPUTE_CAPABILITY: " << execution_capabilities << std::endl;
+			std::cout << sLinePrefix << "CONCURRENT_KERNELS: " << queue_properties << std::endl;
+			std::cout << sLinePrefix << "NAME: " << name << std::endl;
+			std::cout << sLinePrefix << "DRIVER_VERSION: " << driver_version << std::endl;
+
+#if 0
 			std::cout << sLinePrefix << "TYPE: ";
 
 			if (device_type & CL_DEVICE_TYPE_CPU)	std::cout << "CPU ";
@@ -2207,26 +2385,14 @@ public:
 			std::cout << std::endl;
 
 			std::cout << sLinePrefix << "VENDOR_ID: " << vendor_id << std::endl;
-			std::cout << sLinePrefix << "MAX_COMPUTE_UNITS: " << max_compute_units << std::endl;
-			std::cout << sLinePrefix << "MAX_WORK_ITEM_DIMENSIONS: " << max_work_item_dimensions << std::endl;
-
-			for (cl_uint w = 0; w < max_work_item_dimensions; w++)
-			{
-				std::cout << sLinePrefix << "MAX_WORK_ITEM_SIZES[" << w << "]: " << max_work_item_sizes[w] << std::endl;
-			}
-			std::cout << sLinePrefix << "MAX_WORK_GROUP_SIZE: " << max_work_group_size << std::endl;
-			std::cout << sLinePrefix << std::endl;
 			std::cout << sLinePrefix << "PREFERRED_VECTOR_WIDTH_CHAR: " << preferred_vector_width_char << std::endl;
 			std::cout << sLinePrefix << "PREFERRED_VECTOR_WIDTH_SHORT: " << preferred_vector_width_short << std::endl;
 			std::cout << sLinePrefix << "PREFERRED_VECTOR_WIDTH_INT: " << preferred_vector_width_int << std::endl;
 			std::cout << sLinePrefix << "PREFERRED_VECTOR_WIDTH_LONG: " << preferred_vector_width_long << std::endl;
 			std::cout << sLinePrefix << "PREFERRED_VECTOR_WIDTH_FLOAT: " << preferred_vector_width_float << std::endl;
-			std::cout << sLinePrefix << "PREFERRED_VECTOR_WIDTH_DOUBLE: " << preferred_vector_width_double << std::endl;
-			std::cout << sLinePrefix << std::endl;
-			std::cout << sLinePrefix << "MAX_CCLOCK_FREQUENCY: " << max_clock_frequency << std::endl;
-			std::cout << sLinePrefix << "ADDRESS_BITS: " << address_bits << std::endl;
+			std::cout << sLinePrefix << "PREFERRED_VECTOR_WIDTH_DOUBLE: " << preferred_vector_width_double << std::endl;	
+			std::cout << sLinePrefix << std::endl;	
 			std::cout << sLinePrefix << "MAX_MEM_ALLOC_SIZE: " << max_mem_alloc_size << std::endl;
-			std::cout << sLinePrefix << std::endl;
 			std::cout << sLinePrefix << "IMAGE_SUPPORT: " << image_support << std::endl;
 			std::cout << sLinePrefix << "MAX_READ_IMAGE_ARGS: " << max_read_image_args << std::endl;
 			std::cout << sLinePrefix << "MAX_WRITE_IMAGE_ARGS: " << max_write_image_args << std::endl;
@@ -2249,7 +2415,6 @@ public:
 			if (single_fp_config & CL_FP_FMA)	std::cout << "FP_FMA ";
 			std::cout << std::endl;
 			std::cout << sLinePrefix << std::endl;
-
 			std::cout << sLinePrefix << "GLOBAL_MEM_CACHE_TYPE: ";
 			switch(global_mem_cache_type)
 			{
@@ -2259,12 +2424,7 @@ public:
 			}
 			std::cout << std::endl;
 			std::cout << sLinePrefix << "GLOBAL_MEM_CACHELINE_SIZE: " << global_mem_cacheline_size << std::endl;
-			std::cout << sLinePrefix << "GLOBAL_MEM_CACHE_SIZE: " << global_mem_cache_size << std::endl;
-			std::cout << sLinePrefix << "GLOBAL_MEM_SIZE: " << global_mem_size << " (" << (global_mem_size >> 20) << "MB)" << std::endl;
-			std::cout << sLinePrefix << std::endl;
-			std::cout << sLinePrefix << "MAX_CONSTANT_BUFFER_SIZE: " << max_constant_buffer_size << std::endl;
 			std::cout << sLinePrefix << "MAX_CONSTANT_ARGS: " << max_constant_args << std::endl;
-
 			std::cout << sLinePrefix << "LOCAL_MEM_TYPE: ";
 			switch(local_mem_type)
 			{
@@ -2273,12 +2433,9 @@ public:
 				default:	std::cout << "UNKNOWN";	break;
 			}
 			std::cout << std::endl;
-
-			std::cout << sLinePrefix << "LOCAL_MEM_SIZE: " << local_mem_size << std::endl;
 			std::cout << sLinePrefix << "ERROR_CORRECTION_SUPPORT: " << error_correction << std::endl;
 			std::cout << sLinePrefix << "PROFILING_TIMER_RESOLUTION: " << profiling_timer_resolution << std::endl;
 			std::cout << sLinePrefix << "ENDIAN_LITTLE: " << endian_little << std::endl;
-			std::cout << sLinePrefix << "AVAILABLE: " << available << std::endl;
 			std::cout << sLinePrefix << "COMPILER_AVAILABLE: " << compiler_available << std::endl;
 			std::cout << sLinePrefix << "EXECUTION_CAPABILITIES: ";
 			if (execution_capabilities & CL_EXEC_KERNEL)		std::cout << "EXEC_KERNEL ";
@@ -2288,16 +2445,13 @@ public:
 			if (queue_properties & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE)		std::cout << "QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE ";
 			if (queue_properties & CL_QUEUE_PROFILING_ENABLE)	std::cout << "QUEUE_PROFILING_ENABLE";
 			std::cout << std::endl;
-
-			std::cout << sLinePrefix << std::endl;
-			std::cout << sLinePrefix << "NAME: " << name << std::endl;
 			std::cout << sLinePrefix << "VENDOR: " << vendor << std::endl;
-			std::cout << sLinePrefix << "DRIVER_VERSION: " << driver_version << std::endl;
 			std::cout << sLinePrefix << "PROFILE: " << profile << std::endl;
 			std::cout << sLinePrefix << "VERSION: " << version << std::endl;
 			std::cout << sLinePrefix << "EXTENSIONS: " << extensions << std::endl;
+#endif
 		}
-
+#if 0
 private:
 		inline void loadDeviceInfoString(	cl_device_id device_id,
 						cl_device_info device_info,
@@ -2309,7 +2463,7 @@ private:
 			*param_value = new char[retval_size];
 			CL_CHECK_ERROR(clGetDeviceInfo(device_id, device_info, retval_size, *param_value, NULL));
 		}
-
+#endif
 	};
 };
 
