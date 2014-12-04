@@ -33,7 +33,7 @@
 #include "../lib/CFile.hpp"
 //#include "../libtools/CProfiler.hpp"
 #include "../libmath/CVector.hpp"
-//#include "../common.h"
+#include "../common.h"
 #include <sys/types.h>
 
 // load defaults kernel execution paramters
@@ -738,10 +738,9 @@ private:
 						void*			host_ptr	///< Host pointer to initialize buffer
 			)
 		{*/
-		inline void create(
-						CContext&		cContext,	///< context for buffer
-						size_t			size		///< Size of memory buffer
-			)
+		inline void create(	CContext&		cContext,	///< context for buffer
+							size_t			size		///< Size of memory buffer
+		)
 		{
 			release();
 			/*
@@ -749,12 +748,28 @@ private:
 			memobj = clCreateBuffer(cContext.context, flags, size, host_ptr, &errcode_ret);
 			CL_CHECK_ERROR(errcode_ret);
 			*/
-			
+
 			CUresult errcode_ret;
 
 			errcode_ret = cuMemAlloc(&memobj, size);
 			CudaCallCheckError(errcode_ret);
 
+		}
+
+		/*
+		 * same as create() but copies the data from host to device
+		 * 
+		 */
+		inline void createCopyToDevice(	CContext&		cContext,	///< context for buffer
+										size_t			size,		///< Size of memory buffer
+										void*			host_ptr	///< Host pointer to initialize buffer
+		)
+		{
+			// Allocate GPU memory
+			create(cContext, size);
+
+			// Copy data from host_ptr to GPU
+			CudaCallCheckError( cuMemcpyHtoD(memobj, host_ptr, size) );
 		}
 /*
  * CGlTexture has to be included before CCL.hpp to enable the creation of
@@ -1177,7 +1192,7 @@ TODO: change all setArg(...) to include the variable index.
 		/**
 		 * set cl_int kernel argument
 		 */
-		inline void setArg(int arg_index,
+		inline void setArg(	int arg_index,
 							int &size
 		)
 		{

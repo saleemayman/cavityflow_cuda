@@ -22,6 +22,8 @@
 #define FLAG_GHOST_LAYER (1 << 3)
 #define FLAG_GHOST_LAYER_BETA (FLAG_GHOST_LAYER | (1 << 4))
 
+ #define GRID_SIZE_X (16)
+
 //#define HALO_SIZE 0
 #define BENCHMARK_OUTPUT_DIR "output/benchmark"
 #define PROFILE_OUTPUT_DIR "output/profile"
@@ -56,8 +58,8 @@ extern CVector<3, int> E18;
 
 extern CVector<3, int> lbm_units[];
 
-typedef Singleton<CConfiguration<T> > ConfigSingleton; // Global declaration
-typedef Singleton<CProfiler> ProfilerSingleton; // Global declaration
+//typedef Singleton<CConfiguration<T> > ConfigSingleton; // Global declaration
+//typedef Singleton<CProfiler> ProfilerSingleton; // Global declaration
 
 typedef enum {
 	OPENCL_VERSION_UNKNOWN = 0,
@@ -145,7 +147,7 @@ file.close() \
   }
 #endif
 
-static const char * mpiGetErrorString(cl_int errorNum) {
+static const char * mpiGetErrorString(int errorNum) {
 	switch (errorNum) {
 	case MPI_SUCCESS:
 		return "CL_SUCCESS";
