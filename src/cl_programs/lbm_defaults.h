@@ -1,3 +1,4 @@
+#include "vector_types.h"
 
 #ifndef DOMAIN_CELLS_X
 	#define DOMAIN_CELLS_X	(64)
@@ -8,8 +9,17 @@
 
 	typedef float	T;
 	typedef float2	T2;
-	typedef float4	T4;
-	typedef float8	T8;
+	typedef float4	T4;	
+//	typedef float8	T8;	
+
+	#ifndef float8
+		struct float8 {
+			float a, b, c, d, e, f, g, h;
+		};
+
+		typedef struct float8 T8;
+		//typedef float8 T8;
+	#endif
 
 	#define FLAG_OBSTACLE	(1 << 0)
 	#define FLAG_FLUID	(1 << 1)

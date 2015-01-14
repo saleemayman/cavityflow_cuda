@@ -75,11 +75,12 @@ private:
 	static const size_t SIZE_DD_HOST_BYTES = SIZE_DD_HOST * sizeof(T);
 	int _BC[3][2]; ///< Boundary conditions. First index specifys the dimension and second the upper or the lower boundary.
 	// opencl handlers
+	CCL::CPlatform cudaPlatform;		///< constructor will call cuInit
 	CCL::CCommandQueue &cCommandQueue;
 	CCL::CContext &cContext;
 	CCL::CDevice &cDevice;
 	CCL::CDeviceInfo cDeviceInfo;
-	OPENCL_VERSION _cl_version;
+//	OPENCL_VERSION _cl_version;		// check if you need to verify the CUDA driver/toolkit version
 
 	// INITIALIZATION KERNEL
 	CCL::CKernel cKernelInit;
@@ -141,6 +142,8 @@ private:
 		return tokens;
 	}
 
+// not needed for CUDA
+#if 0
 	OPENCL_VERSION getOpenCLVersion() {
 		OPENCL_VERSION cl_version;
 		// format:
@@ -168,14 +171,18 @@ private:
 		}
 		return cl_version;
 	}
+#endif
 
 	inline void enqueueCopyRectKernel(CCL::CMem& src, CCL::CMem& dst,
 			const int src_offset, CVector<3, int> src_origin,
 			CVector<3, int> src_size, const int dst_offset,
 			CVector<3, int> dst_origin, CVector<3, int> dst_size,
-			CVector<3, int> block_size, bool withBarrier = true) {
+			CVector<3, int> block_size, bool withBarrier = true)
+	{
+
 		// set kernel args
-		// source args
+		cKernelCopyRect.setArgSize(20);		///< reserve a vector argument container of 20 elements
+			// source args
 		cKernelCopyRect.setArg(0, src);
 		cKernelCopyRect.setArg(1, src_offset);
 		cKernelCopyRect.setArg(2, src_origin[0]);
@@ -202,8 +209,12 @@ private:
 		// enqueue the CopyRect kernel
 		cCommandQueue.enqueueNDRangeKernel(cKernelCopyRect, // kernel
 				2, // dimensions
+				GRID_SIZE_X,		// number of blocks in x-direction
+				this->domain_cells.elements(),
 				NULL, // global work offset
-				lGlobalSize, NULL);
+				lGlobalSize,
+				cKernelInit_WorkGroupSize, //NULL,
+				cKernelCopyRect.kernelArgsVec);	
 		if (withBarrier)
 			cCommandQueue.enqueueBarrier();
 	}
@@ -243,10 +254,12 @@ public:
 		store_velocity = p_store_velocity;
 		store_density = p_store_density;
 		//debug = p_debug;
-
+// not needed for CUDA
+#if 0
 		_cl_version = OPENCL_VERSION_1_0_0; //getOpenCLVersion();
 		if (_cl_version == OPENCL_VERSION_UNKNOWN)
 			throw "OpenCL Version is unknown!";
+#endif
 
 #if DEBUG
 		std::cout << "CL_VERSION " << _cl_version << std::endl;
@@ -316,77 +329,71 @@ public:
 		 */
 		domain_cells_count = this->domain_cells.elements();
 
-		std::ostringstream cl_program_defines;
 
-		cl_program_defines << "#define SIZE_DD_HOST_BYTES ("
-				<< SIZE_DD_HOST_BYTES << ")" << std::endl;
+		// check this cl_programs_defines -> checked. Just an output stream class for string
+		std::ostringstream cuda_program_defines;
+
+		cuda_program_defines << " -D DEFAULTS=0";
+		cuda_program_defines << " -D SIZE_DD_HOST_BYTES=" << SIZE_DD_HOST_BYTES;
+		cuda_program_defines << " -D DOMAIN_CELLS_X=" << this->domain_cells[0];
+		cuda_program_defines << " -D DOMAIN_CELLS_Y=" << this->domain_cells[1];
+		cuda_program_defines << " -D DOMAIN_CELLS_Z=" << this->domain_cells[2];
+		cuda_program_defines << " -D GLOBAL_WORK_GROUP_SIZE="
+			<< (this->domain_cells[0] * this->domain_cells[1] * this->domain_cells[2]);
+		cuda_program_defines << " -D FLAG_OBSTACLE=" << LBM_FLAG_OBSTACLE;
+		cuda_program_defines << " -D FLAG_FLUID=" << LBM_FLAG_FLUID;
+		cuda_program_defines << " -D FLAG_VELOCITY_INJECTION=" << LBM_FLAG_VELOCITY_INJECTION;
+		cuda_program_defines << " -D FLAG_GHOST_LAYER=" << LBM_FLAG_GHOST_LAYER;
+
+		if (store_velocity)
+			cuda_program_defines << " -D STORE_VELOCITY=1";
+
+		if (store_density)
+			cuda_program_defines << " -D STORE_DENSITY=1";
 
 		if (typeid(T) == typeid(float)) {
-			cl_program_defines << "typedef float T;" << std::endl;
-			cl_program_defines << "typedef float2 T2;" << std::endl;
-			cl_program_defines << "typedef float4 T4;" << std::endl;
-			cl_program_defines << "typedef float8 T8;" << std::endl;
-			cl_program_defines << "typedef float16 T16;" << std::endl;
+			cuda_program_defines << " -D TYPE_FLOAT=1";
+/*			cuda_program_defines << "typedef float2 T2;" << std::endl;
+			cuda_program_defines << "typedef float4 T4;" << std::endl;
+			cuda_program_defines << "typedef float8 T8;" << std::endl;
+			cuda_program_defines << "typedef float16 T16;" << std::endl;*/
 		} else if (typeid(T) == typeid(double)) {
-			cl_program_defines
+/*			cuda_program_defines
 					<< "#pragma OPENCL EXTENSION cl_khr_fp64 : enable"
 					<< std::endl;
-			cl_program_defines << "#ifndef cl_khr_fp64" << std::endl;
-			cl_program_defines
+			cuda_program_defines << "#ifndef cl_khr_fp64" << std::endl;
+			cuda_program_defines
 					<< "	#error cl_khr_fp64 not supported - please switch to single precision to run the simulation"
 					<< std::endl;
-			cl_program_defines << "#endif cl_khr_fp64" << std::endl;
-
-			cl_program_defines << "typedef double T;" << std::endl;
-			cl_program_defines << "typedef double2 T2;" << std::endl;
-			cl_program_defines << "typedef double4 T4;" << std::endl;
-			cl_program_defines << "typedef double8 T8;" << std::endl;
-			cl_program_defines << "typedef double16 T16;" << std::endl;
+			cuda_program_defines << "#endif cl_khr_fp64" << std::endl;
+*/
+			cuda_program_defines << " -D TYPE_DOUBLE=1";
+/*			cuda_program_defines << "typedef double2 T2;" << std::endl;
+			cuda_program_defines << "typedef double4 T4;" << std::endl;
+			cuda_program_defines << "typedef double8 T8;" << std::endl;
+			cuda_program_defines << "typedef double16 T16;" << std::endl;*/
 		} else {
 			error << "unsupported class type T" << std::endl;
 			return;
 		}
 
-		cl_program_defines << "#define DOMAIN_CELLS_X	("
-				<< this->domain_cells[0] << ")" << std::endl;
-		cl_program_defines << "#define DOMAIN_CELLS_Y	("
-				<< this->domain_cells[1] << ")" << std::endl;
-		cl_program_defines << "#define DOMAIN_CELLS_Z	("
-				<< this->domain_cells[2] << ")" << std::endl;
-		cl_program_defines
-				<< "#define GLOBAL_WORK_GROUP_SIZE	(DOMAIN_CELLS_X*DOMAIN_CELLS_Y*DOMAIN_CELLS_Z)"
-				<< std::endl;
-
-		cl_program_defines << "#define FLAG_OBSTACLE	(" << LBM_FLAG_OBSTACLE
-				<< ")" << std::endl;
-		cl_program_defines << "#define FLAG_FLUID	(" << LBM_FLAG_FLUID << ")"
-				<< std::endl;
-		cl_program_defines << "#define FLAG_VELOCITY_INJECTION	("
-				<< LBM_FLAG_VELOCITY_INJECTION << ")" << std::endl;
-		cl_program_defines << "#define FLAG_GHOST_LAYER	("
-				<< LBM_FLAG_GHOST_LAYER << ")" << std::endl;
-
-		if (store_velocity)
-			cl_program_defines << "#define STORE_VELOCITY 1" << std::endl;
-
-		if (store_density)
-			cl_program_defines << "#define STORE_DENSITY 1" << std::endl;
-
 #if DEBUG
-		std::cout << cl_program_defines.str() << std::endl;
+		std::cout << cuda_program_defines.str() << std::endl;
 #endif
 		/*
 		 * ALLOCATE BUFFERS
 		 */
-		cMemDensityDistributions.create(cContext, CL_MEM_READ_WRITE,
-				sizeof(T) * domain_cells_count * SIZE_DD_HOST, NULL);
+//		cMemDensityDistributions.create(cContext, CL_MEM_READ_WRITE,
+//				sizeof(T) * domain_cells_count * SIZE_DD_HOST, NULL);
+		 cMemDensityDistributions.create(cContext,
+		 		sizeof(T) * domain_cells_count * SIZE_DD_HOST);
 		//cMemCellFlags.create(cContext, CL_MEM_READ_WRITE, sizeof(cl_char)*domain_cells_count, NULL);
-		cMemCellFlags.create(cContext, CL_MEM_READ_WRITE,
-				sizeof(cl_int) * domain_cells_count, NULL);
-		cMemVelocity.create(cContext, CL_MEM_READ_WRITE,
-				sizeof(T) * domain_cells_count * 3, NULL);
-		cMemDensity.create(cContext, CL_MEM_READ_WRITE,
-				sizeof(T) * domain_cells_count, NULL);
+		cMemCellFlags.create(cContext,
+				sizeof(cl_int) * domain_cells_count);
+		cMemVelocity.create(cContext,
+				sizeof(T) * domain_cells_count * 3);
+		cMemDensity.create(cContext, 
+				sizeof(T) * domain_cells_count);
 
 		int bc_linear[6];
 		for (int i = 0; i < 3; i++)
@@ -399,35 +406,55 @@ public:
 		std::cout << " " << bc_linear[i];
 		std::cout << std::endl;
 #endif
-		cMemBC.create(cContext, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-				sizeof(cl_int) * 6, bc_linear);
+	
+		//cMemBC.create(cContext, sizeof(cl_int) * 6, bc_linear);
+		cMemBC.createCopyToDevice(cContext, sizeof(int) * 6, bc_linear);
 
 		/**
 		 * prepare INIT KERNEL DATA
 		 * nothing to do because we use COLLISION KERNEL DATA
 		 */
+		//cuda_program_defines << std::endl;
 
-		cl_program_defines << std::endl;
-
-		std::string cProgramDefinesPostfixString;
+		cDeviceInfo.loadDeviceInfo(cDevice);	///< get GPU specifications. CC needed for kernel compilation
 		std::string cProgramCompileOptionsString;
+		std::stringstream cProgramDefinesPostfixString;
+		std::stringstream cProgramCompileOptionsStream;	///< string to append
+		std::string initKernelModuleFileName = "lbm_init";
 		char charbuf[255];
 
 		/*
 		 * INIT kernel
 		 */
-		sprintf(charbuf, "%i", (int) cKernelInit_WorkGroupSize);
-		cProgramDefinesPostfixString = "#define LOCAL_WORK_GROUP_SIZE	(";
-		cProgramDefinesPostfixString += charbuf;
-		cProgramDefinesPostfixString += ")";
+		//sprintf(charbuf, "%i", (int) cKernelInit_WorkGroupSize);
+		cProgramDefinesPostfixString << " -D LOCAL_WORK_GROUP_SIZE=";
+		cProgramDefinesPostfixString << cKernelInit_WorkGroupSize;
 
 		/*cProgramCompileOptionsString = "-Werror -I./";*/
-		cProgramCompileOptionsString = "-I./";
+/*		cProgramCompileOptionsString = "-I./";
 		if (cKernelInit_MaxRegisters != 0) {
-			/* TODO: check for cl_nv_compiler_options extension */
 			cProgramCompileOptionsString += " -cl-nv-maxrregcount=";
 			cProgramCompileOptionsString += cKernelInit_MaxRegisters;
 		}
+*/
+
+		cProgramCompileOptionsStream << "nvcc -x cu -keep ";
+		if (cKernelInit_MaxRegisters != 0)
+		{
+			cProgramCompileOptionsStream << "-maxrregcount ";
+			cProgramCompileOptionsStream << cKernelInit_MaxRegisters;
+		}
+
+		cProgramCompileOptionsStream << cuda_program_defines.str() + cProgramDefinesPostfixString.str();
+		cProgramCompileOptionsStream << " -arch=sm_";
+		cProgramCompileOptionsStream << cDeviceInfo.execution_capabilities;		///< GPU compute capability
+		cProgramCompileOptionsStream << "0 -m64 -I. -dc ";
+		cProgramCompileOptionsStream << initKernelModuleFileName.str();
+		cProgramCompileOptionsStream << ".cu -o ";
+		cProgramCompileOptionsStream << initKernelModuleFileName.str();
+		cProgramCompileOptionsStream << ".o";
+
+		cProgramCompileOptionsString = cProgramCompileOptionsStream.str();
 
 		cKernelInit_GlobalWorkGroupSize = domain_cells_count;
 		if (cKernelInit_GlobalWorkGroupSize % cKernelInit_WorkGroupSize != 0)
@@ -436,10 +463,12 @@ public:
 					* cKernelInit_WorkGroupSize;
 
 		CCL::CProgram cProgramInit;
-		cProgramInit.load(cContext,
-				cl_program_defines.str() + cProgramDefinesPostfixString,
-				"src/cl_programs/lbm_init.cl");
-		cProgramInit.build(cDevice, cProgramCompileOptionsString.c_str());
+		//cProgramInit.load(cContext, cuda_program_defines.str() + cProgramDefinesPostfixString, "src/cl_programs/lbm_init.cl");
+		cProgramInit.executeCommand(cProgramCompileOptionsString.c_str(), initKernelModuleFileName.c_str());
+
+		//TODO: check which program phase I need to load the module
+		cProgramInit.load(cContext, initKernelModuleFileName.c_str() + ".ptx");
+		//executeCommand(	const std::string &command, const char *file_name)
 		if (cProgramInit.error()) {
 			error << "failed to compile lbm_init.cl" << CError::endl;
 			error << cProgramInit.error.getString() << CError::endl;
@@ -475,9 +504,11 @@ public:
 
 		CCL::CProgram cProgramAlpha;
 		cProgramAlpha.load(cContext,
-				cl_program_defines.str() + cProgramDefinesPostfixString,
+				cuda_program_defines.str() + cProgramDefinesPostfixString,
 				"src/cl_programs/lbm_alpha.cl");
-		cProgramAlpha.build(cDevice, cProgramCompileOptionsString.c_str());
+
+// TODO: CProgram.build() member does not exist! Make sure the CUDA version does not need it.
+//		cProgramAlpha.build(cDevice, cProgramCompileOptionsString.c_str());
 		if (cProgramAlpha.error()) {
 			error << "failed to compile lbm_alpha.cl" << CError::endl;
 			error << cProgramAlpha.error.getString() << CError::endl;
@@ -512,9 +543,11 @@ public:
 
 		CCL::CProgram cProgramBeta;
 		cProgramBeta.load(cContext,
-				cl_program_defines.str() + cProgramDefinesPostfixString,
+				cuda_program_defines.str() + cProgramDefinesPostfixString,
 				"src/cl_programs/lbm_beta.cl");
-		cProgramBeta.build(cDevice, cProgramCompileOptionsString.c_str());
+
+// TODO: CProgram.build() member does not exist! Make sure the CUDA version does not need it.
+//		cProgramBeta.build(cDevice, cProgramCompileOptionsString.c_str());
 		if (cProgramBeta.error()) {
 			error << "failed to compile lbm_beta.cl" << CError::endl;
 			error << cProgramBeta.error.getString() << CError::endl;
@@ -549,9 +582,11 @@ public:
 
 		CCL::CProgram cProgramCopyRect;
 		cProgramCopyRect.load(cContext,
-				cl_program_defines.str() + cProgramDefinesPostfixString,
+				cuda_program_defines.str() + cProgramDefinesPostfixString,
 				"src/cl_programs/copy_buffer_rect.cl");
-		cProgramCopyRect.build(cDevice, cProgramCompileOptionsString.c_str());
+		
+// TODO: CProgram.build() member does not exist! Make sure the CUDA version does not need it.
+		//cProgramCopyRect.build(cDevice, cProgramCompileOptionsString.c_str());
 		if (cProgramCopyRect.error()) {
 			error << "failed to compile copy_buffer_rect.cl" << CError::endl;
 			error << cProgramCopyRect.error.getString() << CError::endl;
@@ -622,6 +657,15 @@ public:
 #if DEBUG
 		std::cout << "Init Simulation: " << std::flush;
 #endif
+/* Fix according the member definition:
+		inline void enqueueNDRangeKernel(	CKernel &cKernel,		///< enqueue a OpenCL kernel
+											unsigned int work_dim,		///< number of work dimensions (0, 1 or 2)
+											const size_t *global_work_offset,	///< global work offset
+											const size_t *global_work_size,		///< global work size
+											const size_t *local_work_size,		///< local work size
+											void **  	kernelParams			///< kernel input arguments
+		)
+*/
 		cCommandQueue.enqueueNDRangeKernel(cKernelInit, // kernel
 				1, // dimensions
 				NULL, // global work offset

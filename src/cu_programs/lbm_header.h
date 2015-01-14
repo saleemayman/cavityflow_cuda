@@ -27,8 +27,7 @@
  *
  */
 
-//#include "src/cu_programs/lbm_defaults.h"
- #include "lbm_defaults.h"
+#include "lbm_defaults.h"
 
 #define USE_SWIZZLING	0
 

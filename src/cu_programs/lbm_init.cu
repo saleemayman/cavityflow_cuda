@@ -1,4 +1,3 @@
-//#include "src/cu_programs/lbm_header.h"
 #include "lbm_header.h"
 
 /**

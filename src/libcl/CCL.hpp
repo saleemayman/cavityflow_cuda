@@ -37,7 +37,8 @@
 #include <sys/types.h>
 
 // load defaults kernel execution paramters
-#include "../cl_programs/lbm_defaults.h"
+#define DEFAULTS (1)
+#include "../cu_programs/lbm_defaults.h"
 
 #ifdef C_GL_TEXTURE_HPP
 	#if GL3_PROTOTYPES
@@ -812,10 +813,15 @@ private:
 	 */
 	class CProgram
 	{
+private:
+		std::string command;	///< command string to execute
+		std::stringstream command_string_stream;	///< string to append
+		const char *file_name;	///< cuda file to compile
+
 public:
 		/*CError error;			///< error handler
 		cl_program program;		///< OpenCL program id*/
-		CUresult error;			///< CUDA error handle
+		int error;			///< CUDA error handle
 		CUmodule program;		///< CUDA program id equivalent
 		std::string filepath;	///< string with filename (for debugging purposes)
 
@@ -969,53 +975,25 @@ public:
 			delete build_log;
 			return ret_string;
 		}
-
+#endif
 		/**
-		 * build code for device
+		 * execute compile command on system
 		 */
-		inline void build(	CDevice &device,			///< device to build code for
-							const char* options = ""	///< options for build operation
+		inline void executeCommand(	const std::string &command, 
+									const char *file_name
 		)
 		{
-			if (error())
-				return;
+			std::cout << "Executing Compile command --> " << command << std::endl;
+			error = system(command.c_str());
+			std::cout << "Compile Successful, file --> " << file_name << std::endl;
 
-			// build
-			cl_int ret_val = clBuildProgram(program, 1, &device.device_id, options, NULL, NULL);
-			//cl_int ret_val = clBuildProgram(program, 0, NULL, options, NULL, NULL);
-
-			// avoid abortion due to CL_BILD_PROGRAM_FAILURE
-			if (ret_val != CL_SUCCESS)
+			if (error != 0)
 			{
-				error << cclGetErrorString(ret_val) << std::endl;
-				error << getBuildInfo(device) << std::endl;
-				return;
+				std::cerr << "failed to compile " << file_name << std::endl;
+				exit(error);
 			}
-
-			cl_build_status build_status;
-//			CL_CHECK_ERROR(clGetProgramBuildInfo(program, device.device_id, CL_PROGRAM_BUILD_STATUS, sizeof(cl_build_status), &build_status, NULL));
-			clGetProgramBuildInfo(program, device.device_id, CL_PROGRAM_BUILD_STATUS, sizeof(cl_build_status), &build_status, NULL);
-			if (build_status == CL_SUCCESS)
-				return;
-
-			char *build_log;
-			size_t ret_val_size;
-//			CL_CHECK_ERROR(clGetProgramBuildInfo(program, device.device_id, CL_PROGRAM_BUILD_LOG, 0, NULL, &ret_val_size));
-			clGetProgramBuildInfo(program, device.device_id, CL_PROGRAM_BUILD_LOG, 0, NULL, &ret_val_size);
-			build_log = new char[ret_val_size+1];
-//			CL_CHECK_ERROR(clGetProgramBuildInfo(program, device.device_id, CL_PROGRAM_BUILD_LOG, ret_val_size, build_log, NULL));
-			clGetProgramBuildInfo(program, device.device_id, CL_PROGRAM_BUILD_LOG, ret_val_size, build_log, NULL);
-
-			// to be carefully, terminate with \0
-			// there's no information in the reference wheter the string is 0 terminated or not
-			build_log[ret_val_size] = '\0';
-
-			std::cout << "BUILD LOG: '" << filepath << "'" << std::endl;
-			std::cout << build_log << std::endl;
-
-			delete[] build_log;
 		}
-
+#if 0
 		/**
 		 * output OpenCL binary code
 		 */
@@ -1898,38 +1876,38 @@ TODO: change all setArg(...) to include the variable index.
 			size_t threads_per_block;
 
 			// if no work-group size specified set it to default defined in lbm_defaults.h
-			if (local_work_size == NULL)
-			{
-				if (work_dim == 1)
-				{
-					block = dim3(LOCAL_WORK_GROUP_SIZE, 1 ,1);
-					global_work_size[0] = total_elems;
+			// if (local_work_size == NULL)
+			// {
+			// 	if (work_dim == 1)
+			// 	{
+			// 		block = dim3(LOCAL_WORK_GROUP_SIZE, 1 ,1);
+			// 		global_work_size[0] = total_elems;
 					
-					grid = dim3((total_elems + block.x - 1)/block.x, 1, 1);
-				}
-				else if(work_dim == 2)
-				{
-					block = dim3(LOCAL_WORK_GROUP_SIZE/2, 2, 1);
+			// 		grid = dim3((total_elems + block.x - 1)/block.x, 1, 1);
+			// 	}
+			// 	else if(work_dim == 2)
+			// 	{
+			// 		block = dim3(LOCAL_WORK_GROUP_SIZE/2, 2, 1);
 
-					global_work_size[0] = grid_size_x * LOCAL_WORK_GROUP_SIZE;
-					global_work_size[1] = total_elems/global_work_size[0];
+			// 		global_work_size[0] = grid_size_x * LOCAL_WORK_GROUP_SIZE;
+			// 		global_work_size[1] = total_elems/global_work_size[0];
 
-					grid = dim3(grid_size_x, 
-								(total_elems + global_work_size[0] - 1)/global_work_size[0], 1);
-				}
-				else
-				{
-					block = dim3(LOCAL_WORK_GROUP_SIZE/4, 2 ,2);
+			// 		grid = dim3(grid_size_x, 
+			// 					(total_elems + global_work_size[0] - 1)/global_work_size[0], 1);
+			// 	}
+			// 	else
+			// 	{
+			// 		block = dim3(LOCAL_WORK_GROUP_SIZE/4, 2 ,2);
 					
-					global_work_size[0] = grid_size_x * LOCAL_WORK_GROUP_SIZE;
-					global_work_size[1] = total_elems/global_work_size[0];
-					global_work_size[2] = 1;
+			// 		global_work_size[0] = grid_size_x * LOCAL_WORK_GROUP_SIZE;
+			// 		global_work_size[1] = total_elems/global_work_size[0];
+			// 		global_work_size[2] = 1;
 
-					grid = dim3(grid_size_x, 
-								(total_elems + global_work_size[0] - 1)/global_work_size[0], 1);
-				}
-			}
-			else
+			// 		grid = dim3(grid_size_x, 
+			// 					(total_elems + global_work_size[0] - 1)/global_work_size[0], 1);
+			// 	}
+			// }
+			// else
 			{
 				block = dim3(local_work_size[0], local_work_size[1], local_work_size[2]);
 				threads_per_block = block.x * block.y * block.z;
