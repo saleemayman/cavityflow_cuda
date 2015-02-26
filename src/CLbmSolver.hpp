@@ -438,7 +438,7 @@ public:
 		}
 */
 
-		cProgramCompileOptionsStream << "nvcc -x cu -keep ";
+		cProgramCompileOptionsStream << "nvcc -x cu -keep ";	// -keep retains the PTX and all other intermediate compile files
 		if (cKernelInit_MaxRegisters != 0)
 		{
 			cProgramCompileOptionsStream << "-maxrregcount ";
@@ -449,9 +449,9 @@ public:
 		cProgramCompileOptionsStream << " -arch=sm_";
 		cProgramCompileOptionsStream << cDeviceInfo.execution_capabilities;		///< GPU compute capability
 		cProgramCompileOptionsStream << "0 -m64 -I. -dc ";
-		cProgramCompileOptionsStream << initKernelModuleFileName.str();
+		cProgramCompileOptionsStream << initKernelModuleFileName.data();
 		cProgramCompileOptionsStream << ".cu -o ";
-		cProgramCompileOptionsStream << initKernelModuleFileName.str();
+		cProgramCompileOptionsStream << initKernelModuleFileName.data();
 		cProgramCompileOptionsStream << ".o";
 
 		cProgramCompileOptionsString = cProgramCompileOptionsStream.str();
@@ -468,6 +468,7 @@ public:
 
 		//TODO: check which program phase I need to load the module
 		cProgramInit.load(cContext, initKernelModuleFileName.c_str() + ".ptx");
+
 		//executeCommand(	const std::string &command, const char *file_name)
 		if (cProgramInit.error()) {
 			error << "failed to compile lbm_init.cl" << CError::endl;
@@ -481,17 +482,32 @@ public:
 		/*
 		 * ALPHA
 		 */
-		sprintf(charbuf, "%i", (int) cLbmKernelAlpha_WorkGroupSize);
-		cProgramDefinesPostfixString = "#define LOCAL_WORK_GROUP_SIZE	(";
-		cProgramDefinesPostfixString += charbuf;
-		cProgramDefinesPostfixString += ")";
+		//sprintf(charbuf, "%i", (int) cLbmKernelAlpha_WorkGroupSize);
+		//cProgramDefinesPostfixString << "#define LOCAL_WORK_GROUP_SIZE	(";
+		//cProgramDefinesPostfixString += charbuf;
+		//cProgramDefinesPostfixString += ")";
+
+		std::string alphaKernelModuleFileName = "lbm_alpha";
+		cProgramDefinesPostfixString.str(std::string());	// reset the contents of the StringStream
+		cProgramDefinesPostfixString << " -D LOCAL_WORK_GROUP_SIZE=";
+		cProgramDefinesPostfixString << cLbmKernelAlpha_WorkGroupSize;
 
 		// cProgramCompileOptionsString = "-Werror -I./";
-		cProgramCompileOptionsString = "-I./";
+		/* cProgramCompileOptionsString = "-I./";
 		if (cLbmKernelAlpha_MaxRegisters != 0) {
-			/* TODO: check for cl_nv_compiler_options extension */
+			// TODO: check for cl_nv_compiler_options extension 
 			cProgramCompileOptionsString += " -cl-nv-maxrregcount=";
 			cProgramCompileOptionsString += cLbmKernelAlpha_MaxRegisters;
+		}*/
+
+		// reset the contents of the StringStream
+		cProgramCompileOptionsStream.str(std::string());
+
+		cProgramCompileOptionsStream << "nvcc -x cu -keep ";	// -keep retains the PTX and all other intermediate compile files
+		if (cLbmKernelAlpha_MaxRegisters != 0)
+		{
+			cProgramCompileOptionsStream << "-maxrregcount ";
+			cProgramCompileOptionsStream << cLbmKernelAlpha_MaxRegisters;
 		}
 
 		cLbmKernelAlpha_GlobalWorkGroupSize = domain_cells_count;
@@ -502,10 +518,25 @@ public:
 							/ cLbmKernelAlpha_WorkGroupSize + 1)
 							* cLbmKernelAlpha_WorkGroupSize;
 
+		cProgramCompileOptionsStream << cuda_program_defines.str() + cProgramDefinesPostfixString.str();
+		cProgramCompileOptionsStream << " -arch=sm_";
+		cProgramCompileOptionsStream << cDeviceInfo.execution_capabilities;		///< GPU compute capability
+		cProgramCompileOptionsStream << "0 -m64 -I. -dc ";
+		cProgramCompileOptionsStream << alphaKernelModuleFileName.data();
+		cProgramCompileOptionsStream << ".cu -o ";
+		cProgramCompileOptionsStream << alphaKernelModuleFileName.data();
+		cProgramCompileOptionsStream << ".o";
+
+		cProgramCompileOptionsString = cProgramCompileOptionsStream.str();
+
+
+
 		CCL::CProgram cProgramAlpha;
-		cProgramAlpha.load(cContext,
-				cuda_program_defines.str() + cProgramDefinesPostfixString,
-				"src/cl_programs/lbm_alpha.cl");
+		//cProgramAlpha.load(cContext, cuda_program_defines.str() + cProgramDefinesPostfixString, "src/cl_programs/lbm_alpha.cl");
+		cProgramAlpha.executeCommand(cProgramCompileOptionsString.c_str(), alphaKernelModuleFileName.c_str());
+
+		//TODO: check which program phase I need to load the module
+		cProgramAlpha.load(cContext, alphaKernelModuleFileName.c_str() + ".ptx");
 
 // TODO: CProgram.build() member does not exist! Make sure the CUDA version does not need it.
 //		cProgramAlpha.build(cDevice, cProgramCompileOptionsString.c_str());
@@ -520,31 +551,59 @@ public:
 		/*
 		 * BETA
 		 */
-		sprintf(charbuf, "%i", (int) cLbmKernelBeta_WorkGroupSize);
+		/*sprintf(charbuf, "%i", (int) cLbmKernelBeta_WorkGroupSize);
 		cProgramDefinesPostfixString = "#define LOCAL_WORK_GROUP_SIZE	(";
 		cProgramDefinesPostfixString += charbuf;
-		cProgramDefinesPostfixString += ")";
+		cProgramDefinesPostfixString += ")";*/
+
+		std::string betaKernelModuleFileName = "lbm_beta";
+		cProgramDefinesPostfixString.str(std::string());	// reset the contents of the StringStream
+		cProgramDefinesPostfixString << " -D LOCAL_WORK_GROUP_SIZE=";
+		cProgramDefinesPostfixString << cLbmKernelBeta_WorkGroupSize;
 
 		//cProgramCompileOptionsString = "-Werror -I./";
-		cProgramCompileOptionsString = "-I./";
+		/*cProgramCompileOptionsString = "-I./";
 		if (cLbmKernelBeta_MaxRegisters != 0) {
-			/* TODO: check for cl_nv_compiler_options extension */
+			// TODO: check for cl_nv_compiler_options extension 
 			cProgramCompileOptionsString += " -cl-nv-maxrregcount=";
 			cProgramCompileOptionsString += cLbmKernelBeta_MaxRegisters;
+		}*/
+
+		// reset the contents of the StringStream
+		cProgramCompileOptionsStream.str(std::string());
+
+		cProgramCompileOptionsStream << "nvcc -x cu -keep ";	// -keep retains the PTX and all other intermediate compile files
+		if (cLbmKernelBeta_MaxRegisters != 0)
+		{
+			cProgramCompileOptionsStream << "-maxrregcount ";
+			cProgramCompileOptionsStream << cLbmKernelBeta_MaxRegisters;
 		}
 
-		cLbmKernelBeta_GlobalWorkGroupSize = domain_cells_count;
+		/*cLbmKernelBeta_GlobalWorkGroupSize = domain_cells_count;
 		if (cLbmKernelBeta_GlobalWorkGroupSize % cLbmKernelBeta_WorkGroupSize
 				!= 0)
 			cLbmKernelBeta_GlobalWorkGroupSize =
 					(cKernelInit_GlobalWorkGroupSize
 							/ cLbmKernelBeta_WorkGroupSize + 1)
-							* cLbmKernelBeta_WorkGroupSize;
+							* cLbmKernelBeta_WorkGroupSize;*/
+
+		cProgramCompileOptionsStream << cuda_program_defines.str() + cProgramDefinesPostfixString.str();
+		cProgramCompileOptionsStream << " -arch=sm_";
+		cProgramCompileOptionsStream << cDeviceInfo.execution_capabilities;		///< GPU compute capability
+		cProgramCompileOptionsStream << "0 -m64 -I. -dc ";
+		cProgramCompileOptionsStream << betaKernelModuleFileName.data();
+		cProgramCompileOptionsStream << ".cu -o ";
+		cProgramCompileOptionsStream << betaKernelModuleFileName.data();
+		cProgramCompileOptionsStream << ".o";
+
+		cProgramCompileOptionsString = cProgramCompileOptionsStream.str();
 
 		CCL::CProgram cProgramBeta;
-		cProgramBeta.load(cContext,
-				cuda_program_defines.str() + cProgramDefinesPostfixString,
-				"src/cl_programs/lbm_beta.cl");
+		//cProgramBeta.load(cContext, cuda_program_defines.str() + cProgramDefinesPostfixString, "src/cl_programs/lbm_beta.cl");
+		cProgramBeta.executeCommand(cProgramCompileOptionsString.c_str(), betaKernelModuleFileName.c_str());
+
+		//TODO: check which program phase I need to load the module
+		cProgramBeta.load(cContext, betaKernelModuleFileName.c_str() + ".ptx");
 
 // TODO: CProgram.build() member does not exist! Make sure the CUDA version does not need it.
 //		cProgramBeta.build(cDevice, cProgramCompileOptionsString.c_str());
@@ -561,29 +620,59 @@ public:
 		/*
 		 * INIT CopyBufferRect
 		 */
-		sprintf(charbuf, "%i", (int) cKernelCopyRect_WorkGroupSize);
+		/*sprintf(charbuf, "%i", (int) cKernelCopyRect_WorkGroupSize);
 		cProgramDefinesPostfixString = "#define LOCAL_WORK_GROUP_SIZE	(";
 		cProgramDefinesPostfixString += charbuf;
-		cProgramDefinesPostfixString += ")";
+		cProgramDefinesPostfixString += ")";*/
 
-		cProgramCompileOptionsString = "-Werror -I./";
-		//cProgramCompileOptionsString = "-I./";
+		std::string copyRectKernelModuleFileName = "copy_buffer_rect";
+		cProgramDefinesPostfixString.str(std::string());	// reset the contents of the StringStream
+		cProgramDefinesPostfixString << " -D LOCAL_WORK_GROUP_SIZE=";
+		cProgramDefinesPostfixString << cKernelCopyRect_WorkGroupSize;
+
+		/*cProgramCompileOptionsString = "-Werror -I./";
+		cProgramCompileOptionsString = "-I./";
 		if (cKernelCopyRect_MaxRegisters != 0) {
-			/* TODO: check for cl_nv_compiler_options extension */
+			// TODO: check for cl_nv_compiler_options extension 
 			cProgramCompileOptionsString += " -cl-nv-maxrregcount=";
 			cProgramCompileOptionsString += cKernelCopyRect_MaxRegisters;
+		}*/
+
+		// reset the contents of the StringStream
+		cProgramCompileOptionsStream.str(std::string());
+
+		cProgramCompileOptionsStream << "nvcc -x cu -keep ";	// -keep retains the PTX and all other intermediate compile files
+		if (cKernelCopyRect_MaxRegisters != 0)
+		{
+			cProgramCompileOptionsStream << "-maxrregcount ";
+			cProgramCompileOptionsStream << cKernelCopyRect_MaxRegisters;
 		}
 
-		cKernelCopyRect_GlobalWorkGroupSize = domain_cells_count;
+
+		/*cKernelCopyRect_GlobalWorkGroupSize = domain_cells_count;
 		if (cKernelInit_GlobalWorkGroupSize % cKernelInit_WorkGroupSize != 0)
 			cKernelInit_GlobalWorkGroupSize = (cKernelInit_GlobalWorkGroupSize
 					/ cKernelInit_WorkGroupSize + 1)
-					* cKernelInit_WorkGroupSize;
+					* cKernelInit_WorkGroupSize;*/
+
+		cProgramCompileOptionsStream << cuda_program_defines.str() + cProgramDefinesPostfixString.str();
+		cProgramCompileOptionsStream << " -arch=sm_";
+		cProgramCompileOptionsStream << cDeviceInfo.execution_capabilities;		///< GPU compute capability
+		cProgramCompileOptionsStream << "0 -m64 -I. -dc ";
+		cProgramCompileOptionsStream << copyRectKernelModuleFileName.data();
+		cProgramCompileOptionsStream << ".cu -o ";
+		cProgramCompileOptionsStream << copyRectKernelModuleFileName.data();
+		cProgramCompileOptionsStream << ".o";
+
+		cProgramCompileOptionsString = cProgramCompileOptionsStream.str();
 
 		CCL::CProgram cProgramCopyRect;
-		cProgramCopyRect.load(cContext,
-				cuda_program_defines.str() + cProgramDefinesPostfixString,
-				"src/cl_programs/copy_buffer_rect.cl");
+		//cProgramCopyRect.load(cContext, cuda_program_defines.str() + cProgramDefinesPostfixString, "src/cl_programs/copy_buffer_rect.cl");
+		cProgramCopyRect.executeCommand(cProgramCompileOptionsString.c_str(), copyRectKernelModuleFileName.c_str());
+
+		//TODO: check which program phase I need to load the module
+		cProgramCopyRect.load(cContext, copyRectKernelModuleFileName.c_str() + ".ptx");
+		
 		
 // TODO: CProgram.build() member does not exist! Make sure the CUDA version does not need it.
 		//cProgramCopyRect.build(cDevice, cProgramCompileOptionsString.c_str());

@@ -258,7 +258,9 @@ __global__ void lbm_kernel_beta(
 	 * pointer to current dd buf entry with index lid
 	 */
 	//__local T *dd_buf_lid = &dd_buf[1][lid];
-	__shared__	T *dd_buf_lid = &dd_buf[1][lid];
+	//__shared__	T *dd_buf_lid = &dd_buf[1][lid];
+	extern __shared__	T *dd_buf_lid;
+	dd_buf_lid = &dd_buf[1][lid];
 
 #define dd_read_delta_position_0	read_delta_neg_x
 #define dd_read_delta_position_1	read_delta_pos_x

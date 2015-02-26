@@ -113,14 +113,14 @@
 	/**
 	 * it's REALLY IMPORTANT (!!!) that A is a positive number!!!
 	 */
-	inline int DOMAIN_WRAP(size_t A)
+	__host__ __device__ inline int DOMAIN_WRAP(size_t A)
 	{
 		return A & (DOMAIN_CELLS-1);
 	}
 #else
 //	#warning "domain size has to be a power of 2 to gain a speedup"
 
-	inline int DOMAIN_WRAP(size_t A)
+	__host__ __device__ inline int DOMAIN_WRAP(size_t A)
 	{
 		return A % DOMAIN_CELLS;
 	}
@@ -234,14 +234,14 @@
 	/**
 	 * it's REALLY IMPORTANT (!!!) that A is a positive number!!!
 	 */
-	inline size_t LOCAL_WORK_GROUP_WRAP(size_t A)
+	__host__ __device__ inline size_t LOCAL_WORK_GROUP_WRAP(size_t A)
 	{
 		return A & (LOCAL_WORK_GROUP_SIZE-1);
 	}
 #else
 //	#warning "domain size has to be a power of 2 to gain a speedup"
 
-	inline size_t LOCAL_WORK_GROUP_WRAP(size_t A)
+	__host__ __device__ inline size_t LOCAL_WORK_GROUP_WRAP(size_t A)
 	{
 		return A % LOCAL_WORK_GROUP_SIZE;
 	}
