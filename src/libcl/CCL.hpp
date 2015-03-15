@@ -149,6 +149,10 @@ public:
 			load(p_platform_id);
 		}
 #endif
+		inline void load()
+		{
+			initCPlatform();
+		}
 
 		inline CPlatform()
 		{
@@ -416,6 +420,8 @@ public:
 		}
 #endif
 
+
+#if 0
 #ifdef C_GL_TEXTURE_HPP
 
 		/**
@@ -461,6 +467,7 @@ public:
 			retain();
 			return true;
 		}
+#endif
 #endif
 
 		/**
@@ -759,7 +766,7 @@ private:
 
 		/*
 		 * same as create() but copies the data from host to device
-		 * 
+		 * OpenCL equivalent is clCreateBuffer with  CL_MEM_COPY_HOST_PTR  flag
 		 */
 		inline void createCopyToDevice(	CContext&		cContext,	///< context for buffer
 										size_t			size,		///< Size of memory buffer
@@ -821,7 +828,7 @@ private:
 public:
 		/*CError error;			///< error handler
 		cl_program program;		///< OpenCL program id*/
-		int error;			///< CUDA error handle
+		CError error;			///< error handler
 		CUmodule program;		///< CUDA program id equivalent
 		std::string filepath;	///< string with filename (for debugging purposes)
 
@@ -983,14 +990,15 @@ public:
 									const char *file_name
 		)
 		{
+			int err_ret;
 			std::cout << "Executing Compile command --> " << command << std::endl;
-			error = system(command.c_str());
+			err_ret = system(command.c_str());
 			std::cout << "Compile Successful, file --> " << file_name << std::endl;
 
-			if (error != 0)
+			if (err_ret != 0)
 			{
 				std::cerr << "failed to compile " << file_name << std::endl;
-				exit(error);
+				exit(err_ret);
 			}
 		}
 #if 0
@@ -1171,14 +1179,25 @@ TODO: change all setArg(...) to include the variable index.
 		 * set cl_int kernel argument
 		 */
 		inline void setArg(	int arg_index,
-							int &size
+							int &arg
 		)
 		{
 /*			cl_int ret_val = clSetKernelArg(kernel, arg_index, sizeof(cl_int), &size);
 
 			if (ret_val != CL_SUCCESS)
 				error << cclGetErrorString(ret_val) << std::endl;	*/
-			kernelArgsVec[arg_index] = &size;
+			kernelArgsVec[arg_index] = &arg;
+		}
+
+		inline void setArg(	int arg_index,
+							const int &arg
+		)
+		{
+/*			cl_int ret_val = clSetKernelArg(kernel, arg_index, sizeof(cl_int), &size);
+
+			if (ret_val != CL_SUCCESS)
+				error << cclGetErrorString(ret_val) << std::endl;	*/
+			kernelArgsVec[arg_index] = const_cast<int *>(&arg);	//const_cast < new_type > ( expression ) 		
 		}
 
 // this member is not called in CLbmSolver so I am commenting it out for now
@@ -1423,8 +1442,28 @@ TODO: change all setArg(...) to include the variable index.
 				error << getCudaDrvErrorString(errcode_ret) << std::endl;	// CUDA Driver API erro handling
 
 		}
-	
-// Ignore code not required for LBM code execution to get a simple example
+
+		/**
+		 * read from CL device to buffer located in host memory
+		 */
+		inline void enqueueReadBuffer(	CMem &cMem,				///< memory object
+										bool block_write,	///< don't return until data is written
+										size_t offset,			///< offset to start writing from
+										size_t buffer_size,		///< size of buffer to write
+										void *buffer_ptr		///< host memory pointer
+		)
+		{
+			if (block_write)	// sync write
+			{
+				CudaCallCheckError( cuMemcpyDtoH(buffer_ptr, cMem.memobj, buffer_size) );
+			}
+			else 	// async write
+			{
+				CudaCallCheckError( cuMemcpyDtoHAsync(buffer_ptr, cMem.memobj, buffer_size, cuda_stream) );
+			}
+		}
+
+// Ignore code not required for LBM code (BASIC) execution to get a simple example
 // working with no compile or linking bugs.		
 #if 0
 		/**
@@ -1908,41 +1947,46 @@ TODO: change all setArg(...) to include the variable index.
 			// 	}
 			// }
 			// else
+
+			block = dim3(local_work_size[0], local_work_size[1], local_work_size[2]);
+			threads_per_block = block.x * block.y * block.z;
+
+			if (work_dim == 1)
 			{
-				block = dim3(local_work_size[0], local_work_size[1], local_work_size[2]);
-				threads_per_block = block.x * block.y * block.z;
+				global_work_size[0] = total_elems;
+				grid = dim3((total_elems + threads_per_block - 1)/threads_per_block, 1, 1);
+			}
+			else if(work_dim == 2)
+			{
+				global_work_size[0] = grid_size_x * threads_per_block;
+				global_work_size[1] = total_elems/global_work_size[0];
 
-				if (work_dim == 1)
-				{
-					global_work_size[0] = total_elems;
-					grid = dim3((total_elems + threads_per_block - 1)/threads_per_block, 1, 1);
-				}
-				else if(work_dim == 2)
-				{
-					global_work_size[0] = grid_size_x * threads_per_block;
-					global_work_size[1] = total_elems/global_work_size[0];
+				grid = dim3(grid_size_x, 
+							(total_elems + global_work_size[0] - 1)/global_work_size[0], 1);
+			}
+			else
+			{
+				global_work_size[0] = grid_size_x * threads_per_block;
+				global_work_size[1] = total_elems/global_work_size[0];
+				global_work_size[2] = 1;
 
-					grid = dim3(grid_size_x, 
-								(total_elems + global_work_size[0] - 1)/global_work_size[0], 1);
-				}
-				else
-				{
-					global_work_size[0] = grid_size_x * threads_per_block;
-					global_work_size[1] = total_elems/global_work_size[0];
-					global_work_size[2] = 1;
-
-					grid = dim3(grid_size_x, 
-								(total_elems + global_work_size[0] - 1)/global_work_size[0], 1);
-				}
+				grid = dim3(grid_size_x, 
+							(total_elems + global_work_size[0] - 1)/global_work_size[0], 1);
 			}
 		}
 
 		/**
 		 * enqueue nd range kernel
 		 */
+/*		inline void enqueueNDRangeKernel( 	CKernel &cKernel, ///< enqueue a OpenCL kernel
+											cl_uint work_dim, ///< number of work dimensions (0, 1 or 2)
+											const size_t *global_work_offset, ///< global work offset
+											const size_t *global_work_size, ///< global work size
+											const size_t *local_work_size ///< local work size
+											)	*/		 
 		inline void enqueueNDRangeKernel(	CKernel &cKernel,					///< enqueue a OpenCL kernel
 											unsigned int work_dim,				///< number of work dimensions (0, 1 or 2)
-											const unsigned int grid_size_x,		///< number of blocks in x-direction
+											const unsigned int grid_size_x,		///< number of blocks in x-direction (e.g., total_elems/threads_per_block[0])
 											const size_t total_elements,		///< total number of elements to process
 											const size_t *global_work_offset,	///< global work offset
 											size_t *global_work_size,			///< global work size

@@ -31,6 +31,8 @@
 #define LBM_FLAG_FLUID				(1<<1)
 #define LBM_FLAG_VELOCITY_INJECTION	(1<<2)
 #define LBM_FLAG_GHOST_LAYER		(1<<3)
+#define CU_TRUE 	true
+#define CU_FALSE 	!CU_TRUE
 
 /**
  * the density distributions are packed cell wise to optimize the collision operation and stored
@@ -389,7 +391,7 @@ public:
 		 		sizeof(T) * domain_cells_count * SIZE_DD_HOST);
 		//cMemCellFlags.create(cContext, CL_MEM_READ_WRITE, sizeof(cl_char)*domain_cells_count, NULL);
 		cMemCellFlags.create(cContext,
-				sizeof(cl_int) * domain_cells_count);
+				sizeof(int) * domain_cells_count);
 		cMemVelocity.create(cContext,
 				sizeof(T) * domain_cells_count * 3);
 		cMemDensity.create(cContext, 
@@ -420,7 +422,7 @@ public:
 		std::string cProgramCompileOptionsString;
 		std::stringstream cProgramDefinesPostfixString;
 		std::stringstream cProgramCompileOptionsStream;	///< string to append
-		std::string initKernelModuleFileName = "lbm_init";
+		std::string initKernelModuleFileName = "lbm_init.ptx";
 		char charbuf[255];
 
 		/*
@@ -467,7 +469,7 @@ public:
 		cProgramInit.executeCommand(cProgramCompileOptionsString.c_str(), initKernelModuleFileName.c_str());
 
 		//TODO: check which program phase I need to load the module
-		cProgramInit.load(cContext, initKernelModuleFileName.c_str() + ".ptx");
+		cProgramInit.load(cContext, initKernelModuleFileName.c_str());
 
 		//executeCommand(	const std::string &command, const char *file_name)
 		if (cProgramInit.error()) {
@@ -487,7 +489,7 @@ public:
 		//cProgramDefinesPostfixString += charbuf;
 		//cProgramDefinesPostfixString += ")";
 
-		std::string alphaKernelModuleFileName = "lbm_alpha";
+		std::string alphaKernelModuleFileName = "lbm_alpha.ptx";
 		cProgramDefinesPostfixString.str(std::string());	// reset the contents of the StringStream
 		cProgramDefinesPostfixString << " -D LOCAL_WORK_GROUP_SIZE=";
 		cProgramDefinesPostfixString << cLbmKernelAlpha_WorkGroupSize;
@@ -536,7 +538,7 @@ public:
 		cProgramAlpha.executeCommand(cProgramCompileOptionsString.c_str(), alphaKernelModuleFileName.c_str());
 
 		//TODO: check which program phase I need to load the module
-		cProgramAlpha.load(cContext, alphaKernelModuleFileName.c_str() + ".ptx");
+		cProgramAlpha.load(cContext, alphaKernelModuleFileName.c_str());
 
 // TODO: CProgram.build() member does not exist! Make sure the CUDA version does not need it.
 //		cProgramAlpha.build(cDevice, cProgramCompileOptionsString.c_str());
@@ -556,7 +558,7 @@ public:
 		cProgramDefinesPostfixString += charbuf;
 		cProgramDefinesPostfixString += ")";*/
 
-		std::string betaKernelModuleFileName = "lbm_beta";
+		std::string betaKernelModuleFileName = "lbm_beta.ptx";
 		cProgramDefinesPostfixString.str(std::string());	// reset the contents of the StringStream
 		cProgramDefinesPostfixString << " -D LOCAL_WORK_GROUP_SIZE=";
 		cProgramDefinesPostfixString << cLbmKernelBeta_WorkGroupSize;
@@ -579,13 +581,13 @@ public:
 			cProgramCompileOptionsStream << cLbmKernelBeta_MaxRegisters;
 		}
 
-		/*cLbmKernelBeta_GlobalWorkGroupSize = domain_cells_count;
+		cLbmKernelBeta_GlobalWorkGroupSize = domain_cells_count;
 		if (cLbmKernelBeta_GlobalWorkGroupSize % cLbmKernelBeta_WorkGroupSize
 				!= 0)
 			cLbmKernelBeta_GlobalWorkGroupSize =
 					(cKernelInit_GlobalWorkGroupSize
 							/ cLbmKernelBeta_WorkGroupSize + 1)
-							* cLbmKernelBeta_WorkGroupSize;*/
+							* cLbmKernelBeta_WorkGroupSize;
 
 		cProgramCompileOptionsStream << cuda_program_defines.str() + cProgramDefinesPostfixString.str();
 		cProgramCompileOptionsStream << " -arch=sm_";
@@ -603,7 +605,7 @@ public:
 		cProgramBeta.executeCommand(cProgramCompileOptionsString.c_str(), betaKernelModuleFileName.c_str());
 
 		//TODO: check which program phase I need to load the module
-		cProgramBeta.load(cContext, betaKernelModuleFileName.c_str() + ".ptx");
+		cProgramBeta.load(cContext, betaKernelModuleFileName.c_str());
 
 // TODO: CProgram.build() member does not exist! Make sure the CUDA version does not need it.
 //		cProgramBeta.build(cDevice, cProgramCompileOptionsString.c_str());
@@ -625,7 +627,7 @@ public:
 		cProgramDefinesPostfixString += charbuf;
 		cProgramDefinesPostfixString += ")";*/
 
-		std::string copyRectKernelModuleFileName = "copy_buffer_rect";
+		std::string copyRectKernelModuleFileName = "copy_buffer_rect.ptx";
 		cProgramDefinesPostfixString.str(std::string());	// reset the contents of the StringStream
 		cProgramDefinesPostfixString << " -D LOCAL_WORK_GROUP_SIZE=";
 		cProgramDefinesPostfixString << cKernelCopyRect_WorkGroupSize;
@@ -649,11 +651,11 @@ public:
 		}
 
 
-		/*cKernelCopyRect_GlobalWorkGroupSize = domain_cells_count;
+		cKernelCopyRect_GlobalWorkGroupSize = domain_cells_count;
 		if (cKernelInit_GlobalWorkGroupSize % cKernelInit_WorkGroupSize != 0)
 			cKernelInit_GlobalWorkGroupSize = (cKernelInit_GlobalWorkGroupSize
 					/ cKernelInit_WorkGroupSize + 1)
-					* cKernelInit_WorkGroupSize;*/
+					* cKernelInit_WorkGroupSize;
 
 		cProgramCompileOptionsStream << cuda_program_defines.str() + cProgramDefinesPostfixString.str();
 		cProgramCompileOptionsStream << " -arch=sm_";
@@ -671,8 +673,8 @@ public:
 		cProgramCopyRect.executeCommand(cProgramCompileOptionsString.c_str(), copyRectKernelModuleFileName.c_str());
 
 		//TODO: check which program phase I need to load the module
-		cProgramCopyRect.load(cContext, copyRectKernelModuleFileName.c_str() + ".ptx");
-		
+		cProgramCopyRect.load(cContext, copyRectKernelModuleFileName.c_str());
+
 		
 // TODO: CProgram.build() member does not exist! Make sure the CUDA version does not need it.
 		//cProgramCopyRect.build(cDevice, cProgramCompileOptionsString.c_str());
@@ -755,10 +757,15 @@ public:
 											void **  	kernelParams			///< kernel input arguments
 		)
 */
-		cCommandQueue.enqueueNDRangeKernel(cKernelInit, // kernel
-				1, // dimensions
-				NULL, // global work offset
-				&cKernelInit_GlobalWorkGroupSize, &cKernelInit_WorkGroupSize);
+		// TODO: decide how grid_size_x value is set when calling enqueueNDRangeKernel
+		cCommandQueue.enqueueNDRangeKernel(cKernelInit, ///< kernel
+				1, 										///< dimensions
+				0, 							///< number of blocks in x-dir
+				domain_cells_count,							///< total elements to process 
+				NULL, 									///< global work offset
+				&cKernelInit_GlobalWorkGroupSize,
+				&cKernelInit_WorkGroupSize,
+				cKernelInit.kernelArgsVec);
 
 		cCommandQueue.enqueueBarrier();
 
@@ -767,16 +774,29 @@ public:
 #endif
 	}
 
+/* 		inline void enqueueNDRangeKernel(	CKernel &cKernel,					///< enqueue a OpenCL kernel
+											unsigned int work_dim,				///< number of work dimensions (0, 1 or 2)
+											const unsigned int grid_size_x,		///< number of blocks in x-direction (e.g., total_elems/threads_per_block[0])
+											const size_t total_elements,		///< total number of elements to process
+											const size_t *global_work_offset,	///< global work offset
+											size_t *global_work_size,			///< global work size
+											size_t *local_work_size,			///< local work size
+											std::vector<void *>& kernelParams	///< kernel input arguments
+		)*/
+
 	void simulationStepAlpha() {
 #if DEBUG
 		std::cout << "--> Running Alpha kernel" << std::endl;
 #endif
 		cCommandQueue.enqueueNDRangeKernel(
-				cLbmKernelAlpha, // kernel
-				1, // dimensions
-				NULL, // global work offset
+				cLbmKernelAlpha, 	// kernel
+				1, 					// dimensions
+				0, 					// blocks in x-dim
+				domain_cells_count, // total number of elements
+				NULL, 				// global work offset
 				&cLbmKernelAlpha_GlobalWorkGroupSize,
-				&cLbmKernelAlpha_WorkGroupSize);
+				&cLbmKernelAlpha_WorkGroupSize,
+				cLbmKernelAlpha.kernelArgsVec);
 	}
 
 	void simulationStepBeta() {
@@ -786,9 +806,12 @@ public:
 		cCommandQueue.enqueueNDRangeKernel(
 				cLbmKernelBeta, // kernel
 				1, // dimensions
+				0,
+				domain_cells_count,
 				NULL, // global work offset
 				&cLbmKernelBeta_GlobalWorkGroupSize,
-				&cLbmKernelBeta_WorkGroupSize);
+				&cLbmKernelBeta_WorkGroupSize,
+				cLbmKernelBeta.kernelArgsVec);
 	}
 
 	/**
@@ -821,17 +844,18 @@ public:
 	void storeDensityDistribution(T *dst) {
 		size_t byte_size = cMemDensityDistributions.getSize();
 
-		cCommandQueue.enqueueReadBuffer(cMemDensityDistributions, CL_TRUE, // sync reading
+		cCommandQueue.enqueueReadBuffer(cMemDensityDistributions, CU_TRUE, // sync reading
 				0, byte_size, dst);
 	}
 
 	void storeDensityDistribution(T *dst, CVector<3, int> &origin,
 			CVector<3, int> &size) {
 		CCL::CMem cBuffer;
-		cBuffer.create(cContext, CL_MEM_READ_WRITE,
-				sizeof(T) * size.elements() * SIZE_DD_HOST, NULL);
+		//cBuffer.create(cContext, CL_MEM_READ_WRITE,
+		//		sizeof(T) * size.elements() * SIZE_DD_HOST, NULL);
+		cBuffer.create(cContext, sizeof(T) * size.elements() * SIZE_DD_HOST);
 
-		if (_cl_version >= OPENCL_VERSION_1_1_0) // OpenCL 1.1 and later
+/*		if (_cl_version >= OPENCL_VERSION_1_1_0) // OpenCL 1.1 and later
 				{
 			// TODO: implement the clEnqueueReadBufferRect
 		} else if (_cl_version >= OPENCL_VERSION_1_0_0) // OpenCL 1.0 and later
@@ -843,19 +867,30 @@ public:
 						CVector<3, int>(0, 0, 0), size, size, false);
 			}
 			cCommandQueue.enqueueBarrier();
+		}*/
+		for (int f = 0; f < SIZE_DD_HOST; f++)
+		{
+			enqueueCopyRectKernel(cMemDensityDistributions, cBuffer,
+					f * this->domain_cells_count, origin,
+					this->domain_cells, f * size.elements(),
+					CVector<3, int>(0, 0, 0), size, size, false);
 		}
-		clEnqueueBarrier(cCommandQueue.command_queue);
-		cCommandQueue.enqueueReadBuffer(cBuffer, CL_TRUE, // sync reading
+		cCommandQueue.enqueueBarrier();
+
+		//clEnqueueBarrier(cCommandQueue.command_queue);	This sync point not needed, same thing done in last call above
+		cCommandQueue.enqueueReadBuffer(cBuffer, CU_TRUE, // sync reading
 				0, cBuffer.getSize(), dst);
 	}
 
 	void setDensityDistribution(T *src, CVector<3, int> &origin,
 			CVector<3, int> &size) {
 		CCL::CMem cBuffer;
-		cBuffer.create(cContext, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+		//cBuffer.create(cContext, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+		//		sizeof(T) * size.elements() * SIZE_DD_HOST, src);
+		cBuffer.createCopyToDevice(cContext, 
 				sizeof(T) * size.elements() * SIZE_DD_HOST, src);
 
-		if (_cl_version >= OPENCL_VERSION_1_1_0) {
+/*		if (_cl_version >= OPENCL_VERSION_1_1_0) {
 			// TODO: implement the clEnqueueWriteBufferRect
 		} else if (_cl_version >= OPENCL_VERSION_1_0_0) {
 			for (int f = 0; f < SIZE_DD_HOST; f++) {
@@ -865,16 +900,27 @@ public:
 						this->domain_cells, size, false);
 			}
 			cCommandQueue.enqueueBarrier();
+		}*/
+
+		for (int f = 0; f < SIZE_DD_HOST; f++)
+		{
+			enqueueCopyRectKernel(cBuffer, cMemDensityDistributions,
+					f * size.elements(), CVector<3, int>(0, 0, 0), size,
+					f * this->domain_cells_count, origin,
+					this->domain_cells, size, false);
 		}
+		cCommandQueue.enqueueBarrier();
 	}
 
 	void setDensityDistribution(T *src, CVector<3, int> &origin,
 			CVector<3, int> &size, CVector<3, int> norm) {
 		CCL::CMem cBuffer;
-		cBuffer.create(cContext, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+		//cBuffer.create(cContext, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+		//		sizeof(T) * size.elements() * SIZE_DD_HOST, src);
+		cBuffer.createCopyToDevice(cContext, 
 				sizeof(T) * size.elements() * SIZE_DD_HOST, src);
 
-		if (_cl_version >= OPENCL_VERSION_1_1_0) {
+/*		if (_cl_version >= OPENCL_VERSION_1_1_0) {
 			// TODO: implement the clEnqueueWriteBufferRect
 		} else if (_cl_version >= OPENCL_VERSION_1_0_0) {
 			for (int f = 0; f < SIZE_DD_HOST; f++) {
@@ -886,7 +932,19 @@ public:
 				}
 			}
 			cCommandQueue.enqueueBarrier();
+		}*/
+
+		for (int f = 0; f < SIZE_DD_HOST; f++)
+		{
+			if (norm.dotProd(lbm_units[f]) > 0)
+			{
+				enqueueCopyRectKernel(cBuffer, cMemDensityDistributions,
+						f * size.elements(), CVector<3, int>(0, 0, 0), size,
+						f * this->domain_cells_count, origin,
+						this->domain_cells, size, false);
+			}
 		}
+		cCommandQueue.enqueueBarrier();
 	}
 	/**
 	 * store velocity and density values to host memory
@@ -896,7 +954,7 @@ public:
 	 */
 	void storeVelocity(T *dst) {
 		size_t byte_size = cMemVelocity.getSize();
-		cCommandQueue.enqueueReadBuffer(cMemVelocity, CL_TRUE, // sync reading
+		cCommandQueue.enqueueReadBuffer(cMemVelocity, CU_TRUE, // sync reading
 				0, byte_size, dst);
 	}
 
@@ -909,10 +967,12 @@ public:
 	 */
 	void storeVelocity(T* dst, CVector<3, int> &origin, CVector<3, int> &size) {
 		CCL::CMem cBuffer;
-		cBuffer.create(cContext, CL_MEM_READ_WRITE,
-				sizeof(T) * size.elements() * 3, NULL);
+		//cBuffer.create(cContext, CL_MEM_READ_WRITE,
+		//		sizeof(T) * size.elements() * 3, NULL);
+		cBuffer.create(cContext, 
+				sizeof(T) * size.elements() * 3);
 
-		if (_cl_version >= OPENCL_VERSION_1_1_0) {
+		/*if (_cl_version >= OPENCL_VERSION_1_1_0) {
 			// TODO: implement the clEnqueueWriteBufferRect
 		} else if (_cl_version >= OPENCL_VERSION_1_0_0) {
 			for (int dim = 0; dim < 3; dim++) {
@@ -922,8 +982,16 @@ public:
 						CVector<3, int>(0, 0, 0), size, size, false);
 			}
 			cCommandQueue.enqueueBarrier();
+		}*/
+		for (int dim = 0; dim < 3; dim++) {
+			enqueueCopyRectKernel(cMemVelocity, cBuffer,
+					dim * this->domain_cells_count, origin,
+					this->domain_cells, dim * size.elements(),
+					CVector<3, int>(0, 0, 0), size, size, false);
 		}
-		cCommandQueue.enqueueReadBuffer(cBuffer, CL_TRUE, // sync reading
+		cCommandQueue.enqueueBarrier();
+
+		cCommandQueue.enqueueReadBuffer(cBuffer, CU_TRUE, // sync reading
 				0, cBuffer.getSize(), dst);
 	}
 
@@ -936,10 +1004,12 @@ public:
 	 */
 	void setVelocity(T* src, CVector<3, int> &origin, CVector<3, int> &size) {
 		CCL::CMem cBuffer;
-		cBuffer.create(cContext, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+		//cBuffer.create(cContext, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+		//		sizeof(T) * size.elements() * 3, src);
+		cBuffer.createCopyToDevice(cContext, 
 				sizeof(T) * size.elements() * 3, src);
 
-		if (_cl_version >= OPENCL_VERSION_1_1_0) {
+		/*if (_cl_version >= OPENCL_VERSION_1_1_0) {
 			// TODO: implement the clEnqueueWriteBufferRect
 
 		} else if (_cl_version >= OPENCL_VERSION_1_0_0) {
@@ -950,7 +1020,14 @@ public:
 						this->domain_cells, size, false);
 			}
 			cCommandQueue.enqueueBarrier();
+		}*/
+		for (int dim = 0; dim < 3; dim++) {
+			enqueueCopyRectKernel(cBuffer, cMemVelocity,
+					dim * size.elements(), CVector<3, int>(0, 0, 0), size,
+					dim * this->domain_cells_count, origin,
+					this->domain_cells, size, false);
 		}
+		cCommandQueue.enqueueBarrier();
 	}
 	/**
 	 * Store velocity data from device to host
@@ -960,7 +1037,7 @@ public:
 	void storeDensity(T *dst) {
 		size_t byte_size = cMemDensity.getSize();
 
-		cCommandQueue.enqueueReadBuffer(cMemDensity, CL_TRUE, // sync reading
+		cCommandQueue.enqueueReadBuffer(cMemDensity, CU_TRUE, // sync reading
 				0, byte_size, dst);
 	}
 
@@ -973,10 +1050,11 @@ public:
 	 */
 	void storeDensity(T *dst, CVector<3, int> &origin, CVector<3, int> &size) {
 		CCL::CMem cBuffer;
-		cBuffer.create(cContext, CL_MEM_READ_WRITE, sizeof(T) * size.elements(),
-				NULL);
+		//cBuffer.create(cContext, CL_MEM_READ_WRITE, sizeof(T) * size.elements(),
+		//		NULL);
+		cBuffer.create(cContext, sizeof(T) * size.elements());
 
-		if (_cl_version >= OPENCL_VERSION_1_1_0) {
+		/*if (_cl_version >= OPENCL_VERSION_1_1_0) {
 //			// TODO: test this part
 //			size_t buffer_origin[3] = {origin[0], origin[1], origin[2]};
 //			size_t host_origin[3] = {0,0,0};
@@ -997,8 +1075,12 @@ public:
 			enqueueCopyRectKernel(cMemDensity, cBuffer, 0, origin,
 					this->domain_cells, 0, CVector<3, int>(0, 0, 0), size,
 					size);
-		}
-		cCommandQueue.enqueueReadBuffer(cBuffer, CL_TRUE, // sync reading
+		}*/
+		enqueueCopyRectKernel(cMemDensity, cBuffer, 0, origin,
+				this->domain_cells, 0, CVector<3, int>(0, 0, 0), size,
+				size);
+
+		cCommandQueue.enqueueReadBuffer(cBuffer, CU_TRUE, // sync reading
 				0, cBuffer.getSize(), dst);
 	}
 
@@ -1010,7 +1092,7 @@ public:
 	 * @param size The size of data block
 	 */
 	void setDensity(T *src, CVector<3, int> &origin, CVector<3, int> &size) {
-		if (_cl_version >= OPENCL_VERSION_1_1_0) {
+		/*if (_cl_version >= OPENCL_VERSION_1_1_0) {
 //			// TODO: test this part
 //			size_t buffer_origin[3] = {origin[0], origin[1], origin[2]};
 //			size_t host_origin[3] = {0,0,0};
@@ -1034,18 +1116,24 @@ public:
 			enqueueCopyRectKernel(cBuffer, cMemDensity, 0,
 					CVector<3, int>(0, 0, 0), size, 0, origin,
 					this->domain_cells, size);
-		}
+		}*/
+		CCL::CMem cBuffer;
+		cBuffer.createCopyToDevice(cContext,
+				sizeof(T) * size.elements(), src);
+		enqueueCopyRectKernel(cBuffer, cMemDensity, 0,
+				CVector<3, int>(0, 0, 0), size, 0, origin,
+				this->domain_cells, size);
 	}
 
 	void storeFlags(int *dst) {
 		size_t byte_size = cMemDensity.getSize();
 
-		cCommandQueue.enqueueReadBuffer(cMemCellFlags, CL_TRUE, // sync reading
+		cCommandQueue.enqueueReadBuffer(cMemCellFlags, CU_TRUE, // sync reading
 				0, byte_size, dst);
 	}
 
 	void storeFlags(int *dst, CVector<3, int> &origin, CVector<3, int> &size) {
-		if (_cl_version >= OPENCL_VERSION_1_1_0) {
+		/*if (_cl_version >= OPENCL_VERSION_1_1_0) {
 //			// TODO: test this part
 //			size_t buffer_origin[3] = {origin[0], origin[1], origin[2]};
 //			size_t host_origin[3] = {0,0,0};
@@ -1074,11 +1162,18 @@ public:
 			}
 			cCommandQueue.enqueueReadBuffer(cBuffer, CL_TRUE, // sync reading
 					0, cBuffer.getSize(), dst);
-		}
+		}*/
+
+		CCL::CMem cBuffer;
+		cBuffer.create(cContext, sizeof(int) * size.elements());
+
+		// For CUDA: using cuMemcpyDtoH instead of a CUStream, for now.
+		cCommandQueue.enqueueReadBuffer(cBuffer, CU_TRUE, // sync reading
+				0, cBuffer.getSize(), dst);
 	}
 
 	void setFlags(int *src, CVector<3, int> &origin, CVector<3, int> &size) {
-		if (_cl_version >= OPENCL_VERSION_1_1_0) // OpenCL 1.2 and later
+		/*if (_cl_version >= OPENCL_VERSION_1_1_0) // OpenCL 1.2 and later
 				{
 //			// TODO: test this part
 //			size_t buffer_origin[3] = {origin[0], origin[1], origin[2]};
@@ -1107,7 +1202,14 @@ public:
 						CVector<3, int>(0, 0, 0), size, 0, origin,
 						this->domain_cells, size);
 			}
-		}
+		}*/
+		CCL::CMem cBuffer;
+		cBuffer.createCopyToDevice(cContext, 
+				sizeof(int) * size.elements(), src);
+
+		enqueueCopyRectKernel(cBuffer, cMemCellFlags, 0,
+				CVector<3, int>(0, 0, 0), size, 0, origin,
+				this->domain_cells, size);
 	}
 
 private:
@@ -1115,7 +1217,7 @@ private:
 		size_t char_size = cMem.getSize();
 		char *buffer = new char[char_size];
 
-		cCommandQueue.enqueueReadBuffer(cMem, CL_TRUE, // sync reading
+		cCommandQueue.enqueueReadBuffer(cMem, CU_TRUE, // sync reading
 				0, char_size, buffer);
 
 		for (size_t i = 0; i < char_size; i++) {
@@ -1136,7 +1238,7 @@ private:
 
 		T *buffer = new T[T_size];
 
-		cCommandQueue.enqueueReadBuffer(cMem, CL_TRUE, // sync reading
+		cCommandQueue.enqueueReadBuffer(cMem, CU_TRUE, // sync reading
 				0, byte_size, buffer);
 
 		std::streamsize ss = std::cout.precision();
@@ -1201,7 +1303,7 @@ public:
 
 		T *buffer = new T[T_size];
 
-		cCommandQueue.enqueueReadBuffer(cMem, CL_TRUE, // sync reading
+		cCommandQueue.enqueueReadBuffer(cMem, CU_TRUE, // sync reading
 				0, byte_size, buffer);
 
 		std::streamsize ss = std::cout.precision();
