@@ -23,8 +23,9 @@
 #include <cmath>
 
 // externals
-#include <UnitTest++.h>
-#include "TestReporterStdout.h"
+//#include <UnitTest++.h>
+ //#include <../externals/unittest-cpp/UnitTest++/src/UnitTest++.h>
+//#include "TestReporterStdout.h"
 
 // internals
 #include "CDomain.hpp"
@@ -282,7 +283,7 @@ int main(int argc, char** argv)
 
 	if (unit_test) {
 
-		if ( strcmp(  "all", test_suite.c_str() ) == 0 ) {
+		/*if ( strcmp(  "all", test_suite.c_str() ) == 0 ) {
 			if( debug)
 				std::cout << "running all test." << std::endl;
 			return UnitTest::RunAllTests();
@@ -305,7 +306,7 @@ int main(int argc, char** argv)
 			UnitTest::TestReporterStdout reporter;
 			UnitTest::TestRunner runner( reporter );
 			return runner.RunTestsIf( selectedTests, 0, UnitTest::True(), 0 );
-		}
+		}*/
 	} else if ( ConfigSingleton::Instance()->do_validate ) {
 		CVector<3,int> origin(0,0,0);
 		CDomain<T> domain(-1, ConfigSingleton::Instance()->domain_size, origin, ConfigSingleton::Instance()->domain_length);

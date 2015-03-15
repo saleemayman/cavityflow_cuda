@@ -215,7 +215,7 @@ private:
 				this->domain_cells.elements(),
 				NULL, // global work offset
 				lGlobalSize,
-				cKernelInit_WorkGroupSize, //NULL,
+				&cKernelCopyRect_WorkGroupSize, //NULL,
 				cKernelCopyRect.kernelArgsVec);	
 		if (withBarrier)
 			cCommandQueue.enqueueBarrier();

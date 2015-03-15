@@ -88,26 +88,37 @@ class CController
 		cPlatforms = new CCL::CPlatforms();
 		cPlatforms->load();
 
-		if (cPlatforms->platform_ids_count == 0) {
-			std::cerr << "no platform found!" << std::endl;
-			return -1;
-		}
+// 		if (cPlatforms->platform_ids_count == 0) {
+// 			std::cerr << "no platform found!" << std::endl;
+// 			return -1;
+// 		}
 
-		int platform_id_nr = -1;
-		for (size_t i = 0; i < cPlatforms->platform_ids_count; i++) {
-			CCL::CPlatform cPlatform(cPlatforms->platform_ids[i]);
-			cPlatform.loadPlatformInfo();
+// 		int platform_id_nr = -1;
+// 		for (size_t i = 0; i < cPlatforms->platform_ids_count; i++) {
+// 			CCL::CPlatform cPlatform(cPlatforms->platform_ids[i]);
+// 			cPlatform.loadPlatformInfo();
 
-			if (platform_id_nr == -1)
-				if (strcmp(cPlatform.profile, "FULL_PROFILE") == 0) {
-					platform_id_nr = i;
+// 			if (platform_id_nr == -1)
+// 				if (strcmp(cPlatform.profile, "FULL_PROFILE") == 0) {
+// 					platform_id_nr = i;
+// #if DEBUG
+// 					std::cout << "Using Platform " << (i+1) << " for computation" << std::endl;
+// #endif
+// 				}
+
+// #if DEBUG
+// 			std::cout << "Platform " << (i) << ":" << std::endl;
+// 			std::cout << "        Name: " << cPlatform.name << std::endl;
+// 			std::cout << "     Profile: " << cPlatform.profile << std::endl;
+// 			std::cout << "     Version: " << cPlatform.version << std::endl;
+// 			std::cout << "      Vendor: " << cPlatform.vendor << std::endl;
+// 			std::cout << "  Extensions: " << cPlatform.extensions << std::endl;
+// 			std::cout << std::endl;
+// #endif
+// 		}
+
 #if DEBUG
-					std::cout << "Using Platform " << (i+1) << " for computation" << std::endl;
-#endif
-				}
-
-#if DEBUG
-			std::cout << "Platform " << (i) << ":" << std::endl;
+		//	std::cout << "Platform " << (i) << ":" << std::endl;
 			std::cout << "        Name: " << cPlatform.name << std::endl;
 			std::cout << "     Profile: " << cPlatform.profile << std::endl;
 			std::cout << "     Version: " << cPlatform.version << std::endl;
@@ -115,28 +126,28 @@ class CController
 			std::cout << "  Extensions: " << cPlatform.extensions << std::endl;
 			std::cout << std::endl;
 #endif
-		}
 
-		if (platform_id_nr == -1) {
-			std::cout << "no usable platform found" << std::endl;
-			return -1;
-		}
+		// if (platform_id_nr == -1) {
+		// 	std::cout << "no usable platform found" << std::endl;
+		// 	return -1;
+		// }
 
-		cPlatform = new CCL::CPlatform(
-				cPlatforms->platform_ids[platform_id_nr]);
+		// cPlatform = new CCL::CPlatform(
+		// 		cPlatforms->platform_ids[platform_id_nr]);
 
-		// load standard context for GPU devices
+/*		// load standard context for GPU devices
 #if DEBUG
 		std::cout << "loading gpu context" << std::endl;
 #endif
 
 		cContext = new CCL::CContext(*cPlatform, CL_DEVICE_TYPE_GPU);
-
+*/
 		// load devices belonging to cContext
 #if DEBUG
 		std::cout << "loading devices" << std::endl;
 #endif
-		cDevices = new CCL::CDevices(*cContext);
+		//cDevices = new CCL::CDevices(*cContext);
+		cDevices = new CCL::CDevices();	// context is attached below
 
 		if (cDevices->size() == 0) {
 			std::cerr << "no device found - aborting" << std::endl;
@@ -148,15 +159,18 @@ class CController
 			for (int i = 0; i < (int) cDevices->size(); i++) {
 				CCL::CDeviceInfo cDeviceInfo((*cDevices)[i]);
 				std::cout << "Device " << (i) << ":" << std::endl;
-				std::cout << "        Name: " << cDeviceInfo.name << std::endl;
-				std::cout << "     Profile: " << cDeviceInfo.profile
-						<< std::endl;
-				std::cout << "     Version: " << cDeviceInfo.version
-						<< std::endl;
-				std::cout << "      Vendor: " << cDeviceInfo.vendor
-						<< std::endl;
-				std::cout << "  Extensions: " << cDeviceInfo.extensions
-						<< std::endl;
+				std::cout << "          Name: " << cDeviceInfo.name << std::endl;
+				std::cout << "    Available?: " << cDeviceInfo.available << std::endl;
+				std::cout << "Driver Version: " << cDeviceInfo.driver_version << std::endl;
+				std::cout << "            CC: " << cDeviceInfo.execution_capabilities << std::endl;
+				//std::cout << "     Profile: " << cDeviceInfo.profile
+				//		<< std::endl;
+				//std::cout << "     Version: " << cDeviceInfo.version
+				//		<< std::endl;
+				//std::cout << "      Vendor: " << cDeviceInfo.vendor
+				//		<< std::endl;
+				//std::cout << "  Extensions: " << cDeviceInfo.extensions
+				//		<< std::endl;
 				std::cout << std::endl;
 			}
 			return -1;
@@ -178,8 +192,14 @@ class CController
 			if (_UID & 1)
 				dev_nr = 1;
 		}
-		cDevice =
-				&((*cDevices)[/* ConfigSingleton::Instance()->device_nrd*/dev_nr]);
+		cDevice = &((*cDevices)[/* ConfigSingleton::Instance()->device_nrd*/dev_nr]);
+
+		// load standard context for GPU devices
+#if DEBUG
+		std::cout << "loading gpu context" << std::endl;
+#endif
+
+		cContext = new CCL::CContext(*cDevice);
 
 		// load information about first device - e.g. max_work_group_size
 #if DEBUG
@@ -197,7 +217,8 @@ class CController
 		std::cout << "creating command queue" << std::endl;
 #endif
 		// initialize queue
-		cCommandQueue = new CCL::CCommandQueue(*cContext, *cDevice);
+		//cCommandQueue = new CCL::CCommandQueue(*cContext, *cDevice);
+		cCommandQueue = new CCL::CCommandQueue();
 
 		// INIT LATTICE BOLTZMANN!
 		cLbmPtr = new CLbmSolver<T>(_UID, *cCommandQueue, *cContext, *cDevice,

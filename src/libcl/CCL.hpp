@@ -93,6 +93,7 @@ private:
 			// cuda driver API initialization
 			if (cuInit(0) != CUDA_SUCCESS)
 			{
+				std::cerr << "CUDA Driver API could not initialize, exiting!" << std::endl;
 				exit(-1);
 			}
 		}
@@ -240,7 +241,8 @@ public:
 		 * load device list belonging to context cContext
 		 * \param cContext	existing context
 		 */
-		inline void load(CContext &cContext)
+		//inline void load(CContext &cContext)
+		 inline void load()
 		{
 			// load device information
 //			int value_size_ret;
@@ -294,18 +296,18 @@ public:
 		/**
 		 * initialize devices
 		 */
-		inline CDevices()
+		/*inline CDevices()
 		{
 			initCDevices();
-		}
+		}*/
 
 		/**
 		 * load device list belonging to cContext
 		 */
-		inline CDevices(CContext &cContext)
+		inline CDevices()
 		{
 			initCDevices();
-			load(cContext);
+			load();
 		}
 
 		/**
