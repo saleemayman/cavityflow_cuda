@@ -422,7 +422,7 @@ public:
 		std::string cProgramCompileOptionsString;
 		std::stringstream cProgramDefinesPostfixString;
 		std::stringstream cProgramCompileOptionsStream;	///< string to append
-		std::string initKernelModuleFileName = "lbm_init.ptx";
+		std::string initKernelModuleFileName = "cu_programs/lbm_init.ptx";	//cu_programs/
 		char charbuf[255];
 
 		/*
@@ -489,7 +489,7 @@ public:
 		//cProgramDefinesPostfixString += charbuf;
 		//cProgramDefinesPostfixString += ")";
 
-		std::string alphaKernelModuleFileName = "lbm_alpha.ptx";
+		std::string alphaKernelModuleFileName = "cu_programs/lbm_alpha.ptx";
 		cProgramDefinesPostfixString.str(std::string());	// reset the contents of the StringStream
 		cProgramDefinesPostfixString << " -D LOCAL_WORK_GROUP_SIZE=";
 		cProgramDefinesPostfixString << cLbmKernelAlpha_WorkGroupSize;
@@ -558,7 +558,7 @@ public:
 		cProgramDefinesPostfixString += charbuf;
 		cProgramDefinesPostfixString += ")";*/
 
-		std::string betaKernelModuleFileName = "lbm_beta.ptx";
+		std::string betaKernelModuleFileName = "cu_programs/lbm_beta.ptx";
 		cProgramDefinesPostfixString.str(std::string());	// reset the contents of the StringStream
 		cProgramDefinesPostfixString << " -D LOCAL_WORK_GROUP_SIZE=";
 		cProgramDefinesPostfixString << cLbmKernelBeta_WorkGroupSize;
@@ -627,7 +627,7 @@ public:
 		cProgramDefinesPostfixString += charbuf;
 		cProgramDefinesPostfixString += ")";*/
 
-		std::string copyRectKernelModuleFileName = "copy_buffer_rect.ptx";
+		std::string copyRectKernelModuleFileName = "cu_programs/copy_buffer_rect.ptx";
 		cProgramDefinesPostfixString.str(std::string());	// reset the contents of the StringStream
 		cProgramDefinesPostfixString << " -D LOCAL_WORK_GROUP_SIZE=";
 		cProgramDefinesPostfixString << cKernelCopyRect_WorkGroupSize;
