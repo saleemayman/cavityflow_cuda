@@ -434,3 +434,24 @@ int main(int argc, char** argv)
 
 }
 
+/*
+mpicxx -o build/build_lbm_opencl_dc_mpicxx_release/lib/CBitmap.o -c -fmessage-length=0 -DNDEBUG=1 -O3 -g -mtune=native
+ -I/home/ayman/CSE/turbulent_lbm_multigpu/src/ -I/home/ayman/CSE/turbulent_lbm_multigpu/src/include/ -Iinclude/UnitTest++ 
+ -Iinclude/tinyxml2 -Ibuild/build_lbm_opencl_dc_mpicxx_release -Isrc -Ibuild/build_lbm_opencl_dc_mpicxx_release/src -Isrc/src src/lib/CBitmap.cpp
+
+mpicxx -o build/build_lbm_opencl_dc_mpicxx_release/libtools/CProfilerEvent.o -c -fmessage-length=0 -DNDEBUG=1 -O3 -g 
+ -mtune=native -I/home/ayman/CSE/turbulent_lbm_multigpu/src/ -I/home/ayman/CSE/turbulent_lbm_multigpu/src/include/ 
+ -Iinclude/UnitTest++ -Iinclude/tinyxml2 -Ibuild/build_lbm_opencl_dc_mpicxx_release -Isrc -Ibuild/build_lbm_opencl_dc_mpicxx_release/src 
+ -Isrc/src src/libtools/CProfilerEvent.cpp
+
+//
+mpicxx -o build/build_lbm_opencl_dc_mpicxx_release/lib/CBitmap.o -c -fmessage-length=0 -DNDEBUG=1 -O3 -g -mtune=native
+ -I/home/ayman/CSE/turbulent_lbm_multigpu/src/ -I/home/ayman/CSE/turbulent_lbm_multigpu/src/include/ -Iinclude/tinyxml2 
+ -Ibuild/build_lbm_opencl_dc_mpicxx_release -Isrc -Ibuild/build_lbm_opencl_dc_mpicxx_release/src -Isrc/src src/lib/CBitmap.cpp
+
+mpicxx -o -c -fmessage-length=0 -DNDEBUG=1 -O3 -g 
+ -mtune=native -I/home/ayman/CSE/turbulent_lbm_multigpu/src/ -I/home/ayman/CSE/turbulent_lbm_multigpu/src/include/ 
+ -Iinclude/tinyxml2 -Ibuild/build_lbm_opencl_dc_mpicxx_release -Isrc -Ibuild/build_lbm_opencl_dc_mpicxx_release/src 
+ -Isrc/src 
+
+*/
