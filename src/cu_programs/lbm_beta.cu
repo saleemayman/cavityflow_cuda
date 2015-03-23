@@ -10,7 +10,7 @@
 /**
  * COLLISION AND PROPAGATION KERNEL - BETA type
  */
-__global__ void lbm_kernel_beta(
+extern "C" __global__ void lbm_kernel_beta(
 			T *global_dd,		// density distributions
 			const int *flag_array,	// flags
 			T *velocity,		// velocities

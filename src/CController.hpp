@@ -56,6 +56,9 @@ class CController
 {
 	int _UID; ///< Unique ID of each controller
 	CDomain<T> _domain; ///< Domain data
+	// CVector<3, int> _subdomain_size; ///< Each subdomain have the same size which is specified with this class member.
+	// CVector<3, int> _subdomain_nums;
+
 	ILbmVisualization<T>* cLbmVisualization; ///< Visualization class
 	CLbmSolver<T> *cLbmPtr;
 	int _BC[3][2]; ///< Boundary conditions. First index specifies the dimension and second the upper or the lower boundary.
@@ -87,35 +90,6 @@ class CController
 #endif
 		cPlatforms = new CCL::CPlatforms();
 		cPlatforms->load();
-
-// 		if (cPlatforms->platform_ids_count == 0) {
-// 			std::cerr << "no platform found!" << std::endl;
-// 			return -1;
-// 		}
-
-// 		int platform_id_nr = -1;
-// 		for (size_t i = 0; i < cPlatforms->platform_ids_count; i++) {
-// 			CCL::CPlatform cPlatform(cPlatforms->platform_ids[i]);
-// 			cPlatform.loadPlatformInfo();
-
-// 			if (platform_id_nr == -1)
-// 				if (strcmp(cPlatform.profile, "FULL_PROFILE") == 0) {
-// 					platform_id_nr = i;
-// #if DEBUG
-// 					std::cout << "Using Platform " << (i+1) << " for computation" << std::endl;
-// #endif
-// 				}
-
-// #if DEBUG
-// 			std::cout << "Platform " << (i) << ":" << std::endl;
-// 			std::cout << "        Name: " << cPlatform.name << std::endl;
-// 			std::cout << "     Profile: " << cPlatform.profile << std::endl;
-// 			std::cout << "     Version: " << cPlatform.version << std::endl;
-// 			std::cout << "      Vendor: " << cPlatform.vendor << std::endl;
-// 			std::cout << "  Extensions: " << cPlatform.extensions << std::endl;
-// 			std::cout << std::endl;
-// #endif
-// 		}
 
 #if DEBUG
 		//	std::cout << "Platform " << (i) << ":" << std::endl;
@@ -163,14 +137,6 @@ class CController
 				std::cout << "    Available?: " << cDeviceInfo.available << std::endl;
 				std::cout << "Driver Version: " << cDeviceInfo.driver_version << std::endl;
 				std::cout << "            CC: " << cDeviceInfo.execution_capabilities << std::endl;
-				//std::cout << "     Profile: " << cDeviceInfo.profile
-				//		<< std::endl;
-				//std::cout << "     Version: " << cDeviceInfo.version
-				//		<< std::endl;
-				//std::cout << "      Vendor: " << cDeviceInfo.vendor
-				//		<< std::endl;
-				//std::cout << "  Extensions: " << cDeviceInfo.extensions
-				//		<< std::endl;
 				std::cout << std::endl;
 			}
 			return -1;
@@ -193,6 +159,13 @@ class CController
 				dev_nr = 1;
 		}
 		cDevice = &((*cDevices)[/* ConfigSingleton::Instance()->device_nrd*/dev_nr]);
+
+		// CCL::CDeviceInfo cDeviceInfo(*cDevice);
+		// cDeviceInfo.loadDeviceInfo(*cDevice);	///< get GPU specifications. CC needed for kernel compilation
+
+		// std::ostringstream sPrefix;
+  //      	sPrefix << "    [1] ";
+		// cDeviceInfo.printDeviceInfo(sPrefix.str());
 
 		// load standard context for GPU devices
 #if DEBUG
@@ -222,7 +195,7 @@ class CController
 
 		// INIT LATTICE BOLTZMANN!
 		cLbmPtr = new CLbmSolver<T>(_UID, *cCommandQueue, *cContext, *cDevice,
-				_BC, _domain,
+				_BC, _domain, 
 				ConfigSingleton::Instance()->gravitation, // gravitation vector
 				ConfigSingleton::Instance()->viscosity,
 				ConfigSingleton::Instance()->computation_kernel_count,
@@ -254,6 +227,10 @@ public:
 			for (int j = 0; j < 2; j++)
 				_BC[i][j] = BC[i][j];
 
+		// _subdomain_size = _domain.getSize();
+		// _subdomain_nums = _domain.getSubDomains();
+		// printf("CController._subdomain_size= [%i, %i, %i] \n", _subdomain_size[0], _subdomain_size[1], _subdomain_size[2]);
+		// printf("CController._subdomain_nums= [%i, %i, %i] \n", _subdomain_nums[0], _subdomain_nums[1], _subdomain_nums[2]);
 		// initialize the LBMSolver
 		if (-1 == initLBMSolver())
 			throw "Initialization of LBM Solver failed!";
@@ -549,20 +526,24 @@ public:
 	/*
 	 * This Function is used the set the geometry (e.g obstacles, velocity injections, ...) of corresponding domain
 	 */
-	void setGeometry() {
+	void setGeometry()
+	{
 #if DEBUG
-		std::cout << "Setting Geometry for Domain " << _UID << std::endl;
+// #if 1
+		std::cout << "\nSetting Geometry for Domain " << _UID << std::endl;
 #endif
 		CVector<3, int> origin(1, _domain.getSize()[1] - 2, 1);
 		CVector<3, int> size(_domain.getSize()[0] - 2, 1,
 				_domain.getSize()[2] - 2);
 #if DEBUG
-		std::cout << "GEOMETRY: " << size << std::endl;
+// #if 1
+		std::cout << "\nCController.setGeometry() GEOMETRY: " << size << std::endl;
 #endif
 		int * src = new int[size.elements()];
 		for (int i = 0; i < size.elements(); i++)
 			src[i] = FLAG_VELOCITY_INJECTION;
 		cLbmPtr->setFlags(src, origin, size);
+	
 		delete[] src;
 	}
 

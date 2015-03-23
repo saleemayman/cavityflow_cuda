@@ -97,7 +97,7 @@ public:
 		{
 			if (info_output)
 			{
-				std::cout << "limiting timestep (gravitation: " << gravitation << ")" << std::endl;
+				std::cout << "\nlimiting timestep (gravitation: " << gravitation << ")" << std::endl;
 			}
 
 			d_timestep = CMath<T>::sqrt((max_sim_gravitation_length * d_cell_length) / d_gravitation.length());

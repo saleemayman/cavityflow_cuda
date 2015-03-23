@@ -28,7 +28,7 @@ __device__ inline T4 getCubePosition(int linear_position)
  * \param dd	density distributions
  * \param flags	flags of cells
  */
-__global__ void init_kernel(
+extern "C" __global__ void init_kernel(
 		T 	*global_dd,	// density distributions
 		int *flags,	// flags
 		T 	*velocity_array,	// velocity array (first all x components, then all y components, then z...)

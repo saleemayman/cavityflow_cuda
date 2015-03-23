@@ -16,7 +16,7 @@
  *	Check if the variable address space qualifiers are correct.
  *	For CUDA address space is defined outside the function scope.
 */
-__global__ void copy_buffer_rect(
+extern "C" __global__ void copy_buffer_rect(
 				T*	src,
 		const 	int src_offset,
 		const 	int src_origin_x,

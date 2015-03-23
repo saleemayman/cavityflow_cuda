@@ -9,7 +9,7 @@
  * \param dd	density distributions
  * \param flags	flags of cells
  */
-__global__ void lbm_kernel_alpha(
+extern "C" __global__ void lbm_kernel_alpha(
 					T	*global_dd,		// density distributions
 			const 	int	*flag_array,	// flags
 					T	*velocity,		// velocities

@@ -74,6 +74,9 @@ public:
 	static const size_t SIZE_DD_HOST = 19;
 private:
 	int _UID;
+	// CVector<3, int> _size; ///< Size of the domain
+	// CVector<3, int> _subdomain_nums;	///< total number of subdomains
+
 	static const size_t SIZE_DD_HOST_BYTES = SIZE_DD_HOST * sizeof(T);
 	int _BC[3][2]; ///< Boundary conditions. First index specifys the dimension and second the upper or the lower boundary.
 	// opencl handlers
@@ -144,36 +147,6 @@ private:
 		return tokens;
 	}
 
-// not needed for CUDA
-#if 0
-	OPENCL_VERSION getOpenCLVersion() {
-		OPENCL_VERSION cl_version;
-		// format:
-		// OpenCL<space><major_version.minor_version><space><vendor-specific information>
-		std::string major_minor_version = split(
-				std::string(cDeviceInfo.version))[1];
-		std::vector<std::string> major_minor_vector = split(major_minor_version,
-				".");
-		int major_version = atoi(major_minor_vector[0].c_str());
-		int minor_version = atoi(major_minor_vector[1].c_str());
-		int version = major_version * 100 + minor_version * 10;
-		switch (version) {
-		case OPENCL_VERSION_1_0_0:
-			cl_version = OPENCL_VERSION_1_0_0;
-			break;
-		case OPENCL_VERSION_1_1_0:
-			cl_version = OPENCL_VERSION_1_1_0;
-			break;
-		case OPENCL_VERSION_1_2_0:
-			cl_version = OPENCL_VERSION_1_2_0;
-			break;
-		default:
-			cl_version = OPENCL_VERSION_UNKNOWN;
-			break;
-		}
-		return cl_version;
-	}
-#endif
 
 	inline void enqueueCopyRectKernel(CCL::CMem& src, CCL::CMem& dst,
 			const int src_offset, CVector<3, int> src_origin,
@@ -183,8 +156,8 @@ private:
 	{
 
 		// set kernel args
-		cKernelCopyRect.setArgSize(20);		///< reserve a vector argument container of 20 elements
-			// source args
+		// cKernelCopyRect.setArgSize(20);		///< reserve a vector argument container of 20 elements
+		// source args
 		cKernelCopyRect.setArg(0, src);
 		cKernelCopyRect.setArg(1, src_offset);
 		cKernelCopyRect.setArg(2, src_origin[0]);
@@ -211,7 +184,7 @@ private:
 		// enqueue the CopyRect kernel
 		cCommandQueue.enqueueNDRangeKernel(cKernelCopyRect, // kernel
 				2, // dimensions
-				GRID_SIZE_X,		// number of blocks in x-direction
+				NULL,	//this->domain_cells,		// subdomain size in each directions
 				this->domain_cells.elements(),
 				NULL, // global work offset
 				lGlobalSize,
@@ -250,18 +223,17 @@ public:
 					p_lbm_opencl_number_of_registers_list) {
 		CLbmSkeleton<T>::init(p_d_gravitation, p_d_viscosity, 1.0);
 
+		// _size = domain.getSize();
+		// _subdomain_nums = domain.getSubDomains();
+		// printf("CLbmSolver._size= [%i, %i, %i] \n", _size[0], _size[1], _size[2]);
+		// printf("CLbmSolver._subdomain_nums= [%i, %i, %i] \n", _subdomain_nums[0], _subdomain_nums[1], _subdomain_nums[2]);
+
 		if (CLbmSkeleton<T>::error())
 			error << CLbmSkeleton<T>::error.getString();
 
 		store_velocity = p_store_velocity;
 		store_density = p_store_density;
 		//debug = p_debug;
-// not needed for CUDA
-#if 0
-		_cl_version = OPENCL_VERSION_1_0_0; //getOpenCLVersion();
-		if (_cl_version == OPENCL_VERSION_UNKNOWN)
-			throw "OpenCL Version is unknown!";
-#endif
 
 #if DEBUG
 		std::cout << "CL_VERSION " << _cl_version << std::endl;
@@ -270,6 +242,8 @@ public:
 		for (int i = 0; i < 3; i++)
 			for (int j = 0; j < 2; j++)
 				_BC[i][j] = BC[i][j];
+
+		printf("CLbmSolver._UID = %i\n", _UID);
 
 		reload();
 	}
@@ -332,10 +306,10 @@ public:
 		domain_cells_count = this->domain_cells.elements();
 
 
-		// check this cl_programs_defines -> checked. Just an output stream class for string
+
 		std::ostringstream cuda_program_defines;
 
-		cuda_program_defines << " -D DEFAULTS=0";
+		cuda_program_defines << " -D PROBLEM_DEFAULTS=0";
 		cuda_program_defines << " -D SIZE_DD_HOST_BYTES=" << SIZE_DD_HOST_BYTES;
 		cuda_program_defines << " -D DOMAIN_CELLS_X=" << this->domain_cells[0];
 		cuda_program_defines << " -D DOMAIN_CELLS_Y=" << this->domain_cells[1];
@@ -353,28 +327,16 @@ public:
 		if (store_density)
 			cuda_program_defines << " -D STORE_DENSITY=1";
 
-		if (typeid(T) == typeid(float)) {
+		if (typeid(T) == typeid(float))
+		{
 			cuda_program_defines << " -D TYPE_FLOAT=1";
-/*			cuda_program_defines << "typedef float2 T2;" << std::endl;
-			cuda_program_defines << "typedef float4 T4;" << std::endl;
-			cuda_program_defines << "typedef float8 T8;" << std::endl;
-			cuda_program_defines << "typedef float16 T16;" << std::endl;*/
-		} else if (typeid(T) == typeid(double)) {
-/*			cuda_program_defines
-					<< "#pragma OPENCL EXTENSION cl_khr_fp64 : enable"
-					<< std::endl;
-			cuda_program_defines << "#ifndef cl_khr_fp64" << std::endl;
-			cuda_program_defines
-					<< "	#error cl_khr_fp64 not supported - please switch to single precision to run the simulation"
-					<< std::endl;
-			cuda_program_defines << "#endif cl_khr_fp64" << std::endl;
-*/
+		}
+		else if (typeid(T) == typeid(double))
+		{
 			cuda_program_defines << " -D TYPE_DOUBLE=1";
-/*			cuda_program_defines << "typedef double2 T2;" << std::endl;
-			cuda_program_defines << "typedef double4 T4;" << std::endl;
-			cuda_program_defines << "typedef double8 T8;" << std::endl;
-			cuda_program_defines << "typedef double16 T16;" << std::endl;*/
-		} else {
+		}
+		else
+		{
 			error << "unsupported class type T" << std::endl;
 			return;
 		}
@@ -419,10 +381,15 @@ public:
 		//cuda_program_defines << std::endl;
 
 		cDeviceInfo.loadDeviceInfo(cDevice);	///< get GPU specifications. CC needed for kernel compilation
+
+		// std::ostringstream sPrefix;
+  //      	sPrefix << "    [1] ";
+		// cDeviceInfo.printDeviceInfo(sPrefix.str());
+
 		std::string cProgramCompileOptionsString;
 		std::stringstream cProgramDefinesPostfixString;
 		std::stringstream cProgramCompileOptionsStream;	///< string to append
-		std::string initKernelModuleFileName = "cu_programs/lbm_init.ptx";	//cu_programs/
+		std::string initKernelModuleFileName = "src/cu_programs/lbm_init";	//cu_programs/
 		char charbuf[255];
 
 		/*
@@ -432,15 +399,7 @@ public:
 		cProgramDefinesPostfixString << " -D LOCAL_WORK_GROUP_SIZE=";
 		cProgramDefinesPostfixString << cKernelInit_WorkGroupSize;
 
-		/*cProgramCompileOptionsString = "-Werror -I./";*/
-/*		cProgramCompileOptionsString = "-I./";
-		if (cKernelInit_MaxRegisters != 0) {
-			cProgramCompileOptionsString += " -cl-nv-maxrregcount=";
-			cProgramCompileOptionsString += cKernelInit_MaxRegisters;
-		}
-*/
-
-		cProgramCompileOptionsStream << "nvcc -x cu -keep ";	// -keep retains the PTX and all other intermediate compile files
+		cProgramCompileOptionsStream << "nvcc -x cu -keep -keep-dir src/cu_programs/ ";	// -keep retains the PTX and all other intermediate compile files
 		if (cKernelInit_MaxRegisters != 0)
 		{
 			cProgramCompileOptionsStream << "-maxrregcount ";
@@ -448,8 +407,9 @@ public:
 		}
 
 		cProgramCompileOptionsStream << cuda_program_defines.str() + cProgramDefinesPostfixString.str();
-		cProgramCompileOptionsStream << " -arch=sm_";
-		cProgramCompileOptionsStream << cDeviceInfo.execution_capabilities;		///< GPU compute capability
+		// cProgramCompileOptionsStream << " -arch=sm_";
+		// cProgramCompileOptionsStream << cDeviceInfo.execution_capabilities;		///< GPU compute capability
+		cProgramCompileOptionsStream << " -arch=sm_3";
 		cProgramCompileOptionsStream << "0 -m64 -I. -dc ";
 		cProgramCompileOptionsStream << initKernelModuleFileName.data();
 		cProgramCompileOptionsStream << ".cu -o ";
@@ -465,10 +425,16 @@ public:
 					* cKernelInit_WorkGroupSize;
 
 		CCL::CProgram cProgramInit;
-		//cProgramInit.load(cContext, cuda_program_defines.str() + cProgramDefinesPostfixString, "src/cl_programs/lbm_init.cl");
-		cProgramInit.executeCommand(cProgramCompileOptionsString.c_str(), initKernelModuleFileName.c_str());
 
-		//TODO: check which program phase I need to load the module
+		// Compile the CUDA kernels using nvcc
+		// if (_UID & 1)
+		// {
+		// 	cProgramInit.executeCommand(cProgramCompileOptionsString.c_str(), initKernelModuleFileName.c_str());
+		// }
+		// MPI_Barrier(MPI_COMM_WORLD);
+
+		// Load init_lbm.ptx file with a CUDA module(program)
+		initKernelModuleFileName = initKernelModuleFileName + ".ptx";
 		cProgramInit.load(cContext, initKernelModuleFileName.c_str());
 
 		//executeCommand(	const std::string &command, const char *file_name)
@@ -489,23 +455,15 @@ public:
 		//cProgramDefinesPostfixString += charbuf;
 		//cProgramDefinesPostfixString += ")";
 
-		std::string alphaKernelModuleFileName = "cu_programs/lbm_alpha.ptx";
+		std::string alphaKernelModuleFileName = "src/cu_programs/lbm_alpha";
 		cProgramDefinesPostfixString.str(std::string());	// reset the contents of the StringStream
 		cProgramDefinesPostfixString << " -D LOCAL_WORK_GROUP_SIZE=";
 		cProgramDefinesPostfixString << cLbmKernelAlpha_WorkGroupSize;
 
-		// cProgramCompileOptionsString = "-Werror -I./";
-		/* cProgramCompileOptionsString = "-I./";
-		if (cLbmKernelAlpha_MaxRegisters != 0) {
-			// TODO: check for cl_nv_compiler_options extension 
-			cProgramCompileOptionsString += " -cl-nv-maxrregcount=";
-			cProgramCompileOptionsString += cLbmKernelAlpha_MaxRegisters;
-		}*/
-
 		// reset the contents of the StringStream
 		cProgramCompileOptionsStream.str(std::string());
 
-		cProgramCompileOptionsStream << "nvcc -x cu -keep ";	// -keep retains the PTX and all other intermediate compile files
+		cProgramCompileOptionsStream << "nvcc -x cu -keep -keep-dir src/cu_programs/ ";	// -keep retains the PTX and all other intermediate compile files
 		if (cLbmKernelAlpha_MaxRegisters != 0)
 		{
 			cProgramCompileOptionsStream << "-maxrregcount ";
@@ -521,8 +479,9 @@ public:
 							* cLbmKernelAlpha_WorkGroupSize;
 
 		cProgramCompileOptionsStream << cuda_program_defines.str() + cProgramDefinesPostfixString.str();
-		cProgramCompileOptionsStream << " -arch=sm_";
-		cProgramCompileOptionsStream << cDeviceInfo.execution_capabilities;		///< GPU compute capability
+		// cProgramCompileOptionsStream << " -arch=sm_";
+		// cProgramCompileOptionsStream << cDeviceInfo.execution_capabilities;		///< GPU compute capability
+		cProgramCompileOptionsStream << " -arch=sm_3";
 		cProgramCompileOptionsStream << "0 -m64 -I. -dc ";
 		cProgramCompileOptionsStream << alphaKernelModuleFileName.data();
 		cProgramCompileOptionsStream << ".cu -o ";
@@ -534,10 +493,16 @@ public:
 
 
 		CCL::CProgram cProgramAlpha;
-		//cProgramAlpha.load(cContext, cuda_program_defines.str() + cProgramDefinesPostfixString, "src/cl_programs/lbm_alpha.cl");
-		cProgramAlpha.executeCommand(cProgramCompileOptionsString.c_str(), alphaKernelModuleFileName.c_str());
+		
+		// Compile cuda kernels to ptx file using nvcc
+		// if (_UID & 1)
+		// {
+		// 	cProgramAlpha.executeCommand(cProgramCompileOptionsString.c_str(), alphaKernelModuleFileName.c_str());
+		// }
+		// MPI_Barrier(MPI_COMM_WORLD);
 
 		//TODO: check which program phase I need to load the module
+		alphaKernelModuleFileName = alphaKernelModuleFileName + ".ptx";
 		cProgramAlpha.load(cContext, alphaKernelModuleFileName.c_str());
 
 // TODO: CProgram.build() member does not exist! Make sure the CUDA version does not need it.
@@ -558,23 +523,15 @@ public:
 		cProgramDefinesPostfixString += charbuf;
 		cProgramDefinesPostfixString += ")";*/
 
-		std::string betaKernelModuleFileName = "cu_programs/lbm_beta.ptx";
+		std::string betaKernelModuleFileName = "src/cu_programs/lbm_beta";
 		cProgramDefinesPostfixString.str(std::string());	// reset the contents of the StringStream
 		cProgramDefinesPostfixString << " -D LOCAL_WORK_GROUP_SIZE=";
 		cProgramDefinesPostfixString << cLbmKernelBeta_WorkGroupSize;
 
-		//cProgramCompileOptionsString = "-Werror -I./";
-		/*cProgramCompileOptionsString = "-I./";
-		if (cLbmKernelBeta_MaxRegisters != 0) {
-			// TODO: check for cl_nv_compiler_options extension 
-			cProgramCompileOptionsString += " -cl-nv-maxrregcount=";
-			cProgramCompileOptionsString += cLbmKernelBeta_MaxRegisters;
-		}*/
-
 		// reset the contents of the StringStream
 		cProgramCompileOptionsStream.str(std::string());
 
-		cProgramCompileOptionsStream << "nvcc -x cu -keep ";	// -keep retains the PTX and all other intermediate compile files
+		cProgramCompileOptionsStream << "nvcc -x cu -keep -keep-dir src/cu_programs/ ";	// -keep retains the PTX and all other intermediate compile files
 		if (cLbmKernelBeta_MaxRegisters != 0)
 		{
 			cProgramCompileOptionsStream << "-maxrregcount ";
@@ -590,8 +547,9 @@ public:
 							* cLbmKernelBeta_WorkGroupSize;
 
 		cProgramCompileOptionsStream << cuda_program_defines.str() + cProgramDefinesPostfixString.str();
-		cProgramCompileOptionsStream << " -arch=sm_";
-		cProgramCompileOptionsStream << cDeviceInfo.execution_capabilities;		///< GPU compute capability
+		// cProgramCompileOptionsStream << " -arch=sm_";
+		// cProgramCompileOptionsStream << cDeviceInfo.execution_capabilities;		///< GPU compute capability
+		cProgramCompileOptionsStream << " -arch=sm_3";
 		cProgramCompileOptionsStream << "0 -m64 -I. -dc ";
 		cProgramCompileOptionsStream << betaKernelModuleFileName.data();
 		cProgramCompileOptionsStream << ".cu -o ";
@@ -601,10 +559,16 @@ public:
 		cProgramCompileOptionsString = cProgramCompileOptionsStream.str();
 
 		CCL::CProgram cProgramBeta;
-		//cProgramBeta.load(cContext, cuda_program_defines.str() + cProgramDefinesPostfixString, "src/cl_programs/lbm_beta.cl");
-		cProgramBeta.executeCommand(cProgramCompileOptionsString.c_str(), betaKernelModuleFileName.c_str());
+		
+		// compile cuda kernel to ptx
+		// if (_UID & 1)
+		// {
+		// 	cProgramBeta.executeCommand(cProgramCompileOptionsString.c_str(), betaKernelModuleFileName.c_str());
+		// }
+		// MPI_Barrier(MPI_COMM_WORLD);
 
 		//TODO: check which program phase I need to load the module
+		betaKernelModuleFileName = betaKernelModuleFileName + ".ptx";
 		cProgramBeta.load(cContext, betaKernelModuleFileName.c_str());
 
 // TODO: CProgram.build() member does not exist! Make sure the CUDA version does not need it.
@@ -627,23 +591,15 @@ public:
 		cProgramDefinesPostfixString += charbuf;
 		cProgramDefinesPostfixString += ")";*/
 
-		std::string copyRectKernelModuleFileName = "cu_programs/copy_buffer_rect.ptx";
+		std::string copyRectKernelModuleFileName = "src/cu_programs/copy_buffer_rect";
 		cProgramDefinesPostfixString.str(std::string());	// reset the contents of the StringStream
 		cProgramDefinesPostfixString << " -D LOCAL_WORK_GROUP_SIZE=";
 		cProgramDefinesPostfixString << cKernelCopyRect_WorkGroupSize;
 
-		/*cProgramCompileOptionsString = "-Werror -I./";
-		cProgramCompileOptionsString = "-I./";
-		if (cKernelCopyRect_MaxRegisters != 0) {
-			// TODO: check for cl_nv_compiler_options extension 
-			cProgramCompileOptionsString += " -cl-nv-maxrregcount=";
-			cProgramCompileOptionsString += cKernelCopyRect_MaxRegisters;
-		}*/
-
 		// reset the contents of the StringStream
 		cProgramCompileOptionsStream.str(std::string());
 
-		cProgramCompileOptionsStream << "nvcc -x cu -keep ";	// -keep retains the PTX and all other intermediate compile files
+		cProgramCompileOptionsStream << "nvcc -x cu -keep -keep-dir src/cu_programs/ ";	// -keep retains the PTX and all other intermediate compile files
 		if (cKernelCopyRect_MaxRegisters != 0)
 		{
 			cProgramCompileOptionsStream << "-maxrregcount ";
@@ -658,8 +614,9 @@ public:
 					* cKernelInit_WorkGroupSize;
 
 		cProgramCompileOptionsStream << cuda_program_defines.str() + cProgramDefinesPostfixString.str();
-		cProgramCompileOptionsStream << " -arch=sm_";
-		cProgramCompileOptionsStream << cDeviceInfo.execution_capabilities;		///< GPU compute capability
+		// cProgramCompileOptionsStream << " -arch=sm_";
+		// cProgramCompileOptionsStream << cDeviceInfo.execution_capabilities;		///< GPU compute capability
+		cProgramCompileOptionsStream << " -arch=sm_3";
 		cProgramCompileOptionsStream << "0 -m64 -I. -dc ";
 		cProgramCompileOptionsStream << copyRectKernelModuleFileName.data();
 		cProgramCompileOptionsStream << ".cu -o ";
@@ -669,10 +626,16 @@ public:
 		cProgramCompileOptionsString = cProgramCompileOptionsStream.str();
 
 		CCL::CProgram cProgramCopyRect;
-		//cProgramCopyRect.load(cContext, cuda_program_defines.str() + cProgramDefinesPostfixString, "src/cl_programs/copy_buffer_rect.cl");
-		cProgramCopyRect.executeCommand(cProgramCompileOptionsString.c_str(), copyRectKernelModuleFileName.c_str());
+		
+		// compile kernel with nvcc
+		// if (_UID & 1)
+		// {
+		// 	cProgramCopyRect.executeCommand(cProgramCompileOptionsString.c_str(), copyRectKernelModuleFileName.c_str());
+		// }
+		// MPI_Barrier(MPI_COMM_WORLD);			
 
 		//TODO: check which program phase I need to load the module
+		copyRectKernelModuleFileName = copyRectKernelModuleFileName + ".ptx";
 		cProgramCopyRect.load(cContext, copyRectKernelModuleFileName.c_str());
 
 		
@@ -706,7 +669,7 @@ public:
 		 * SETUP ARGUMENTS
 		 */
 		// initialization kernel
-		cKernelInit.create(cProgramInit, "init_kernel");
+		cKernelInit.create(cProgramInit, "init_kernel"); // attach kernel to CUDA module
 		cKernelInit.setArg(0, cMemDensityDistributions);
 		cKernelInit.setArg(1, cMemCellFlags);
 		cKernelInit.setArg(2, cMemVelocity);
@@ -715,7 +678,7 @@ public:
 		cKernelInit.setArg(5, paramDrivenCavityVelocity[0]);
 
 		// collision and propagation kernels (alpha and beta)
-		cLbmKernelAlpha.create(cProgramAlpha, "lbm_kernel_alpha");
+		cLbmKernelAlpha.create(cProgramAlpha, "lbm_kernel_alpha");	 // attach kernel to CUDA module
 		cLbmKernelAlpha.setArg(0, cMemDensityDistributions);
 		cLbmKernelAlpha.setArg(1, cMemCellFlags);
 		cLbmKernelAlpha.setArg(2, cMemVelocity);
@@ -726,7 +689,7 @@ public:
 		cLbmKernelAlpha.setArg(7, this->gravitation[2]);
 		cLbmKernelAlpha.setArg(8, paramDrivenCavityVelocity[0]);
 
-		cLbmKernelBeta.create(cProgramBeta, "lbm_kernel_beta");
+		cLbmKernelBeta.create(cProgramBeta, "lbm_kernel_beta"); // attach kernel to CUDA module
 		cLbmKernelBeta.setArg(0, cMemDensityDistributions);
 		cLbmKernelBeta.setArg(1, cMemCellFlags);
 		cLbmKernelBeta.setArg(2, cMemVelocity);
@@ -737,7 +700,9 @@ public:
 		cLbmKernelBeta.setArg(7, this->gravitation[2]);
 		cLbmKernelBeta.setArg(8, paramDrivenCavityVelocity[0]);
 
-		cKernelCopyRect.create(cProgramCopyRect, "copy_buffer_rect");
+		cKernelCopyRect.create(cProgramCopyRect, "copy_buffer_rect"); // attach kernel to CUDA module
+
+		printf("\n");
 
 		reset();
 	}
@@ -748,20 +713,12 @@ public:
 #if DEBUG
 		std::cout << "Init Simulation: " << std::flush;
 #endif
-/* Fix according the member definition:
-		inline void enqueueNDRangeKernel(	CKernel &cKernel,		///< enqueue a OpenCL kernel
-											unsigned int work_dim,		///< number of work dimensions (0, 1 or 2)
-											const size_t *global_work_offset,	///< global work offset
-											const size_t *global_work_size,		///< global work size
-											const size_t *local_work_size,		///< local work size
-											void **  	kernelParams			///< kernel input arguments
-		)
-*/
 		// TODO: decide how grid_size_x value is set when calling enqueueNDRangeKernel
+		// printf("CLbmSolver.reset() before call\n");
 		cCommandQueue.enqueueNDRangeKernel(cKernelInit, ///< kernel
 				1, 										///< dimensions
-				0, 							///< number of blocks in x-dir
-				domain_cells_count,							///< total elements to process 
+				NULL,	//this->domain_cells.size(),
+				domain_cells_count,						///< total elements to process 
 				NULL, 									///< global work offset
 				&cKernelInit_GlobalWorkGroupSize,
 				&cKernelInit_WorkGroupSize,
@@ -774,15 +731,6 @@ public:
 #endif
 	}
 
-/* 		inline void enqueueNDRangeKernel(	CKernel &cKernel,					///< enqueue a OpenCL kernel
-											unsigned int work_dim,				///< number of work dimensions (0, 1 or 2)
-											const unsigned int grid_size_x,		///< number of blocks in x-direction (e.g., total_elems/threads_per_block[0])
-											const size_t total_elements,		///< total number of elements to process
-											const size_t *global_work_offset,	///< global work offset
-											size_t *global_work_size,			///< global work size
-											size_t *local_work_size,			///< local work size
-											std::vector<void *>& kernelParams	///< kernel input arguments
-		)*/
 
 	void simulationStepAlpha() {
 #if DEBUG
@@ -791,7 +739,7 @@ public:
 		cCommandQueue.enqueueNDRangeKernel(
 				cLbmKernelAlpha, 	// kernel
 				1, 					// dimensions
-				0, 					// blocks in x-dim
+				NULL, 	//this->domain_cells.size(),
 				domain_cells_count, // total number of elements
 				NULL, 				// global work offset
 				&cLbmKernelAlpha_GlobalWorkGroupSize,
@@ -806,7 +754,7 @@ public:
 		cCommandQueue.enqueueNDRangeKernel(
 				cLbmKernelBeta, // kernel
 				1, // dimensions
-				0,
+				NULL,	//this->domain_cells.size(),
 				domain_cells_count,
 				NULL, // global work offset
 				&cLbmKernelBeta_GlobalWorkGroupSize,
