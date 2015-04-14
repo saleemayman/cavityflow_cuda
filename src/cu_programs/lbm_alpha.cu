@@ -22,8 +22,14 @@ extern "C" __global__ void lbm_kernel_alpha(
 		)
 {
 	//const size_t gid = get_global_id(0);
-	const size_t gid = threadIdx.x + blockDim.x * blockIdx.x;
+	// const size_t gid = threadIdx.x + blockDim.x * blockIdx.x;
+	const size_t idx_x = threadIdx.x + blockDim.x * blockIdx.x;
+	const size_t idx_y = threadIdx.y + blockDim.y * blockIdx.y;
+	const size_t idx_z = threadIdx.z + blockDim.z * blockIdx.z;
 
+	const size_t idx_xy = idx_y * (blockDim.x * gridDim.x) + idx_x;
+	const size_t gid = idx_z * (blockDim.x * gridDim.x + blockDim.y * gridDim.y) + idx_xy;
+	
 	if (gid >= GLOBAL_WORK_GROUP_SIZE)
 		return;
 
@@ -337,7 +343,8 @@ extern "C" __global__ void lbm_kernel_alpha(
 			*current_dds = dd18;
 #endif
 
-#if STORE_VELOCITY
+// #if STORE_VELOCITY
+#if 1
 			velocity_x = 0.0f;
 			velocity_y = 0.0f;
 			velocity_z = 0.0f;
@@ -485,7 +492,8 @@ extern "C" __global__ void lbm_kernel_alpha(
 				break;
 	}
 
-#if STORE_VELOCITY
+// #if STORE_VELOCITY
+#if 1
 	// store velocity
 	current_dds = &velocity[gid];
 	*current_dds = velocity_x;	current_dds += DOMAIN_CELLS;
@@ -493,7 +501,8 @@ extern "C" __global__ void lbm_kernel_alpha(
 	*current_dds = velocity_z;
 #endif
 
-#if STORE_DENSITY
+// #if STORE_DENSITY
+#if 1
 	// store density (not necessary)
 	density[gid] = rho;
 #endif
