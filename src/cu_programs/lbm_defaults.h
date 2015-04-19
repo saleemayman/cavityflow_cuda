@@ -2,10 +2,10 @@
 
 #if PROBLEM_DEFAULTS
 	#define DOMAIN_CELLS_X	(1)
-	#define DOMAIN_CELLS_Y	(2)
-	#define DOMAIN_CELLS_Z	(3)
+	#define DOMAIN_CELLS_Y	(1)
+	#define DOMAIN_CELLS_Z	(1)
 
-	#define LOCAL_WORK_GROUP_SIZE	(128)
+	#define LOCAL_WORK_GROUP_SIZE	(16)
 
 
 	#define FLAG_OBSTACLE	(1 << 0)

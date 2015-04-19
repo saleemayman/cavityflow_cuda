@@ -83,7 +83,9 @@ class CController
 				cLbmPtr->domain_cells[0] * cLbmPtr->domain_cells[1]);
 	}
 
-	int initLBMSolver() {
+	int initLBMSolver()
+	{
+		printf(" -> CController::initLBMSolver()");
 
 #if DEBUG
 		std::cout << "loading platforms" << std::endl;
@@ -199,6 +201,7 @@ class CController
 				ConfigSingleton::Instance()->gravitation, // gravitation vector
 				ConfigSingleton::Instance()->viscosity,
 				ConfigSingleton::Instance()->computation_kernel_count,
+				ConfigSingleton::Instance()->threads_per_dimension,
 				//ConfigSingleton::Instance()->debug_mode,
 				ConfigSingleton::Instance()->do_visualization
 						|| ConfigSingleton::Instance()->debug_mode,
@@ -227,10 +230,6 @@ public:
 			for (int j = 0; j < 2; j++)
 				_BC[i][j] = BC[i][j];
 
-		// _subdomain_size = _domain.getSize();
-		// _subdomain_nums = _domain.getSubDomains();
-		// printf("CController._subdomain_size= [%i, %i, %i] \n", _subdomain_size[0], _subdomain_size[1], _subdomain_size[2]);
-		// printf("CController._subdomain_nums= [%i, %i, %i] \n", _subdomain_nums[0], _subdomain_nums[1], _subdomain_nums[2]);
 		// initialize the LBMSolver
 		if (-1 == initLBMSolver())
 			throw "Initialization of LBM Solver failed!";
@@ -260,7 +259,9 @@ public:
 		}
 	}
 
-	void syncAlpha() {
+	void syncAlpha()
+	{
+		// printf(" -> CController::syncAlpha()");
 #if DEBUG
 		std::cout << "--> Sync alpha" << std::endl;
 #endif
@@ -317,14 +318,17 @@ public:
 		}
 	}
 
-	void syncBeta() {
+	void syncBeta()
+	{
+		// printf(" -> CController::syncBeta()");
 #if DEBUG
 		std::cout << "--> Sync beta" << std::endl;
 #endif
 
 		// TODO: OPTIMIZATION: communication of different neighbors can be done in Non-blocking form.
 		typename std::vector<CComm<T>*>::iterator it = _comm_container.begin();
-		for (; it != _comm_container.end(); it++) {
+		for (; it != _comm_container.end(); it++)
+		{
 			// the send and receive values in beta sync is the opposite values of
 			// Comm instance related to current communication, since the ghost layer data
 			// will be sent back to their origin
@@ -381,6 +385,7 @@ public:
 	}
 
 	void computeNextStep() {
+		// printf(" -> CController::computeNextStep()");
 		cLbmPtr->simulationStep();
 		if (cLbmPtr->simulation_step_counter & 1)
 			syncBeta();
@@ -391,7 +396,9 @@ public:
 	 * This function starts the simulation for the particular subdomain corresponded to
 	 * this class.
 	 */
-	int run() {
+	int run()
+	{
+		// printf(" -> CController::run()");
 		CVector<3, int> domain_size = _domain.getSize();
 		int loops = ConfigSingleton::Instance()->loops;
 		if (loops < 0)

@@ -69,6 +69,7 @@
 #define eq_dd_a0(vela, vela2, rho_alpha)	((T)(1.0f/18.0f)*((rho_alpha) + (T)(3.0f)*(vela) + (T)(9.0f/2.0f)*(vela2)))
 #define eq_dd_a1(vela, vela2, rho_alpha)	((T)(1.0f/18.0f)*((rho_alpha) + (T)(-3.0f)*(vela) + (T)(9.0f/2.0f)*(vela2)))
 
+
 /*
  * we can reuse the following functions because of the symmetry of the density distributions!
  *

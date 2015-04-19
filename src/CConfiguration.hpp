@@ -34,6 +34,7 @@ public:
 	CVector<4, T> drivenCavityVelocity;
 	// device configuration data
 	size_t computation_kernel_count;
+	size_t threads_per_dimension;
 	int device_nr;
 
 	// simulation configuration data
@@ -95,6 +96,7 @@ public:
 		std::cout <<  "	     VALIDATE: " <<  do_validate << std::endl;
 		std::cout <<  "DEVICE: " << std::endl;
 		std::cout <<  "  KERNEL_COUNT: " <<  computation_kernel_count << std::endl;
+		std::cout <<  "  THREADS_PER_DIM: " <<  threads_per_dimension << std::endl;
 		std::cout <<  "	    DEVICE_NR: " <<  device_nr << std::endl;
 	}
 private:
@@ -146,6 +148,7 @@ private:
 	void interpret_device_data(const txml::XMLNode* root) {
 		const txml::XMLNode* child_four = root->FirstChildElement(TAG_NAME_CHILD_FOUR);
 		computation_kernel_count = atoi(child_four->FirstChildElement( "kernel-count" )->GetText());
+		threads_per_dimension = atoi(child_four->FirstChildElement( "threads-per-dim" )->GetText());
 		device_nr = atoi(child_four->FirstChildElement( "device-number" )->GetText());
 	}
 
