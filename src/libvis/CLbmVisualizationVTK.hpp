@@ -26,6 +26,7 @@ public:
 
 	void render(int increment = -1)
 	{
+		// printf(" ->CLbmVisualization::render()");
 		// using the increment in VTK visualization as the time step value
 		_timeStepNumber = increment;
 

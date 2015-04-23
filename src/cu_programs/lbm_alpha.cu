@@ -492,8 +492,8 @@ extern "C" __global__ void lbm_kernel_alpha(
 				break;
 	}
 
-// #if STORE_VELOCITY
-#if 1
+#if STORE_VELOCITY
+// #if 1
 	// store velocity
 	current_dds = &velocity[gid];
 	*current_dds = velocity_x;	current_dds += DOMAIN_CELLS;
@@ -501,8 +501,8 @@ extern "C" __global__ void lbm_kernel_alpha(
 	*current_dds = velocity_z;
 #endif
 
-// #if STORE_DENSITY
-#if 1
+#if STORE_DENSITY
+// #if 1
 	// store density (not necessary)
 	density[gid] = rho;
 #endif

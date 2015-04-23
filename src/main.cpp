@@ -408,7 +408,7 @@ int main(int argc, char** argv)
             for ( int i = 0; i < local_size_without_halo.elements()*3; i++)
             {
                 if (fabs(sub_global_data[i] - local_data[i]) > tolerance ){
-#if 1
+#if 0
                     if ((i % 30) == 0)
                     {
                         std::cout << "PROC. RANK: " << my_rank << " VALIDATION FAILED at Index: " << i << std::endl;

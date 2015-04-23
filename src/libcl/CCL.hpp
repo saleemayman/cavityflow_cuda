@@ -756,7 +756,7 @@ private:
         }
 
         // for debugging
-        inline void printRhoMemObj(size_t elems)
+        inline void printDensityMemObj(size_t elems)
         {
             T *rho_memobj_h = new T[elems];
 
@@ -1195,7 +1195,7 @@ public:
          * set the number of grid size and threads per block for GPU
          */
         void setGridAndBlockSize(   dim3 &numBlocks, dim3 &threadsPerBlock, unsigned int work_dim,
-                                    size_t &local_work_size, const size_t total_elements
+                                    size_t &local_work_size, const size_t total_elements, size_t *global_work_size
         )
         {
             size_t totalThreadsPerBlock;
@@ -1212,13 +1212,16 @@ public:
             }
             else if(work_dim == 2)
             {
-                threadsPerBlock = dim3(local_work_size, local_work_size, 1);
+                // threadsPerBlock = dim3(local_work_size, local_work_size, 1);
+                threadsPerBlock = dim3(1, 1, 1);
                 totalThreadsPerBlock = threadsPerBlock.x * threadsPerBlock.y * threadsPerBlock.z;
 
-                grids_x = sqrt((total_elements + threadsPerBlock.x * threadsPerBlock.y - 1) / totalThreadsPerBlock);
-                grids_y = grids_x;
+                // grids_x = sqrt((total_elements + threadsPerBlock.x * threadsPerBlock.y - 1) / totalThreadsPerBlock);
+                grids_x = global_work_size[0];
+                grids_y = global_work_size[1];
+                // grids_y = grids_x;
 
-                numBlocks = dim3(grids_x + 1, grids_y + 1, 1);
+                numBlocks = dim3(grids_x, grids_y, 1);
             }
             else
             {
@@ -1253,7 +1256,7 @@ public:
             dim3 numBlocks;  //  number of blocks to launch = dim3((size + threadsPerBlock.x - 1) / threadsPerBlock.x, 1, 1);
             int sharedMemBytes;
 
-            setGridAndBlockSize(numBlocks, threadsPerBlock, work_dim, local_work_size, total_elements);
+            setGridAndBlockSize(numBlocks, threadsPerBlock, work_dim, local_work_size, total_elements, global_work_size);
 
             // printf("\n");
             // printf("threadsPerBlock: [%u, %u, %u] \n", threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z);

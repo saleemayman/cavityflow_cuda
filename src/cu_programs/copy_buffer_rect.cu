@@ -41,8 +41,16 @@ extern "C" __global__ void copy_buffer_rect(
 	int gid_k = get_global_id(1);
 	*/
 	// get the thread ID for each direction
-	int gid_j = threadIdx.x + blockDim.x * blockIdx.x;
-	int gid_k = threadIdx.y + blockDim.y * blockIdx.y;
+	// int gid_j = threadIdx.x + blockDim.x * blockIdx.x;
+	// int gid_k = threadIdx.y + blockDim.y * blockIdx.y;
+	const size_t idx_x = threadIdx.x + blockDim.x * blockIdx.x;		
+	const size_t idx_y = threadIdx.y + blockDim.y * blockIdx.y;
+	const size_t idx_xy = idx_y * (blockDim.x * gridDim.x) + idx_x;
+	int gid_j = idx_x;
+	int gid_k = idx_y;
+
+	// if (gid_j >= DOMAIN_CELLS_Y || gid_k >= DOMAIN_CELLS_Z)
+	// 	return;
 
 	int src_slice_z_size = src_size_x * src_size_y;
 	int dst_slice_z_size = dst_size_x * dst_size_y;
@@ -64,3 +72,31 @@ extern "C" __global__ void copy_buffer_rect(
 	}
 
 }
+/*
+
+const size_t idx_x = threadIdx.x + blockDim.x * blockIdx.x;
+const size_t idx_y = threadIdx.y + blockDim.y * blockIdx.y;
+const size_t idx_z = threadIdx.z + blockDim.z * blockIdx.z;
+
+const size_t idx_xy = idx_y * (blockDim.x * gridDim.x) + idx_x;
+
+src_offset: 0
+src_origin_x[0]: 0
+src_origin_y[1]: 0
+src_origin_z[2]: 0
+src_size_x[0]: 14
+src_size_y[1]: 1
+src_size_z[2]: 2
+dst_offset: 0
+dst_origin_x[0]: 1
+dst_origin_y[1]: 14
+dst_origin_z[2]: 1
+dst_size_x[0]: 16
+dst_size_y[1]: 16
+dst_size_z[2]: 4
+block_size[0]: 14
+lGlobalSize[0]: 1
+lGlobalSize[1]: 2
+threadsPerBlock: [16, 16, 1] 
+numBlocks: [3, 3, 1] 
+*/

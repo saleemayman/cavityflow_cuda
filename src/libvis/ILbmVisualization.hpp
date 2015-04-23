@@ -43,6 +43,7 @@ public:
 		CVector<3,int> domain_cells = cLbmOpencl->domain_cells;
 
 		delete [] velocity;
+		// printf(" ->ILbmVisualization::setup()");
 		velocity = new T[domain_cells.elements()*3];
 
 		delete [] density;

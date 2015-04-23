@@ -3,7 +3,7 @@
 
 #define CACHED_ACCESS       0
 
-#define USE_SHARED_MEMORY   1
+#define USE_SHARED_MEMORY   0
 
 #include "lbm_header.h"
 
@@ -268,7 +268,6 @@ extern "C" __global__ void lbm_kernel_beta(
     //__shared__    T *dd_buf_lid = &dd_buf[1][lid];
     // extern __shared__    T *dd_buf_lid;
     T *dd_buf_lid = &dd_buf[1][lid];
-    __syncthreads();
 
 #define dd_read_delta_position_0    read_delta_neg_x
 #define dd_read_delta_position_1    read_delta_pos_x
@@ -821,9 +820,10 @@ extern "C" __global__ void lbm_kernel_beta(
     *current_dds = velocity_z;
 #endif
 
-// #if STORE_DENSITY
-#if 1
+#if STORE_DENSITY
+// #if 1
     // store density (not necessary)
     density[gid] = rho;
+    // density[gid] = flag;
 #endif
 }

@@ -243,8 +243,8 @@ if (gid < GLOBAL_WORK_GROUP_SIZE)
 	*current_dds = velocity_z;
 #endif
 
-// #if STORE_DENSITY
-#if 1
+#if STORE_DENSITY
+// #if 1
 	// store density
 	density[gid] = rho;
 	// density[gid] = gid;
