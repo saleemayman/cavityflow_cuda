@@ -823,7 +823,7 @@ extern "C" __global__ void lbm_kernel_beta(
 #if STORE_DENSITY
 // #if 1
     // store density (not necessary)
-    density[gid] = rho;
-    // density[gid] = flag;
+    // density[gid] = rho;
+    density[gid] = flag;
 #endif
 }

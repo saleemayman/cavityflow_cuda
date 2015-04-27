@@ -33,24 +33,17 @@ extern "C" __global__ void copy_buffer_rect(
 		const 	int dst_size_x,
 		const 	int dst_size_y,
 		const 	int dst_size_z,
-		const 	int block_size_x
+		const 	int block_size_x,
+		const 	int block_size_y,
+		const 	int block_size_z
 		)
 {
-	/*
-	int gid_j = get_global_id(0);
-	int gid_k = get_global_id(1);
-	*/
 	// get the thread ID for each direction
-	// int gid_j = threadIdx.x + blockDim.x * blockIdx.x;
-	// int gid_k = threadIdx.y + blockDim.y * blockIdx.y;
-	const size_t idx_x = threadIdx.x + blockDim.x * blockIdx.x;		
-	const size_t idx_y = threadIdx.y + blockDim.y * blockIdx.y;
-	const size_t idx_xy = idx_y * (blockDim.x * gridDim.x) + idx_x;
-	int gid_j = idx_x;
-	int gid_k = idx_y;
+	const size_t gid_j = threadIdx.x + blockDim.x * blockIdx.x;		
+	const size_t gid_k = threadIdx.y + blockDim.y * blockIdx.y;
 
-	// if (gid_j >= DOMAIN_CELLS_Y || gid_k >= DOMAIN_CELLS_Z)
-	// 	return;
+	if (gid_j >= block_size_y || gid_k >= block_size_z)
+		return;
 
 	int src_slice_z_size = src_size_x * src_size_y;
 	int dst_slice_z_size = dst_size_x * dst_size_y;

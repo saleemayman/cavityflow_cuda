@@ -544,21 +544,21 @@ public:
 		CVector<3, int> origin(1, _domain.getSize()[1] - 2, 1);
 		CVector<3, int> size(_domain.getSize()[0] - 2, 1,
 				_domain.getSize()[2] - 2);
-// #if DEBUG
-#if 1
+#if DEBUG
+// #if 1
 		std::cout << "\nCController.setGeometry() GEOMETRY: " << size << std::endl;
 		std::cout << "\nCController.setGeometry() origin: " << origin << std::endl;
 #endif
 		int * src = new int[size.elements()];
 
-		printf("setGeometry-> src size= %i\n", size.elements());
+		// printf("setGeometry-> src size= %i\n", size.elements());
 
 		for (int i = 0; i < size.elements(); i++)
 		{
 			src[i] = FLAG_VELOCITY_INJECTION;
-			printf(" %i", src[i]);
+			// printf(" %i", src[i]);
 		}
-		printf("\n");
+		// printf("\n");
 		cLbmPtr->setFlags(src, origin, size);
 	
 		delete[] src;

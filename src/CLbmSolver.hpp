@@ -165,28 +165,30 @@ private:
         // cKernelCopyRect.setArgSize(20);      ///< reserve a vector argument container of 20 elements
         // source args
         cKernelCopyRect.setArg(0, src);
-        cKernelCopyRect.setArg(1, src_offset);      printf("src_offset: %i\n", src_offset);
-        cKernelCopyRect.setArg(2, src_origin[0]);   printf("src_origin[0]: %i\n", src_origin[0]);
-        cKernelCopyRect.setArg(3, src_origin[1]);   printf("src_origin[1]: %i\n", src_origin[1]);
-        cKernelCopyRect.setArg(4, src_origin[2]);   printf("src_origin[2]: %i\n", src_origin[2]);
-        cKernelCopyRect.setArg(5, src_size[0]);     printf("src_size[0]: %i\n", src_size[0]);
-        cKernelCopyRect.setArg(6, src_size[1]);     printf("src_size[1]: %i\n", src_size[1]);
-        cKernelCopyRect.setArg(7, src_size[2]);     printf("src_size[2]: %i\n", src_size[2]);
+        cKernelCopyRect.setArg(1, src_offset); 
+        cKernelCopyRect.setArg(2, src_origin[0]);
+        cKernelCopyRect.setArg(3, src_origin[1]);
+        cKernelCopyRect.setArg(4, src_origin[2]);
+        cKernelCopyRect.setArg(5, src_size[0]);
+        cKernelCopyRect.setArg(6, src_size[1]);
+        cKernelCopyRect.setArg(7, src_size[2]);
 
         // destination args
         cKernelCopyRect.setArg(8, dst);
-        cKernelCopyRect.setArg(9, dst_offset);      printf("dst_offset: %i\n", dst_offset);
-        cKernelCopyRect.setArg(10, dst_origin[0]);  printf("dst_origin[0]: %i\n", dst_origin[0]);
-        cKernelCopyRect.setArg(11, dst_origin[1]);  printf("dst_origin[1]: %i\n", dst_origin[1]);
-        cKernelCopyRect.setArg(12, dst_origin[2]);  printf("dst_origin[2]: %i\n", dst_origin[2]);
-        cKernelCopyRect.setArg(13, dst_size[0]);    printf("dst_size[0]: %i\n", dst_size[0]);
-        cKernelCopyRect.setArg(14, dst_size[1]);    printf("dst_size[1]: %i\n", dst_size[1]);
-        cKernelCopyRect.setArg(15, dst_size[2]);    printf("dst_size[2]: %i\n", dst_size[2]);
-        cKernelCopyRect.setArg(16, block_size[0]);  printf("block_size[0]: %i\n", block_size[0]);
+        cKernelCopyRect.setArg(9, dst_offset); 
+        cKernelCopyRect.setArg(10, dst_origin[0]);
+        cKernelCopyRect.setArg(11, dst_origin[1]);
+        cKernelCopyRect.setArg(12, dst_origin[2]);
+        cKernelCopyRect.setArg(13, dst_size[0]);
+        cKernelCopyRect.setArg(14, dst_size[1]);
+        cKernelCopyRect.setArg(15, dst_size[2]);
+        cKernelCopyRect.setArg(16, block_size[0]);
+        cKernelCopyRect.setArg(17, block_size[1]);
+        cKernelCopyRect.setArg(18, block_size[2]);
 
         size_t lGlobalSize[2];
-        lGlobalSize[0] = block_size[1];     printf("lGlobalSize[0]: %lu\n", lGlobalSize[0]);
-        lGlobalSize[1] = block_size[2];     printf("lGlobalSize[1]: %lu\n", lGlobalSize[1]);
+        lGlobalSize[0] = block_size[1]; 
+        lGlobalSize[1] = block_size[2]; 
         // enqueue the CopyRect kernel
         cCommandQueue.enqueueNDRangeKernel(cKernelCopyRect, // kernel
                 2, // dimensions
@@ -424,10 +426,10 @@ public:
         CCL::CProgram cProgramInit;
 
         // Compile the CUDA kernels using nvcc
-        if (simulation_step_counter == 0)
-        {
-         cProgramInit.executeCommand(cProgramCompileOptionsString.c_str(), initKernelModuleFileName.c_str());
-        }
+        // if (simulation_step_counter == 0)
+        // {
+        //  cProgramInit.executeCommand(cProgramCompileOptionsString.c_str(), initKernelModuleFileName.c_str());
+        // }
         // cProgramInit.executeCommand(cProgramCompileOptionsString.c_str(), initKernelModuleFileName.c_str());
         // MPI_Barrier(MPI_COMM_WORLD);
 
@@ -486,10 +488,10 @@ public:
         CCL::CProgram cProgramAlpha;
         
         // Compile cuda kernels to ptx file using nvcc
-        if (simulation_step_counter == 0)
-        {
-         cProgramAlpha.executeCommand(cProgramCompileOptionsString.c_str(), alphaKernelModuleFileName.c_str());
-        }
+        // if (simulation_step_counter == 0)
+        // {
+        //  cProgramAlpha.executeCommand(cProgramCompileOptionsString.c_str(), alphaKernelModuleFileName.c_str());
+        // }
         // cProgramAlpha.executeCommand(cProgramCompileOptionsString.c_str(), alphaKernelModuleFileName.c_str());
         // MPI_Barrier(MPI_COMM_WORLD);
 
@@ -549,10 +551,10 @@ public:
         CCL::CProgram cProgramBeta;
         
         // compile cuda kernel to ptx
-        if (simulation_step_counter == 0)
-        {
-         cProgramBeta.executeCommand(cProgramCompileOptionsString.c_str(), betaKernelModuleFileName.c_str());
-        }
+        // if (simulation_step_counter == 0)
+        // {
+        //  cProgramBeta.executeCommand(cProgramCompileOptionsString.c_str(), betaKernelModuleFileName.c_str());
+        // }
         // cProgramBeta.executeCommand(cProgramCompileOptionsString.c_str(), betaKernelModuleFileName.c_str());
         // MPI_Barrier(MPI_COMM_WORLD);
 
@@ -613,10 +615,10 @@ public:
         CCL::CProgram cProgramCopyRect;
         
         // compile kernel with nvcc
-        if (simulation_step_counter == 0)
-        {
-         cProgramCopyRect.executeCommand(cProgramCompileOptionsString.c_str(), copyRectKernelModuleFileName.c_str());
-        }
+        // if (simulation_step_counter == 0)
+        // {
+        //  cProgramCopyRect.executeCommand(cProgramCompileOptionsString.c_str(), copyRectKernelModuleFileName.c_str());
+        // }
         // cProgramCopyRect.executeCommand(cProgramCompileOptionsString.c_str(), copyRectKernelModuleFileName.c_str());
         // MPI_Barrier(MPI_COMM_WORLD);
 
@@ -662,7 +664,8 @@ public:
         cKernelInit.setArg(2, cMemVelocity);
         cKernelInit.setArg(3, cMemDensity);
         cKernelInit.setArg(4, cMemBC);
-        cKernelInit.setArg(5, paramDrivenCavityVelocity[0]);
+        // cKernelInit.setArg(5, paramDrivenCavityVelocity[0]);
+        cKernelInit.setArg(5, CLbmSkeleton<T>::drivenCavityVelocity[0]);
 
         // collision and propagation kernels (alpha and beta)
         cLbmKernelAlpha.create(cProgramAlpha, "lbm_kernel_alpha");   // attach kernel to CUDA module
@@ -674,7 +677,8 @@ public:
         cLbmKernelAlpha.setArg(5, this->gravitation[0]);
         cLbmKernelAlpha.setArg(6, this->gravitation[1]);
         cLbmKernelAlpha.setArg(7, this->gravitation[2]);
-        cLbmKernelAlpha.setArg(8, paramDrivenCavityVelocity[0]);
+        // cLbmKernelAlpha.setArg(8, paramDrivenCavityVelocity[0]);
+        cLbmKernelAlpha.setArg(8, CLbmSkeleton<T>::drivenCavityVelocity[0]);
 
         cLbmKernelBeta.create(cProgramBeta, "lbm_kernel_beta"); // attach kernel to CUDA module
         cLbmKernelBeta.setArg(0, cMemDensityDistributions);
@@ -685,7 +689,8 @@ public:
         cLbmKernelBeta.setArg(5, this->gravitation[0]);
         cLbmKernelBeta.setArg(6, this->gravitation[1]);
         cLbmKernelBeta.setArg(7, this->gravitation[2]);
-        cLbmKernelBeta.setArg(8, paramDrivenCavityVelocity[0]);
+        // cLbmKernelBeta.setArg(8, paramDrivenCavityVelocity[0]);
+        cLbmKernelBeta.setArg(8, CLbmSkeleton<T>::drivenCavityVelocity[0]);
 
         cKernelCopyRect.create(cProgramCopyRect, "copy_buffer_rect"); // attach kernel to CUDA module
 
@@ -1035,16 +1040,16 @@ public:
         cBuffer.createCopyToDevice(cContext, 
                 sizeof(int) * size.elements(), src);
 
-        printf("src [cBuffer -> cMemCellFlags]: size= %i\n", size.elements() );
-        for (size_t i = 0; i < size.elements(); i++)
-        {
-            printf(" %i ", src[i]);
-            if ((i + 1) % (domain_x) == 0)
-            {
-                printf("\n");
-            }
-        }
-        printf("\n");
+        // printf("src [cBuffer -> cMemCellFlags]: size= %i\n", size.elements() );
+        // for (size_t i = 0; i < size.elements(); i++)
+        // {
+        //     printf(" %i ", src[i]);
+        //     if ((i + 1) % (domain_x) == 0)
+        //     {
+        //         printf("\n");
+        //     }
+        // }
+        // printf("\n");
 
         enqueueCopyRectKernel(cBuffer, cMemCellFlags, 0,
                 CVector<3, int>(0, 0, 0), size, 0, origin,

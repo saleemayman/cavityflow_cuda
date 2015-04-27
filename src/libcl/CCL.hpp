@@ -1212,16 +1212,16 @@ public:
             }
             else if(work_dim == 2)
             {
-                // threadsPerBlock = dim3(local_work_size, local_work_size, 1);
-                threadsPerBlock = dim3(1, 1, 1);
+                threadsPerBlock = dim3(local_work_size, local_work_size, 1);
+                // threadsPerBlock = dim3(1, 1, 1);
                 totalThreadsPerBlock = threadsPerBlock.x * threadsPerBlock.y * threadsPerBlock.z;
 
-                // grids_x = sqrt((total_elements + threadsPerBlock.x * threadsPerBlock.y - 1) / totalThreadsPerBlock);
-                grids_x = global_work_size[0];
-                grids_y = global_work_size[1];
-                // grids_y = grids_x;
+                grids_x = sqrt((total_elements + threadsPerBlock.x * threadsPerBlock.y - 1) / totalThreadsPerBlock);
+                // grids_x = global_work_size[0];
+                // grids_y = global_work_size[1];
+                grids_y = grids_x;
 
-                numBlocks = dim3(grids_x, grids_y, 1);
+                numBlocks = dim3(grids_x + 1, grids_y + 1, 1);
             }
             else
             {

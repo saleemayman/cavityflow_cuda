@@ -46,11 +46,9 @@ extern "C" __global__ void init_kernel(
 	const size_t idx_xy = idx_y * (blockDim.x * gridDim.x) + idx_x;
 	const size_t gid = idx_z * (blockDim.x * gridDim.x + blockDim.y * gridDim.y) + idx_xy;
 
-	// if (gid >= GLOBAL_WORK_GROUP_SIZE)
-	// 	return;
+	if (gid >= GLOBAL_WORK_GROUP_SIZE)
+		return;
 
-if (gid < GLOBAL_WORK_GROUP_SIZE)
-{
 	//__global T *current_dds = &global_dd[gid];
 	T *current_dds = &global_dd[gid];
 
@@ -247,7 +245,7 @@ if (gid < GLOBAL_WORK_GROUP_SIZE)
 // #if 1
 	// store density
 	density[gid] = rho;
-	// density[gid] = gid;
+	// density[gid] = flag;
 #endif
-}
+
 }
