@@ -339,8 +339,8 @@ int main(int argc, char** argv)
                 CVector<3,int> local_size_with_halo = controller->getDomain().getSize();
                 CVector<3,int> local_size_without_halo(local_size_with_halo[0]-2, local_size_with_halo[1]-2, local_size_with_halo[2]-2 );
 
-                printf("local_size_with_halo: [%i, %i, %i] \n", local_size_with_halo[0], local_size_with_halo[1], local_size_with_halo[2]);
-                printf("local_size_without_halo: [%i, %i, %i] \n", local_size_without_halo[0], local_size_without_halo[1], local_size_without_halo[2]);
+                // printf("local_size_with_halo: [%i, %i, %i] \n", local_size_with_halo[0], local_size_with_halo[1], local_size_with_halo[2]);
+                // printf("local_size_without_halo: [%i, %i, %i] \n", local_size_without_halo[0], local_size_without_halo[1], local_size_without_halo[2]);
 
                 int local_size[] = {local_size_without_halo[0], local_size_without_halo[1], local_size_without_halo[2]};
                 T* local_data = new T[local_size_without_halo.elements()*3];
@@ -349,7 +349,7 @@ int main(int argc, char** argv)
                 MPI_Send(local_size, 3, MPI_INT, num_procs - 1, 0, MPI_COMM_WORLD);
                 MPI_Send(local_data, local_size_without_halo.elements()*3, MPI_FLOAT, num_procs - 1, 1, MPI_COMM_WORLD );
 
-                printf("send size: %i\n", local_size_without_halo.elements()*3);
+                // printf("send size: %i\n", local_size_without_halo.elements()*3);
 
                 //PI_Sendrecv(bufSend, size, MPI_DOUBLE, rank_l, 1, bufRecv, size, MPI_DOUBLE, rank_r, 1, MPI_COMM_WORLD, status);
                 delete[] local_data;

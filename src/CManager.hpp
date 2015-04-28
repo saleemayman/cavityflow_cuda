@@ -94,6 +94,7 @@ public:
 #if DEBUG
 		std::cout << "ID: "<< id << " NX: " << nx << " NY: " << ny << " NZ: " << nz << std::endl;
 #endif
+
 		// create the subdomains instances for the whole domain
 		CVector<3, int> origin(nx * _subdomain_size[0], ny * _subdomain_size[1],
 				nz * _subdomain_size[2]);
@@ -115,6 +116,17 @@ public:
 			BC[2][0] = FLAG_OBSTACLE;
 		if (nz == (_subdomain_nums[2] - 1))
 			BC[2][1] = FLAG_OBSTACLE;
+
+		for (int i = 0; i < 2; i++)
+		{
+			if (id == i)
+			{
+				printf("ID: %i, NX: %i, NY: %i, NZ: %i, FLAG_GHOST_LAYER: %i\n", id, nx, ny, nz, 1<<3);
+				printf("BC[1][1]: %i, BC[1][2]: %i\n", BC[1][1], BC[1][2]);
+				printf("BC[2][1]: %i, BC[2][2]: %i\n", BC[2][1], BC[2][2]);
+				printf("BC[3][1]: %i, BC[3][2]: %i\n", BC[3][1], BC[3][2]);
+			}
+		}
 
 		_lbm_controller = new CController<T>(id, *subdomain, BC);
 

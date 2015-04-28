@@ -85,7 +85,7 @@ class CController
 
 	int initLBMSolver()
 	{
-		printf(" -> CController::initLBMSolver()");
+		// printf(" -> CController::initLBMSolver()");
 
 #if DEBUG
 		std::cout << "loading platforms" << std::endl;
@@ -558,7 +558,7 @@ public:
 			src[i] = FLAG_VELOCITY_INJECTION;
 			// printf(" %i", src[i]);
 		}
-		// printf("\n");
+		printf("\n");
 		cLbmPtr->setFlags(src, origin, size);
 	
 		delete[] src;

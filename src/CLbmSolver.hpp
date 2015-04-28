@@ -232,7 +232,7 @@ public:
                     p_lbm_opencl_number_of_registers_list) {
         CLbmSkeleton<T>::init(p_d_gravitation, p_d_viscosity, 1.0);
 
-        printf(" ->CLbmSolver::CLbmSolver() ");
+        // printf(" ->CLbmSolver::CLbmSolver() ");
 
         if (CLbmSkeleton<T>::error())
             error << CLbmSkeleton<T>::error.getString();
@@ -372,7 +372,7 @@ public:
             for (int j = 0; j < 2; j++)
                 bc_linear[i * 2 + j] = _BC[i][j];
 
-#if DEBUG
+#if 1
         std::cout << "BOUNDARY CONDITION: "<< std::endl;
         for(int i = 0; i < 6; i++)
         std::cout << " " << bc_linear[i];
@@ -426,12 +426,12 @@ public:
         CCL::CProgram cProgramInit;
 
         // Compile the CUDA kernels using nvcc
-        // if (simulation_step_counter == 0)
-        // {
-        //  cProgramInit.executeCommand(cProgramCompileOptionsString.c_str(), initKernelModuleFileName.c_str());
-        // }
+        if (simulation_step_counter == 0 && (_UID == 0 || _UID == -1))
+        {
+         cProgramInit.executeCommand(cProgramCompileOptionsString.c_str(), initKernelModuleFileName.c_str());
+        }
         // cProgramInit.executeCommand(cProgramCompileOptionsString.c_str(), initKernelModuleFileName.c_str());
-        // MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Barrier(MPI_COMM_WORLD);
 
         // Load init_lbm.ptx file with a CUDA module(program)
         initKernelModuleFileName = initKernelModuleFileName + ".ptx";
@@ -488,12 +488,12 @@ public:
         CCL::CProgram cProgramAlpha;
         
         // Compile cuda kernels to ptx file using nvcc
-        // if (simulation_step_counter == 0)
-        // {
-        //  cProgramAlpha.executeCommand(cProgramCompileOptionsString.c_str(), alphaKernelModuleFileName.c_str());
-        // }
+        if (simulation_step_counter == 0  && (_UID == 0 || _UID == -1))
+        {
+         cProgramAlpha.executeCommand(cProgramCompileOptionsString.c_str(), alphaKernelModuleFileName.c_str());
+        }
         // cProgramAlpha.executeCommand(cProgramCompileOptionsString.c_str(), alphaKernelModuleFileName.c_str());
-        // MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Barrier(MPI_COMM_WORLD);
 
         //TODO: check which program phase I need to load the module
         alphaKernelModuleFileName = alphaKernelModuleFileName + ".ptx";
@@ -551,12 +551,12 @@ public:
         CCL::CProgram cProgramBeta;
         
         // compile cuda kernel to ptx
-        // if (simulation_step_counter == 0)
-        // {
-        //  cProgramBeta.executeCommand(cProgramCompileOptionsString.c_str(), betaKernelModuleFileName.c_str());
-        // }
+        if (simulation_step_counter == 0  && (_UID == 0 || _UID == -1))
+        {
+         cProgramBeta.executeCommand(cProgramCompileOptionsString.c_str(), betaKernelModuleFileName.c_str());
+        }
         // cProgramBeta.executeCommand(cProgramCompileOptionsString.c_str(), betaKernelModuleFileName.c_str());
-        // MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Barrier(MPI_COMM_WORLD);
 
         //TODO: check which program phase I need to load the module
         betaKernelModuleFileName = betaKernelModuleFileName + ".ptx";
@@ -615,12 +615,12 @@ public:
         CCL::CProgram cProgramCopyRect;
         
         // compile kernel with nvcc
-        // if (simulation_step_counter == 0)
-        // {
-        //  cProgramCopyRect.executeCommand(cProgramCompileOptionsString.c_str(), copyRectKernelModuleFileName.c_str());
-        // }
+        if (simulation_step_counter == 0  && (_UID == 0 || _UID == -1))
+        {
+         cProgramCopyRect.executeCommand(cProgramCompileOptionsString.c_str(), copyRectKernelModuleFileName.c_str());
+        }
         // cProgramCopyRect.executeCommand(cProgramCompileOptionsString.c_str(), copyRectKernelModuleFileName.c_str());
-        // MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Barrier(MPI_COMM_WORLD);
 
         //TODO: check which program phase I need to load the module
         copyRectKernelModuleFileName = copyRectKernelModuleFileName + ".ptx";
@@ -694,8 +694,6 @@ public:
 
         cKernelCopyRect.create(cProgramCopyRect, "copy_buffer_rect"); // attach kernel to CUDA module
 
-        printf("\n");
-
         reset();
     }
 
@@ -720,27 +718,26 @@ public:
 
         cCommandQueue.enqueueBarrier();
 
+if (_UID == 0)
+{
+        int *cell_flags = new int[domain_cells_count];
+        storeFlags(cell_flags);
 
-        // int *cell_flags = new int[domain_cells_count];
-        // storeFlags(cell_flags);
+        printf("ID: %i, cell flags: size= %lu\n", _UID, domain_cells_count);
 
-        // printf("FLAG_OBSTACLE: %lu\n", (1 << 0));
-        // printf("FLAG_FLUID: %lu\n", (1 << 1));
-        // printf("FLAG_GHOST_LAYER: %lu\n", (1 << 3));
-        // printf("cell flags: size= %lu\n", domain_cells_count);
+        for (size_t i = 0; i < domain_cells_count; i++)
+        {
+            printf(" %i ", cell_flags[i]);
+            if ((i + 1) % (domain_x) == 0)
+            {
+                printf("\n");
+            }
+        }
+        printf("\n");
 
-        // for (size_t i = 0; i < domain_cells_count; i++)
-        // {
-        //     printf(" %i ", cell_flags[i]);
-        //     if ((i + 1) % (domain_x) == 0)
-        //     {
-        //         printf("\n");
-        //     }
-        // }
-        // printf("\n");
-
-        // delete [] cell_flags;
-
+        delete [] cell_flags;
+}
+MPI_Barrier(MPI_COMM_WORLD);
 #if DEBUG
         std::cout << "OK" << std::endl;
 #endif

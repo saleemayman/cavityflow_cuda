@@ -1,9 +1,9 @@
 #include "vector_types.h"
 
 #if PROBLEM_DEFAULTS
-	#define DOMAIN_CELLS_X	(1)
-	#define DOMAIN_CELLS_Y	(1)
-	#define DOMAIN_CELLS_Z	(1)
+	#define DOMAIN_CELLS_X	(64)
+	#define DOMAIN_CELLS_Y	(64)
+	#define DOMAIN_CELLS_Z	(64)
 
 	#define LOCAL_WORK_GROUP_SIZE	(16)
 

@@ -820,10 +820,10 @@ extern "C" __global__ void lbm_kernel_beta(
     *current_dds = velocity_z;
 #endif
 
-#if STORE_DENSITY
-// #if 1
+// #if STORE_DENSITY
+#if 1
     // store density (not necessary)
-    // density[gid] = rho;
-    density[gid] = flag;
+    density[gid] = rho;
+    // density[gid] = DOMAIN_CELLS_X;
 #endif
 }
