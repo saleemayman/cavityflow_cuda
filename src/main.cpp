@@ -67,7 +67,7 @@ CVector<3,int> lbm_units[] = {  E0,E1,E2,E3,
 };
 
 // simulation type
-typedef float T;
+// typedef float T;
 //typedef double T;
 #define VALIDATION_RANK 0
 void extract_comma_separated_integers(std::list<int> &int_list, std::string &int_string)
@@ -330,7 +330,7 @@ int main(int argc, char** argv)
         }
 
         if (my_rank != num_procs - 1) {
-            manager->initSimulation(my_rank);
+            manager->initSimulation(my_rank, num_procs);
             manager->startSimulation();
 
             // getting the local data
@@ -338,10 +338,6 @@ int main(int argc, char** argv)
                 CController<T>* controller = manager->getController();
                 CVector<3,int> local_size_with_halo = controller->getDomain().getSize();
                 CVector<3,int> local_size_without_halo(local_size_with_halo[0]-2, local_size_with_halo[1]-2, local_size_with_halo[2]-2 );
-
-                // printf("local_size_with_halo: [%i, %i, %i] \n", local_size_with_halo[0], local_size_with_halo[1], local_size_with_halo[2]);
-                // printf("local_size_without_halo: [%i, %i, %i] \n", local_size_without_halo[0], local_size_without_halo[1], local_size_without_halo[2]);
-
                 int local_size[] = {local_size_without_halo[0], local_size_without_halo[1], local_size_without_halo[2]};
                 T* local_data = new T[local_size_without_halo.elements()*3];
                 CVector<3,int> local_origin(1,1,1);
@@ -349,9 +345,6 @@ int main(int argc, char** argv)
                 MPI_Send(local_size, 3, MPI_INT, num_procs - 1, 0, MPI_COMM_WORLD);
                 MPI_Send(local_data, local_size_without_halo.elements()*3, MPI_FLOAT, num_procs - 1, 1, MPI_COMM_WORLD );
 
-                // printf("send size: %i\n", local_size_without_halo.elements()*3);
-
-                //PI_Sendrecv(bufSend, size, MPI_DOUBLE, rank_l, 1, bufRecv, size, MPI_DOUBLE, rank_r, 1, MPI_COMM_WORLD, status);
                 delete[] local_data;
             }
 
@@ -382,7 +375,7 @@ int main(int argc, char** argv)
             CManager<T> validataion_manager(validatiaon_domain, CVector<3,int>(1,1,1));
             std::cout <<  my_rank << "--> Compute the results for one domain." << std::endl;
 
-            validataion_manager.initSimulation(-1);
+            validataion_manager.initSimulation(-1, num_procs);
             validataion_manager.startSimulation();
             T* sub_global_data = new T[local_size_without_halo.elements()*3];
             // getting the global data
@@ -444,39 +437,17 @@ int main(int argc, char** argv)
         }
 
         // printf("main() before initSimulation. \n");
-        manager->initSimulation(my_rank);
+        manager->initSimulation(my_rank, num_procs);
 
-        printf("main() start simulation. \n");
+        // printf("main() start simulation. \n");
         manager->startSimulation();
         delete manager;
 
-        printf("Rank: %i done.\n", my_rank);
+        // printf("Rank: %i done.\n", my_rank);
         MPI_Finalize();    /// Cleanup MPI
     }
 
-    printf("main() Complete! \n");
+    // printf("main() Complete! \n");
     return 0;
 
 }
-
-/*
-mpicxx -o build/build_lbm_opencl_dc_mpicxx_release/lib/CBitmap.o -c -fmessage-length=0 -DNDEBUG=1 -O3 -g -mtune=native
- -I/home/ayman/CSE/turbulent_lbm_multigpu/src/ -I/home/ayman/CSE/turbulent_lbm_multigpu/src/include/ -Iinclude/UnitTest++ 
- -Iinclude/tinyxml2 -Ibuild/build_lbm_opencl_dc_mpicxx_release -Isrc -Ibuild/build_lbm_opencl_dc_mpicxx_release/src -Isrc/src src/lib/CBitmap.cpp
-
-mpicxx -o build/build_lbm_opencl_dc_mpicxx_release/libtools/CProfilerEvent.o -c -fmessage-length=0 -DNDEBUG=1 -O3 -g 
- -mtune=native -I/home/ayman/CSE/turbulent_lbm_multigpu/src/ -I/home/ayman/CSE/turbulent_lbm_multigpu/src/include/ 
- -Iinclude/UnitTest++ -Iinclude/tinyxml2 -Ibuild/build_lbm_opencl_dc_mpicxx_release -Isrc -Ibuild/build_lbm_opencl_dc_mpicxx_release/src 
- -Isrc/src src/libtools/CProfilerEvent.cpp
-
-//
-mpicxx -o build/build_lbm_opencl_dc_mpicxx_release/lib/CBitmap.o -c -fmessage-length=0 -DNDEBUG=1 -O3 -g -mtune=native
- -I/home/ayman/CSE/turbulent_lbm_multigpu/src/ -I/home/ayman/CSE/turbulent_lbm_multigpu/src/include/ -Iinclude/tinyxml2 
- -Ibuild/build_lbm_opencl_dc_mpicxx_release -Isrc -Ibuild/build_lbm_opencl_dc_mpicxx_release/src -Isrc/src src/lib/CBitmap.cpp
-
-mpicxx -o -c -fmessage-length=0 -DNDEBUG=1 -O3 -g 
- -mtune=native -I/home/ayman/CSE/turbulent_lbm_multigpu/src/ -I/home/ayman/CSE/turbulent_lbm_multigpu/src/include/ 
- -Iinclude/tinyxml2 -Ibuild/build_lbm_opencl_dc_mpicxx_release -Isrc -Ibuild/build_lbm_opencl_dc_mpicxx_release/src 
- -Isrc/src 
-
-*/

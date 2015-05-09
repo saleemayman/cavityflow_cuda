@@ -2,7 +2,6 @@
 
 #define GRAVITATION	0
 
-
 /**
  * COLLISION AND PROPAGATION KERNEL - ALPHA type
  *
@@ -18,11 +17,16 @@ extern "C" __global__ void lbm_kernel_alpha(
 			const 	T 	gravitation_x,
 			const 	T 	gravitation_y,
 			const 	T 	gravitation_z,
-			const 	T 	drivenCavityVelocity			// velocity parameters for modification of density distributions
+			const 	T 	drivenCavityVelocity,			// velocity parameters for modification of density distributions
+            const int domainCellsX,
+            const int domainCellsY,
+            const int domainCellsZ
 		)
 {
 	//const size_t gid = get_global_id(0);
 	// const size_t gid = threadIdx.x + blockDim.x * blockIdx.x;
+	const int DOMAIN_CELLS = domainCellsX * domainCellsY * domainCellsZ;
+
 	const size_t idx_x = threadIdx.x + blockDim.x * blockIdx.x;
 	const size_t idx_y = threadIdx.y + blockDim.y * blockIdx.y;
 	const size_t idx_z = threadIdx.z + blockDim.z * blockIdx.z;
@@ -30,7 +34,7 @@ extern "C" __global__ void lbm_kernel_alpha(
 	const size_t idx_xy = idx_y * (blockDim.x * gridDim.x) + idx_x;
 	const size_t gid = idx_z * (blockDim.x * gridDim.x + blockDim.y * gridDim.y) + idx_xy;
 	
-	if (gid >= GLOBAL_WORK_GROUP_SIZE)
+	if (gid >= DOMAIN_CELLS)
 		return;
 
 	// load cell type flag
@@ -343,8 +347,7 @@ extern "C" __global__ void lbm_kernel_alpha(
 			*current_dds = dd18;
 #endif
 
-// #if STORE_VELOCITY
-#if 1
+#if STORE_VELOCITY
 			velocity_x = 0.0f;
 			velocity_y = 0.0f;
 			velocity_z = 0.0f;
@@ -493,7 +496,6 @@ extern "C" __global__ void lbm_kernel_alpha(
 	}
 
 #if STORE_VELOCITY
-// #if 1
 	// store velocity
 	current_dds = &velocity[gid];
 	*current_dds = velocity_x;	current_dds += DOMAIN_CELLS;
@@ -501,10 +503,9 @@ extern "C" __global__ void lbm_kernel_alpha(
 	*current_dds = velocity_z;
 #endif
 
-// #if STORE_DENSITY
-#if 1
+#if STORE_DENSITY
 	// store density (not necessary)
-	density[gid] = rho;
-	// density[gid] = DOMAIN_CELLS_X;
+	// density[gid] = rho;
+	density[gid] = flag;
 #endif
 }

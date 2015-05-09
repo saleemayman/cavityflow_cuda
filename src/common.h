@@ -16,13 +16,15 @@
 #include "CConfiguration.hpp"
 #include "Singleton.hpp"
 
-#define FLAG_OBSTACLE	(1 << 0)
-#define FLAG_FLUID	(1 << 1)
-#define FLAG_VELOCITY_INJECTION	(1 << 2)
-#define FLAG_GHOST_LAYER (1 << 3)
-#define FLAG_GHOST_LAYER_BETA (FLAG_GHOST_LAYER | (1 << 4))
+#include "common_cpu_gpu.h"
 
- #define GRID_SIZE_X (16)
+// #define FLAG_OBSTACLE	(1 << 0)
+// #define FLAG_FLUID	(1 << 1)
+// #define FLAG_VELOCITY_INJECTION	(1 << 2)
+// #define FLAG_GHOST_LAYER (1 << 3)
+// #define FLAG_GHOST_LAYER_BETA (FLAG_GHOST_LAYER | (1 << 4))
+
+ // #define GRID_SIZE_X (16)
 
 //#define HALO_SIZE 0
 #define BENCHMARK_OUTPUT_DIR "output/benchmark"
@@ -60,13 +62,6 @@ extern CVector<3, int> lbm_units[];
 
 typedef Singleton<CConfiguration<T> > ConfigSingleton; // Global declaration
 //typedef Singleton<CProfiler> ProfilerSingleton; // Global declaration
-
-typedef enum {
-	OPENCL_VERSION_UNKNOWN = 0,
-	OPENCL_VERSION_1_0_0 = 100,
-	OPENCL_VERSION_1_1_0 = 110,
-	OPENCL_VERSION_1_2_0 = 120,
-} OPENCL_VERSION;
 
 typedef enum {
 	MPI_COMM_DIRECTION_UNKNOWN = 0,

@@ -26,8 +26,8 @@
     </domain-size>
     <!-- number of subdomains  in x, y and z direction -->
     <subdomain-num>
-      <x>2</x>
-      <y>1</y>
+      <x>1</x>
+      <y>2</y>
       <z>1</z>
     </subdomain-num>
     <domian-length>
@@ -38,13 +38,13 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>40</loops>
+    <loops>100</loops>
     <!-- timestep default: -1 for automatic detection -->
     <timestep>-1.0</timestep>
     <visualization>
       <VTK>1</VTK>
     </visualization>
-    <validate>1</validate>
+    <validate>0</validate>
   </simulation>
   <!-- configuration data related to computing device (e.g. GPU) -->
   <device>

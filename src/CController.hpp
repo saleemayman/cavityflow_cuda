@@ -40,7 +40,7 @@
 #include <list>
 #include <vector>
 // simulation type
-typedef float T;
+// typedef float T;
 //typedef double T;
 
 #define MPI_TAG_ALPHA_SYNC 0
@@ -55,9 +55,8 @@ template<typename T>
 class CController
 {
 	int _UID; ///< Unique ID of each controller
+	int _NProcs;
 	CDomain<T> _domain; ///< Domain data
-	// CVector<3, int> _subdomain_size; ///< Each subdomain have the same size which is specified with this class member.
-	// CVector<3, int> _subdomain_nums;
 
 	ILbmVisualization<T>* cLbmVisualization; ///< Visualization class
 	CLbmSolver<T> *cLbmPtr;
@@ -72,7 +71,8 @@ class CController
 	CCL::CDevice* cDevice;
 	CCL::CCommandQueue* cCommandQueue;
 
-	void outputDD(int dd_i) {
+	void outputDD(int dd_i)
+	{
 		std::cout << "DD " << dd_i << std::endl;
 		//					int gcd = CMath<int>::gcd(cLbmPtr->domain_cells[0],wrap_max_line);
 		//					if (wrap_max_line % gcd == 0)
@@ -85,7 +85,6 @@ class CController
 
 	int initLBMSolver()
 	{
-		// printf(" -> CController::initLBMSolver()");
 
 #if DEBUG
 		std::cout << "loading platforms" << std::endl;
@@ -93,36 +92,10 @@ class CController
 		cPlatforms = new CCL::CPlatforms();
 		cPlatforms->load();
 
-#if DEBUG
-		//	std::cout << "Platform " << (i) << ":" << std::endl;
-			std::cout << "        Name: " << cPlatform.name << std::endl;
-			std::cout << "     Profile: " << cPlatform.profile << std::endl;
-			std::cout << "     Version: " << cPlatform.version << std::endl;
-			std::cout << "      Vendor: " << cPlatform.vendor << std::endl;
-			std::cout << "  Extensions: " << cPlatform.extensions << std::endl;
-			std::cout << std::endl;
-#endif
-
-		// if (platform_id_nr == -1) {
-		// 	std::cout << "no usable platform found" << std::endl;
-		// 	return -1;
-		// }
-
-		// cPlatform = new CCL::CPlatform(
-		// 		cPlatforms->platform_ids[platform_id_nr]);
-
-/*		// load standard context for GPU devices
-#if DEBUG
-		std::cout << "loading gpu context" << std::endl;
-#endif
-
-		cContext = new CCL::CContext(*cPlatform, CL_DEVICE_TYPE_GPU);
-*/
 		// load devices belonging to cContext
 #if DEBUG
 		std::cout << "loading devices" << std::endl;
 #endif
-		//cDevices = new CCL::CDevices(*cContext);
 		cDevices = new CCL::CDevices();	// context is attached below
 
 		if (cDevices->size() == 0) {
@@ -138,7 +111,7 @@ class CController
 				std::cout << "          Name: " << cDeviceInfo.name << std::endl;
 				std::cout << "    Available?: " << cDeviceInfo.available << std::endl;
 				std::cout << "Driver Version: " << cDeviceInfo.driver_version << std::endl;
-				std::cout << "            CC: " << cDeviceInfo.execution_capabilities << std::endl;
+				std::cout << "            CC: " << cDeviceInfo.execution_capabilities_major << std::endl;
 				std::cout << std::endl;
 			}
 			return -1;
@@ -162,13 +135,6 @@ class CController
 		}
 		cDevice = &((*cDevices)[/* ConfigSingleton::Instance()->device_nrd*/dev_nr]);
 
-		// CCL::CDeviceInfo cDeviceInfo(*cDevice);
-		// cDeviceInfo.loadDeviceInfo(*cDevice);	///< get GPU specifications. CC needed for kernel compilation
-
-		// std::ostringstream sPrefix;
-  //      	sPrefix << "    [1] ";
-		// cDeviceInfo.printDeviceInfo(sPrefix.str());
-
 		// load standard context for GPU devices
 #if DEBUG
 		std::cout << "loading gpu context" << std::endl;
@@ -176,27 +142,11 @@ class CController
 
 		cContext = new CCL::CContext(*cDevice);
 
-		// load information about first device - e.g. max_work_group_size
-#if DEBUG
-		std::cout << "loading device information" << std::endl;
-		CCL::CDeviceInfo cDeviceInfo(*cDevice);
-
-		std::cout << "Device " << (ConfigSingleton::Instance()->device_nr) << ":" << std::endl;
-		std::cout << "        Name: " << cDeviceInfo.name << std::endl;
-		std::cout << "     Profile: " << cDeviceInfo.profile << std::endl;
-		std::cout << "     Version: " << cDeviceInfo.version << std::endl;
-		std::cout << "      Vendor: " << cDeviceInfo.vendor << std::endl;
-		std::cout << "  Extensions: " << cDeviceInfo.extensions << std::endl;
-		std::cout << std::endl;
-
-		std::cout << "creating command queue" << std::endl;
-#endif
 		// initialize queue
-		//cCommandQueue = new CCL::CCommandQueue(*cContext, *cDevice);
 		cCommandQueue = new CCL::CCommandQueue();
 
 		// INIT LATTICE BOLTZMANN!
-		cLbmPtr = new CLbmSolver<T>(_UID, *cCommandQueue, *cContext, *cDevice,
+		cLbmPtr = new CLbmSolver<T>(_UID, _NProcs, *cCommandQueue, *cContext, *cDevice,
 				_BC, _domain, 
 				ConfigSingleton::Instance()->gravitation, // gravitation vector
 				ConfigSingleton::Instance()->viscosity,
@@ -226,8 +176,9 @@ class CController
 
 public:
 
-	CController(int UID, CDomain<T> domain, int BC[3][2]) :
-			_UID(UID), _domain(domain), cLbmVisualization(NULL) {
+	CController(int UID, int num_procs, CDomain<T> domain, int BC[3][2]) :
+			_UID(UID), _NProcs(num_procs), _domain(domain), cLbmVisualization(NULL)
+	{
 		for (int i = 0; i < 3; i++)
 			for (int j = 0; j < 2; j++)
 				_BC[i][j] = BC[i][j];
@@ -236,7 +187,8 @@ public:
 		if (-1 == initLBMSolver())
 			throw "Initialization of LBM Solver failed!";
 	}
-	~CController() {
+	~CController()
+	{
 		if (cPlatforms)
 			delete cPlatform;
 
@@ -263,9 +215,8 @@ public:
 
 	void syncAlpha()
 	{
-		// printf(" -> CController::syncAlpha()");
 #if DEBUG
-		std::cout << "--> Sync alpha" << std::endl;
+		// std::cout << "--> Sync alpha" << std::endl;
 #endif
 		// TODO: OPTIMIZATION: communication of different neighbors can be done in Non-blocking way.
 		typename std::vector<CComm<T>*>::iterator it = _comm_container.begin();
@@ -276,7 +227,7 @@ public:
 			CVector<3, int> recv_origin = (*it)->getRecvOrigin();
 			int dst_rank = (*it)->getDstId();
 #if DEBUG
-			std::cout << "ALPHA RANK: " << dst_rank << std::endl;
+			// std::cout << "ALPHA RANK: " << dst_rank << std::endl;
 #endif
 
 			// send buffer
@@ -322,9 +273,8 @@ public:
 
 	void syncBeta()
 	{
-		// printf(" -> CController::syncBeta()");
 #if DEBUG
-		std::cout << "--> Sync beta" << std::endl;
+		// std::cout << "--> Sync beta" << std::endl;
 #endif
 
 		// TODO: OPTIMIZATION: communication of different neighbors can be done in Non-blocking form.
@@ -342,7 +292,7 @@ public:
 			CVector<3, int> normal = (*it)->getCommDirection();
 			int dst_rank = (*it)->getDstId();
 #if DEBUG
-			std::cout << "BETA RANK: " << dst_rank << std::endl;
+			// std::cout << "BETA RANK: " << dst_rank << std::endl;
 #endif
 			// send buffer
 			int send_buffer_size = send_size.elements() * cLbmPtr->SIZE_DD_HOST;
@@ -386,21 +336,21 @@ public:
 		}
 	}
 
-	void computeNextStep() {
-		// printf(" -> CController::computeNextStep()");
+	void computeNextStep()
+	{
 		cLbmPtr->simulationStep();
 		if (cLbmPtr->simulation_step_counter & 1)
 			syncBeta();
 		else
 			syncAlpha();
 	}
+
 	/*
 	 * This function starts the simulation for the particular subdomain corresponded to
 	 * this class.
 	 */
 	int run()
 	{
-		// printf(" -> CController::run()");
 		CVector<3, int> domain_size = _domain.getSize();
 		int loops = ConfigSingleton::Instance()->loops;
 		if (loops < 0)
@@ -497,7 +447,7 @@ public:
 		std::streamsize ss = std::cout.precision();
 		std::cout.precision(8);
 		std::cout.setf(std::ios::fixed, std::ios::floatfield);
-#if DEBUG
+#if 1
 		// The velocity checksum is only stored in debug mode!
 		vector_checksum = cLbmPtr->getVelocityChecksum();
 		std::cout << "Checksum: " << (vector_checksum*1000.0f) << std::endl;
@@ -528,7 +478,8 @@ public:
 		return EXIT_SUCCESS;
 	}
 
-	void addCommunication(CComm<T>* comm) {
+	void addCommunication(CComm<T>* comm)
+	{
 		_comm_container.push_back(comm);
 	}
 
@@ -538,25 +489,20 @@ public:
 	void setGeometry()
 	{
 #if DEBUG
-// #if 1
 		std::cout << "\nSetting Geometry for Domain " << _UID << std::endl;
 #endif
 		CVector<3, int> origin(1, _domain.getSize()[1] - 2, 1);
 		CVector<3, int> size(_domain.getSize()[0] - 2, 1,
 				_domain.getSize()[2] - 2);
 #if DEBUG
-// #if 1
 		std::cout << "\nCController.setGeometry() GEOMETRY: " << size << std::endl;
 		std::cout << "\nCController.setGeometry() origin: " << origin << std::endl;
 #endif
 		int * src = new int[size.elements()];
 
-		// printf("setGeometry-> src size= %i\n", size.elements());
-
 		for (int i = 0; i < size.elements(); i++)
 		{
 			src[i] = FLAG_VELOCITY_INJECTION;
-			// printf(" %i", src[i]);
 		}
 		printf("\n");
 		cLbmPtr->setFlags(src, origin, size);
@@ -568,7 +514,8 @@ public:
 		return cLbmPtr;
 	}
 
-	void setSolver(CLbmSolver<T>* lbmPtr) {
+	void setSolver(CLbmSolver<T>* lbmPtr)
+	{
 		cLbmPtr = lbmPtr;
 	}
 

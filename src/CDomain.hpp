@@ -4,9 +4,10 @@
 #include <stdlib.h>
 #include <iostream>
 #include "libmath/CVector.hpp"
+#include "common_cpu_gpu.h"
 
 // simulation type
-typedef float T;
+// typedef float T;
 //typedef double T;
 
 /*

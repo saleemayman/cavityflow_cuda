@@ -26,13 +26,12 @@
  * thus, each velocity components can be accessed linearly
  *
  */
-
 #include "lbm_defaults.h"
 
 #define USE_SWIZZLING	0
 
-#define DOMAIN_CELLS		(DOMAIN_CELLS_X*DOMAIN_CELLS_Y*DOMAIN_CELLS_Z)
-#define DOMAIN_SLICE_CELLS	(DOMAIN_CELLS_X*DOMAIN_CELLS_Y)
+// #define DOMAIN_CELLS		(DOMAIN_CELLS_X*DOMAIN_CELLS_Y*DOMAIN_CELLS_Z)
+// #define DOMAIN_SLICE_CELLS	(DOMAIN_CELLS_X*DOMAIN_CELLS_Y)
 
 /**
  * Next we define the delta values for the neighbor cells.
@@ -41,17 +40,17 @@
  * neighbor, but use a additive components of (DOMAIN_CELLS-1). Otherwise we would run
  * into more computations due to the modulo computations of negative numbers.
  */
-#define DELTA_POS_X		(1)
-#define DELTA_NEG_X		(DOMAIN_CELLS-1)
+// #define DELTA_POS_X		(1)
+// #define DELTA_NEG_X		(DOMAIN_CELLS-1)
 
-#define DELTA_POS_Y		(DOMAIN_CELLS_X)
-#define DELTA_NEG_Y		(DOMAIN_CELLS-DOMAIN_CELLS_X)
+// #define DELTA_POS_Y		(DOMAIN_CELLS_X)
+// #define DELTA_NEG_Y		(DOMAIN_CELLS-DOMAIN_CELLS_X)
 
-#define DELTA_POS_Z		(DOMAIN_SLICE_CELLS)
-#define DELTA_NEG_Z		(DOMAIN_CELLS-DOMAIN_SLICE_CELLS)
+// #define DELTA_POS_Z		(DOMAIN_SLICE_CELLS)
+// #define DELTA_NEG_Z		(DOMAIN_CELLS-DOMAIN_SLICE_CELLS)
 
 //#include "src/cu_programs/wrap.h"
- #include "wrap.h"
+ // #include "wrap.h"
 
 /**
  * equilibrium distributions f_eq for incompressible fluids

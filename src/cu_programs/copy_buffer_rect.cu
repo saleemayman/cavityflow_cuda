@@ -1,5 +1,6 @@
 #include "lbm_defaults.h"
 
+
 /**
  * COPY KERNEL
  *
@@ -65,31 +66,3 @@ extern "C" __global__ void copy_buffer_rect(
 	}
 
 }
-/*
-
-const size_t idx_x = threadIdx.x + blockDim.x * blockIdx.x;
-const size_t idx_y = threadIdx.y + blockDim.y * blockIdx.y;
-const size_t idx_z = threadIdx.z + blockDim.z * blockIdx.z;
-
-const size_t idx_xy = idx_y * (blockDim.x * gridDim.x) + idx_x;
-
-src_offset: 0
-src_origin_x[0]: 0
-src_origin_y[1]: 0
-src_origin_z[2]: 0
-src_size_x[0]: 14
-src_size_y[1]: 1
-src_size_z[2]: 2
-dst_offset: 0
-dst_origin_x[0]: 1
-dst_origin_y[1]: 14
-dst_origin_z[2]: 1
-dst_size_x[0]: 16
-dst_size_y[1]: 16
-dst_size_z[2]: 4
-block_size[0]: 14
-lGlobalSize[0]: 1
-lGlobalSize[1]: 2
-threadsPerBlock: [16, 16, 1] 
-numBlocks: [3, 3, 1] 
-*/

@@ -7,6 +7,18 @@
 
 #include "lbm_header.h"
 
+
+__device__ inline size_t DOMAIN_WRAP(size_t A, const size_t DOMAIN_CELLS, const bool isPowTwo)
+{
+    return ( isPowTwo * (A & (DOMAIN_CELLS-1)) + (!isPowTwo) * (A % DOMAIN_CELLS) );
+}
+
+__device__ inline size_t LOCAL_WORK_GROUP_WRAP(size_t A, const size_t LOCAL_WORK_GROUP_SIZE, const bool isPowTwo)
+{
+    return ( isPowTwo * (A & (LOCAL_WORK_GROUP_SIZE-1)) + (!isPowTwo) * (A % LOCAL_WORK_GROUP_SIZE) );
+}
+
+
 /**
  * COLLISION AND PROPAGATION KERNEL - BETA type
  */
@@ -19,11 +31,28 @@ extern "C" __global__ void lbm_kernel_beta(
             const T gravitation_x,
             const T gravitation_y,
             const T gravitation_z,
-            const T drivenCavityVelocity            // velocity parameters for modification of density distributions
+            const T drivenCavityVelocity,            // velocity parameters for modification of density distributions
+            const int domainCells_x,
+            const int domainCells_y,
+            const int domainCells_z,
+            const int localWorkGroup,
+            const bool isDomainPowOfTwo,
+            const bool isLocalPowOfTwo
         )
 {
     //const size_t gid = get_global_id(0);
     // const size_t gid = threadIdx.x + blockDim.x * blockIdx.x;
+    const int LOCAL_WORK_GROUP_SIZE = localWorkGroup;
+    const int DOMAIN_CELLS = domainCells_x * domainCells_y * domainCells_z;
+    const int DOMAIN_SLICE_CELLS = domainCells_x * domainCells_y;
+
+    const int DELTA_POS_X = 1;
+    const int DELTA_NEG_X = DOMAIN_CELLS - 1;
+    const int DELTA_POS_Y = domainCells_x;
+    const int DELTA_NEG_Y = DOMAIN_CELLS - domainCells_x;
+    const int DELTA_POS_Z = DOMAIN_SLICE_CELLS;
+    const int DELTA_NEG_Z = DOMAIN_CELLS - DOMAIN_SLICE_CELLS;
+
     const size_t idx_x = threadIdx.x + blockDim.x * blockIdx.x;
     const size_t idx_y = threadIdx.y + blockDim.y * blockIdx.y;
     const size_t idx_z = threadIdx.z + blockDim.z * blockIdx.z;
@@ -31,7 +60,7 @@ extern "C" __global__ void lbm_kernel_beta(
     const size_t idx_xy = idx_y * (blockDim.x * gridDim.x) + idx_x;
     const size_t gid = idx_z * (blockDim.x * gridDim.x + blockDim.y * gridDim.y) + idx_xy;
 
-    if (gid >= GLOBAL_WORK_GROUP_SIZE)
+    if (gid >= DOMAIN_CELLS)
         return;
 
     // load cell type flag
@@ -58,8 +87,10 @@ extern "C" __global__ void lbm_kernel_beta(
     /*
      * dd 0-3: f(1,0,0), f(-1,0,0),  f(0,1,0),  f(0,-1,0)
      */
-    dd1 = current_dds[DOMAIN_WRAP(gid + DELTA_POS_X)];  current_dds += DOMAIN_CELLS;
-    dd0 = current_dds[DOMAIN_WRAP(gid + DELTA_NEG_X)];  current_dds += DOMAIN_CELLS;
+    dd1 = current_dds[DOMAIN_WRAP(gid + DELTA_POS_X, DOMAIN_CELLS, isDomainPowOfTwo)];  
+    current_dds += DOMAIN_CELLS;
+    dd0 = current_dds[DOMAIN_WRAP(gid + DELTA_NEG_X, DOMAIN_CELLS, isDomainPowOfTwo)];  
+    current_dds += DOMAIN_CELLS;
 
     rho = dd0;
     velocity_x = dd0;
@@ -71,8 +102,10 @@ extern "C" __global__ void lbm_kernel_beta(
     rho += dd1;
     velocity_x -= dd1;
 
-    dd3 = current_dds[DOMAIN_WRAP(gid + DELTA_POS_Y)];      current_dds += DOMAIN_CELLS;
-    dd2 = current_dds[DOMAIN_WRAP(gid + DELTA_NEG_Y)];      current_dds += DOMAIN_CELLS;
+    dd3 = current_dds[DOMAIN_WRAP(gid + DELTA_POS_Y, DOMAIN_CELLS, isDomainPowOfTwo)];      
+    current_dds += DOMAIN_CELLS;
+    dd2 = current_dds[DOMAIN_WRAP(gid + DELTA_NEG_Y, DOMAIN_CELLS, isDomainPowOfTwo)];      
+    current_dds += DOMAIN_CELLS;
 
     rho += dd2;
     velocity_y = dd2;
@@ -83,8 +116,10 @@ extern "C" __global__ void lbm_kernel_beta(
     /*
      * dd 4-7: f(1,1,0), f(-1,-1,0), f(1,-1,0), f(-1,1,0)
      */
-    dd5 = current_dds[DOMAIN_WRAP(gid + (DELTA_POS_X + DELTA_POS_Y))];      current_dds += DOMAIN_CELLS;
-    dd4 = current_dds[DOMAIN_WRAP(gid + (DELTA_NEG_X + DELTA_NEG_Y))];      current_dds += DOMAIN_CELLS;
+    dd5 = current_dds[DOMAIN_WRAP(gid + (DELTA_POS_X + DELTA_POS_Y), DOMAIN_CELLS, isDomainPowOfTwo)];
+    current_dds += DOMAIN_CELLS;
+    dd4 = current_dds[DOMAIN_WRAP(gid + (DELTA_NEG_X + DELTA_NEG_Y), DOMAIN_CELLS, isDomainPowOfTwo)];      
+    current_dds += DOMAIN_CELLS;
 
     rho += dd4;
     velocity_x += dd4;
@@ -94,8 +129,10 @@ extern "C" __global__ void lbm_kernel_beta(
     velocity_x -= dd5;
     velocity_y -= dd5;
 
-    dd7 = current_dds[DOMAIN_WRAP(gid + (DELTA_POS_X + DELTA_NEG_Y))];      current_dds += DOMAIN_CELLS;
-    dd6 = current_dds[DOMAIN_WRAP(gid + (DELTA_NEG_X + DELTA_POS_Y))];      current_dds += DOMAIN_CELLS;
+    dd7 = current_dds[DOMAIN_WRAP(gid + (DELTA_POS_X + DELTA_NEG_Y), DOMAIN_CELLS, isDomainPowOfTwo)];      
+    current_dds += DOMAIN_CELLS;
+    dd6 = current_dds[DOMAIN_WRAP(gid + (DELTA_NEG_X + DELTA_POS_Y), DOMAIN_CELLS, isDomainPowOfTwo)];
+    current_dds += DOMAIN_CELLS;
 
 
     rho += dd6;
@@ -109,8 +146,10 @@ extern "C" __global__ void lbm_kernel_beta(
     /*
      * dd 8-11: f(1,0,1), f(-1,0,-1), f(1,0,-1), f(-1,0,1)
      */
-    dd9 = current_dds[DOMAIN_WRAP(gid + (DELTA_POS_X + DELTA_POS_Z))];      current_dds += DOMAIN_CELLS;
-    dd8 = current_dds[DOMAIN_WRAP(gid + (DELTA_NEG_X + DELTA_NEG_Z))];      current_dds += DOMAIN_CELLS;
+    dd9 = current_dds[DOMAIN_WRAP(gid + (DELTA_POS_X + DELTA_POS_Z), DOMAIN_CELLS, isDomainPowOfTwo)];
+    current_dds += DOMAIN_CELLS;
+    dd8 = current_dds[DOMAIN_WRAP(gid + (DELTA_NEG_X + DELTA_NEG_Z), DOMAIN_CELLS, isDomainPowOfTwo)];
+    current_dds += DOMAIN_CELLS;
 
     rho += dd8;
     velocity_x += dd8;
@@ -120,8 +159,10 @@ extern "C" __global__ void lbm_kernel_beta(
     velocity_x -= dd9;
     velocity_z -= dd9;
 
-    dd11 = current_dds[DOMAIN_WRAP(gid + (DELTA_POS_X + DELTA_NEG_Z))];     current_dds += DOMAIN_CELLS;
-    dd10 = current_dds[DOMAIN_WRAP(gid + (DELTA_NEG_X + DELTA_POS_Z))];     current_dds += DOMAIN_CELLS;
+    dd11 = current_dds[DOMAIN_WRAP(gid + (DELTA_POS_X + DELTA_NEG_Z), DOMAIN_CELLS, isDomainPowOfTwo)];
+    current_dds += DOMAIN_CELLS;
+    dd10 = current_dds[DOMAIN_WRAP(gid + (DELTA_NEG_X + DELTA_POS_Z), DOMAIN_CELLS, isDomainPowOfTwo)];
+    current_dds += DOMAIN_CELLS;
 
     rho += dd10;
     velocity_x += dd10;
@@ -134,8 +175,10 @@ extern "C" __global__ void lbm_kernel_beta(
     /*
      * dd 12-15: f(0,1,1), f(0,-1,-1), f(0,1,-1), f(0,-1,1)
      */
-    dd13 = current_dds[DOMAIN_WRAP(gid + (DELTA_POS_Y + DELTA_POS_Z))]; current_dds += DOMAIN_CELLS;
-    dd12 = current_dds[DOMAIN_WRAP(gid + (DELTA_NEG_Y + DELTA_NEG_Z))]; current_dds += DOMAIN_CELLS;
+    dd13 = current_dds[DOMAIN_WRAP(gid + (DELTA_POS_Y + DELTA_POS_Z), DOMAIN_CELLS, isDomainPowOfTwo)];
+    current_dds += DOMAIN_CELLS;
+    dd12 = current_dds[DOMAIN_WRAP(gid + (DELTA_NEG_Y + DELTA_NEG_Z), DOMAIN_CELLS, isDomainPowOfTwo)];
+    current_dds += DOMAIN_CELLS;
 
     rho += dd12;
     velocity_y += dd12;
@@ -145,8 +188,10 @@ extern "C" __global__ void lbm_kernel_beta(
     velocity_y -= dd13;
     velocity_z -= dd13;
 
-    dd15 = current_dds[DOMAIN_WRAP(gid + (DELTA_POS_Y + DELTA_NEG_Z))]; current_dds += DOMAIN_CELLS;
-    dd14 = current_dds[DOMAIN_WRAP(gid + (DELTA_NEG_Y + DELTA_POS_Z))]; current_dds += DOMAIN_CELLS;
+    dd15 = current_dds[DOMAIN_WRAP(gid + (DELTA_POS_Y + DELTA_NEG_Z), DOMAIN_CELLS, isDomainPowOfTwo)];
+    current_dds += DOMAIN_CELLS;
+    dd14 = current_dds[DOMAIN_WRAP(gid + (DELTA_NEG_Y + DELTA_POS_Z), DOMAIN_CELLS, isDomainPowOfTwo)];
+    current_dds += DOMAIN_CELLS;
 
     rho += dd14;
     velocity_y += dd14;
@@ -159,8 +204,10 @@ extern "C" __global__ void lbm_kernel_beta(
     /*
      * dd 16-18: f(0,0,1), f(0,0,-1),  f(0,0,0),  (not used)
      */
-    dd17 = current_dds[DOMAIN_WRAP(gid + DELTA_POS_Z)];     current_dds += DOMAIN_CELLS;
-    dd16 = current_dds[DOMAIN_WRAP(gid + DELTA_NEG_Z)];     current_dds += DOMAIN_CELLS;
+    dd17 = current_dds[DOMAIN_WRAP(gid + DELTA_POS_Z, DOMAIN_CELLS, isDomainPowOfTwo)];
+    current_dds += DOMAIN_CELLS;
+    dd16 = current_dds[DOMAIN_WRAP(gid + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo)];
+    current_dds += DOMAIN_CELLS;
 
     rho += dd16;
     velocity_z += dd16;
@@ -226,8 +273,8 @@ extern "C" __global__ void lbm_kernel_beta(
      * gid_pos:     0 1 2 3 4 5 ... -1   <<< !!!
      */
 
-    int pos_x_wrap = LOCAL_WORK_GROUP_WRAP(lid + 1);
-    int neg_x_wrap = LOCAL_WORK_GROUP_WRAP(lid + (LOCAL_WORK_GROUP_SIZE - 1));
+    int pos_x_wrap = LOCAL_WORK_GROUP_WRAP(lid + 1, LOCAL_WORK_GROUP_SIZE, isLocalPowOfTwo);
+    int neg_x_wrap = LOCAL_WORK_GROUP_WRAP(lid + (LOCAL_WORK_GROUP_SIZE - 1), LOCAL_WORK_GROUP_SIZE, isLocalPowOfTwo);
 
 #if (LOCAL_WORK_GROUP_SIZE/DOMAIN_CELLS_X)*DOMAIN_CELLS_X == LOCAL_WORK_GROUP_SIZE
     /*
@@ -240,8 +287,8 @@ extern "C" __global__ void lbm_kernel_beta(
     /*
      * cache variables for speedup
      */
-    int read_delta_neg_x = DOMAIN_WRAP(gid - lid + pos_x_wrap + DELTA_NEG_X);
-    int read_delta_pos_x = DOMAIN_WRAP(gid - lid + neg_x_wrap + DELTA_POS_X);
+    int read_delta_neg_x = DOMAIN_WRAP(gid - lid + pos_x_wrap + DELTA_NEG_X, DOMAIN_CELLS, isDomainPowOfTwo);
+    int read_delta_pos_x = DOMAIN_WRAP(gid - lid + neg_x_wrap + DELTA_POS_X, DOMAIN_CELLS, isDomainPowOfTwo);
 #endif
 
     /*
@@ -275,18 +322,18 @@ extern "C" __global__ void lbm_kernel_beta(
     *dd_buf_lid = current_dds[dd_read_delta_position_1];        current_dds += DOMAIN_CELLS;    dd_buf_lid -= LOCAL_WORK_GROUP_SIZE;
     *dd_buf_lid = current_dds[dd_read_delta_position_0];        current_dds += DOMAIN_CELLS;    dd_buf_lid += 5*LOCAL_WORK_GROUP_SIZE;
 #if CACHED_ACCESS
-    dd_read_delta_position_3 = DOMAIN_WRAP(gid + DELTA_POS_Y);
+    dd_read_delta_position_3 = DOMAIN_WRAP(gid + DELTA_POS_Y, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
-    #define dd_read_delta_position_3    DOMAIN_WRAP(gid + DELTA_POS_Y)
+    #define dd_read_delta_position_3    DOMAIN_WRAP(gid + DELTA_POS_Y, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
     dd3 = current_dds[dd_read_delta_position_3];        current_dds += DOMAIN_CELLS;
     rho = dd3;
     velocity_y = -dd3;
 
 #if CACHED_ACCESS
-    dd_read_delta_position_2 = DOMAIN_WRAP(gid + DELTA_NEG_Y);
+    dd_read_delta_position_2 = DOMAIN_WRAP(gid + DELTA_NEG_Y, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
-    #define dd_read_delta_position_2    DOMAIN_WRAP(gid + DELTA_NEG_Y)
+    #define dd_read_delta_position_2    DOMAIN_WRAP(gid + DELTA_NEG_Y, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
     dd2 = current_dds[dd_read_delta_position_2];        current_dds += DOMAIN_CELLS;
     rho += dd2;
@@ -312,30 +359,30 @@ extern "C" __global__ void lbm_kernel_beta(
      * dd1: f(1,1,0), f(-1,-1,0), f(1,-1,0), f(-1,1,0)
      */
 #if CACHED_ACCESS
-    dd_read_delta_position_5 = DOMAIN_WRAP(read_delta_pos_x + DELTA_POS_Y);
+    dd_read_delta_position_5 = DOMAIN_WRAP(read_delta_pos_x + DELTA_POS_Y, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
-    #define dd_read_delta_position_5    DOMAIN_WRAP(read_delta_pos_x + DELTA_POS_Y)
+    #define dd_read_delta_position_5    DOMAIN_WRAP(read_delta_pos_x + DELTA_POS_Y, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
     *dd_buf_lid = current_dds[dd_read_delta_position_5];    current_dds += DOMAIN_CELLS;    dd_buf_lid -= LOCAL_WORK_GROUP_SIZE;
 
 #if CACHED_ACCESS
-    dd_read_delta_position_4 = DOMAIN_WRAP(read_delta_neg_x + DELTA_NEG_Y);
+    dd_read_delta_position_4 = DOMAIN_WRAP(read_delta_neg_x + DELTA_NEG_Y, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
-    #define dd_read_delta_position_4    DOMAIN_WRAP(read_delta_neg_x + DELTA_NEG_Y)
+    #define dd_read_delta_position_4    DOMAIN_WRAP(read_delta_neg_x + DELTA_NEG_Y, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
     *dd_buf_lid = current_dds[dd_read_delta_position_4];    current_dds += DOMAIN_CELLS;    dd_buf_lid += 3*LOCAL_WORK_GROUP_SIZE;
 
 #if CACHED_ACCESS
-    dd_read_delta_position_7 = DOMAIN_WRAP(read_delta_pos_x + DELTA_NEG_Y);
+    dd_read_delta_position_7 = DOMAIN_WRAP(read_delta_pos_x + DELTA_NEG_Y, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
-    #define dd_read_delta_position_7    DOMAIN_WRAP(read_delta_pos_x + DELTA_NEG_Y)
+    #define dd_read_delta_position_7    DOMAIN_WRAP(read_delta_pos_x + DELTA_NEG_Y, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
     *dd_buf_lid = current_dds[dd_read_delta_position_7];    current_dds += DOMAIN_CELLS;    dd_buf_lid -= LOCAL_WORK_GROUP_SIZE;
 
 #if CACHED_ACCESS
-    dd_read_delta_position_6 = DOMAIN_WRAP(read_delta_neg_x + DELTA_POS_Y);
+    dd_read_delta_position_6 = DOMAIN_WRAP(read_delta_neg_x + DELTA_POS_Y, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
-    #define dd_read_delta_position_6    DOMAIN_WRAP(read_delta_neg_x + DELTA_POS_Y)
+    #define dd_read_delta_position_6    DOMAIN_WRAP(read_delta_neg_x + DELTA_POS_Y, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
     *dd_buf_lid = current_dds[dd_read_delta_position_6];    current_dds += DOMAIN_CELLS;    dd_buf_lid += 3*LOCAL_WORK_GROUP_SIZE;
 
@@ -372,30 +419,30 @@ extern "C" __global__ void lbm_kernel_beta(
      */
 
 #if CACHED_ACCESS
-    dd_read_delta_position_9 = DOMAIN_WRAP(read_delta_pos_x + DELTA_POS_Z);
+    dd_read_delta_position_9 = DOMAIN_WRAP(read_delta_pos_x + DELTA_POS_Z, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
-    #define dd_read_delta_position_9    DOMAIN_WRAP(read_delta_pos_x + DELTA_POS_Z)
+    #define dd_read_delta_position_9    DOMAIN_WRAP(read_delta_pos_x + DELTA_POS_Z, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
     *dd_buf_lid = current_dds[dd_read_delta_position_9];    current_dds += DOMAIN_CELLS;    dd_buf_lid -= LOCAL_WORK_GROUP_SIZE;
 
 #if CACHED_ACCESS
-    dd_read_delta_position_8 = DOMAIN_WRAP(read_delta_neg_x + DELTA_NEG_Z);
+    dd_read_delta_position_8 = DOMAIN_WRAP(read_delta_neg_x + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
-    #define dd_read_delta_position_8    DOMAIN_WRAP(read_delta_neg_x + DELTA_NEG_Z)
+    #define dd_read_delta_position_8    DOMAIN_WRAP(read_delta_neg_x + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
     *dd_buf_lid = current_dds[dd_read_delta_position_8];    current_dds += DOMAIN_CELLS;    dd_buf_lid += 3*LOCAL_WORK_GROUP_SIZE;
 
 #if CACHED_ACCESS
-    dd_read_delta_position_11 = DOMAIN_WRAP(read_delta_pos_x + DELTA_NEG_Z);
+    dd_read_delta_position_11 = DOMAIN_WRAP(read_delta_pos_x + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
-    #define dd_read_delta_position_11   DOMAIN_WRAP(read_delta_pos_x + DELTA_NEG_Z)
+    #define dd_read_delta_position_11   DOMAIN_WRAP(read_delta_pos_x + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
     *dd_buf_lid = current_dds[dd_read_delta_position_11];   current_dds += DOMAIN_CELLS;    dd_buf_lid -= LOCAL_WORK_GROUP_SIZE;
 
 #if CACHED_ACCESS
-    dd_read_delta_position_10 = DOMAIN_WRAP(read_delta_neg_x + DELTA_POS_Z);
+    dd_read_delta_position_10 = DOMAIN_WRAP(read_delta_neg_x + DELTA_POS_Z, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
-    #define dd_read_delta_position_10   DOMAIN_WRAP(read_delta_neg_x + DELTA_POS_Z)
+    #define dd_read_delta_position_10   DOMAIN_WRAP(read_delta_neg_x + DELTA_POS_Z, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
     *dd_buf_lid = current_dds[dd_read_delta_position_10];   current_dds += DOMAIN_CELLS;
 
@@ -433,9 +480,9 @@ extern "C" __global__ void lbm_kernel_beta(
      */
 
 #if CACHED_ACCESS
-    dd_read_delta_position_13 = DOMAIN_WRAP(gid + DELTA_POS_Y + DELTA_POS_Z);
+    dd_read_delta_position_13 = DOMAIN_WRAP(gid + DELTA_POS_Y + DELTA_POS_Z, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
-    #define dd_read_delta_position_13   DOMAIN_WRAP(gid + DELTA_POS_Y + DELTA_POS_Z)
+    #define dd_read_delta_position_13   DOMAIN_WRAP(gid + DELTA_POS_Y + DELTA_POS_Z, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
     dd13 = current_dds[dd_read_delta_position_13];  current_dds += DOMAIN_CELLS;
     rho += dd13;
@@ -443,9 +490,9 @@ extern "C" __global__ void lbm_kernel_beta(
     velocity_z -= dd13;
 
 #if CACHED_ACCESS
-    dd_read_delta_position_12 = DOMAIN_WRAP(gid + DELTA_NEG_Y + DELTA_NEG_Z);
+    dd_read_delta_position_12 = DOMAIN_WRAP(gid + DELTA_NEG_Y + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
-    #define dd_read_delta_position_12   DOMAIN_WRAP(gid + DELTA_NEG_Y + DELTA_NEG_Z)
+    #define dd_read_delta_position_12   DOMAIN_WRAP(gid + DELTA_NEG_Y + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
     dd12 = current_dds[dd_read_delta_position_12];  current_dds += DOMAIN_CELLS;
     rho += dd12;
@@ -453,9 +500,9 @@ extern "C" __global__ void lbm_kernel_beta(
     velocity_z += dd12;
 
 #if CACHED_ACCESS
-    dd_read_delta_position_15 = DOMAIN_WRAP(gid + DELTA_POS_Y + DELTA_NEG_Z);
+    dd_read_delta_position_15 = DOMAIN_WRAP(gid + DELTA_POS_Y + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
-    #define dd_read_delta_position_15   DOMAIN_WRAP(gid + DELTA_POS_Y + DELTA_NEG_Z)
+    #define dd_read_delta_position_15   DOMAIN_WRAP(gid + DELTA_POS_Y + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
     dd15 = current_dds[dd_read_delta_position_15];  current_dds += DOMAIN_CELLS;
     rho += dd15;
@@ -463,9 +510,9 @@ extern "C" __global__ void lbm_kernel_beta(
     velocity_z += dd15;
 
 #if CACHED_ACCESS
-    dd_read_delta_position_14 = DOMAIN_WRAP(gid + DELTA_NEG_Y + DELTA_POS_Z);
+    dd_read_delta_position_14 = DOMAIN_WRAP(gid + DELTA_NEG_Y + DELTA_POS_Z, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
-    #define dd_read_delta_position_14   DOMAIN_WRAP(gid + DELTA_NEG_Y + DELTA_POS_Z)
+    #define dd_read_delta_position_14   DOMAIN_WRAP(gid + DELTA_NEG_Y + DELTA_POS_Z, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
     dd14 = current_dds[dd_read_delta_position_14];  current_dds += DOMAIN_CELLS;
     rho += dd14;
@@ -481,18 +528,18 @@ extern "C" __global__ void lbm_kernel_beta(
      * dd4: f(0,0,1), f(0,0,-1),  f(0,0,0),  (not used)
      */
 #if CACHED_ACCESS
-    dd_read_delta_position_17 = DOMAIN_WRAP(gid + DELTA_POS_Z);
+    dd_read_delta_position_17 = DOMAIN_WRAP(gid + DELTA_POS_Z, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
-    #define dd_read_delta_position_17   DOMAIN_WRAP(gid + DELTA_POS_Z)
+    #define dd_read_delta_position_17   DOMAIN_WRAP(gid + DELTA_POS_Z, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
     dd17 = current_dds[dd_read_delta_position_17];  current_dds += DOMAIN_CELLS;
     rho += dd17;
     velocity_z -= dd17;
 
 #if CACHED_ACCESS
-    dd_read_delta_position_16 = DOMAIN_WRAP(gid + DELTA_NEG_Z);
+    dd_read_delta_position_16 = DOMAIN_WRAP(gid + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
-    #define dd_read_delta_position_16   DOMAIN_WRAP(gid + DELTA_NEG_Z)
+    #define dd_read_delta_position_16   DOMAIN_WRAP(gid + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
     dd16 = current_dds[dd_read_delta_position_16];  current_dds += DOMAIN_CELLS;
     rho += dd16;
@@ -579,8 +626,7 @@ extern "C" __global__ void lbm_kernel_beta(
 
         case FLAG_OBSTACLE: // in case of an obstacle, we bounce back the values
             // set to zero velocity and no fluid density
-// #if STORE_VELOCITY
-#if 1
+#if STORE_VELOCITY
             velocity_x = 0.0f;
             velocity_y = 0.0f;
             velocity_z = 0.0f;
@@ -779,40 +825,57 @@ extern "C" __global__ void lbm_kernel_beta(
 #else
 
     /* f(1,0,0), f(-1,0,0),  f(0,1,0),  f(0,-1,0) */
-    current_dds[DOMAIN_WRAP(gid + DELTA_POS_X)] = dd0;  current_dds += DOMAIN_CELLS;
-    current_dds[DOMAIN_WRAP(gid + DELTA_NEG_X)] = dd1;  current_dds += DOMAIN_CELLS;
-    current_dds[DOMAIN_WRAP(gid + DELTA_POS_Y)] = dd2;  current_dds += DOMAIN_CELLS;
-    current_dds[DOMAIN_WRAP(gid + DELTA_NEG_Y)] = dd3;  current_dds += DOMAIN_CELLS;
+    current_dds[DOMAIN_WRAP(gid + DELTA_POS_X, DOMAIN_CELLS, isDomainPowOfTwo)] = dd0;
+    current_dds += DOMAIN_CELLS;
+    current_dds[DOMAIN_WRAP(gid + DELTA_NEG_X, DOMAIN_CELLS, isDomainPowOfTwo)] = dd1;
+    current_dds += DOMAIN_CELLS;
+    current_dds[DOMAIN_WRAP(gid + DELTA_POS_Y, DOMAIN_CELLS, isDomainPowOfTwo)] = dd2;
+    current_dds += DOMAIN_CELLS;
+    current_dds[DOMAIN_WRAP(gid + DELTA_NEG_Y, DOMAIN_CELLS, isDomainPowOfTwo)] = dd3;
+    current_dds += DOMAIN_CELLS;
 
     /* f(1,1,0), f(-1,-1,0), f(1,-1,0), f(-1,1,0) */
-    current_dds[DOMAIN_WRAP(gid + DELTA_POS_X + DELTA_POS_Y)] = dd4;    current_dds += DOMAIN_CELLS;
-    current_dds[DOMAIN_WRAP(gid + DELTA_NEG_X + DELTA_NEG_Y)] = dd5;    current_dds += DOMAIN_CELLS;
-    current_dds[DOMAIN_WRAP(gid + DELTA_POS_X + DELTA_NEG_Y)] = dd6;    current_dds += DOMAIN_CELLS;
-    current_dds[DOMAIN_WRAP(gid + DELTA_NEG_X + DELTA_POS_Y)] = dd7;    current_dds += DOMAIN_CELLS;
+    current_dds[DOMAIN_WRAP(gid + DELTA_POS_X + DELTA_POS_Y, DOMAIN_CELLS, isDomainPowOfTwo)] = dd4;
+    current_dds += DOMAIN_CELLS;
+    current_dds[DOMAIN_WRAP(gid + DELTA_NEG_X + DELTA_NEG_Y, DOMAIN_CELLS, isDomainPowOfTwo)] = dd5;
+    current_dds += DOMAIN_CELLS;
+    current_dds[DOMAIN_WRAP(gid + DELTA_POS_X + DELTA_NEG_Y, DOMAIN_CELLS, isDomainPowOfTwo)] = dd6;
+    current_dds += DOMAIN_CELLS;
+    current_dds[DOMAIN_WRAP(gid + DELTA_NEG_X + DELTA_POS_Y, DOMAIN_CELLS, isDomainPowOfTwo)] = dd7;
+    current_dds += DOMAIN_CELLS;
 
     /* f(1,0,1), f(-1,0,-1), f(1,0,-1), f(-1,0,1) */
-    current_dds[DOMAIN_WRAP(gid + DELTA_POS_X + DELTA_POS_Z)] = dd8;    current_dds += DOMAIN_CELLS;
-    current_dds[DOMAIN_WRAP(gid + DELTA_NEG_X + DELTA_NEG_Z)] = dd9;    current_dds += DOMAIN_CELLS;
-    current_dds[DOMAIN_WRAP(gid + DELTA_POS_X + DELTA_NEG_Z)] = dd10;   current_dds += DOMAIN_CELLS;
-    current_dds[DOMAIN_WRAP(gid + DELTA_NEG_X + DELTA_POS_Z)] = dd11;   current_dds += DOMAIN_CELLS;
+    current_dds[DOMAIN_WRAP(gid + DELTA_POS_X + DELTA_POS_Z, DOMAIN_CELLS, isDomainPowOfTwo)] = dd8;
+    current_dds += DOMAIN_CELLS;
+    current_dds[DOMAIN_WRAP(gid + DELTA_NEG_X + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo)] = dd9;
+    current_dds += DOMAIN_CELLS;
+    current_dds[DOMAIN_WRAP(gid + DELTA_POS_X + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo)] = dd10;
+    current_dds += DOMAIN_CELLS;
+    current_dds[DOMAIN_WRAP(gid + DELTA_NEG_X + DELTA_POS_Z, DOMAIN_CELLS, isDomainPowOfTwo)] = dd11;
+    current_dds += DOMAIN_CELLS;
 
     /* f(0,1,1), f(0,-1,-1), f(0,1,-1), f(0,-1,1) */
-    current_dds[DOMAIN_WRAP(gid + DELTA_POS_Y + DELTA_POS_Z)] = dd12;   current_dds += DOMAIN_CELLS;
-    current_dds[DOMAIN_WRAP(gid + DELTA_NEG_Y + DELTA_NEG_Z)] = dd13;   current_dds += DOMAIN_CELLS;
-    current_dds[DOMAIN_WRAP(gid + DELTA_POS_Y + DELTA_NEG_Z)] = dd14;   current_dds += DOMAIN_CELLS;
-    current_dds[DOMAIN_WRAP(gid + DELTA_NEG_Y + DELTA_POS_Z)] = dd15;   current_dds += DOMAIN_CELLS;
+    current_dds[DOMAIN_WRAP(gid + DELTA_POS_Y + DELTA_POS_Z, DOMAIN_CELLS, isDomainPowOfTwo)] = dd12;
+    current_dds += DOMAIN_CELLS;
+    current_dds[DOMAIN_WRAP(gid + DELTA_NEG_Y + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo)] = dd13;
+    current_dds += DOMAIN_CELLS;
+    current_dds[DOMAIN_WRAP(gid + DELTA_POS_Y + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo)] = dd14;
+    current_dds += DOMAIN_CELLS;
+    current_dds[DOMAIN_WRAP(gid + DELTA_NEG_Y + DELTA_POS_Z, DOMAIN_CELLS, isDomainPowOfTwo)] = dd15;
+    current_dds += DOMAIN_CELLS;
 
     /* f(0,0,1), f(0,0,-1),  f(0,0,0) */
-    current_dds[DOMAIN_WRAP(gid + DELTA_POS_Z)] = dd16; current_dds += DOMAIN_CELLS;
-    current_dds[DOMAIN_WRAP(gid + DELTA_NEG_Z)] = dd17; current_dds += DOMAIN_CELLS;
+    current_dds[DOMAIN_WRAP(gid + DELTA_POS_Z, DOMAIN_CELLS, isDomainPowOfTwo)] = dd16;
+    current_dds += DOMAIN_CELLS;
+    current_dds[DOMAIN_WRAP(gid + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo)] = dd17;
+    current_dds += DOMAIN_CELLS;
     current_dds[gid] = dd18;
 #endif
 
     if ( flag == FLAG_GHOST_LAYER)
         return;
 
-// #if STORE_VELOCITY
-#if 1
+#if STORE_VELOCITY
     // store velocity
     current_dds = &velocity[gid];
     *current_dds = velocity_x;  current_dds += DOMAIN_CELLS;
@@ -820,10 +883,9 @@ extern "C" __global__ void lbm_kernel_beta(
     *current_dds = velocity_z;
 #endif
 
-// #if STORE_DENSITY
-#if 1
+#if STORE_DENSITY
     // store density (not necessary)
-    density[gid] = rho;
-    // density[gid] = DOMAIN_CELLS_X;
+    // density[gid] = rho;
+    density[gid] = flag;
 #endif
 }

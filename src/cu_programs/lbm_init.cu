@@ -5,17 +5,17 @@
  * \input linear_position	linear position in 3D cube (ordering: X,Y,Z)
  * \return	Vector with 3D position in cube
  */
-__device__ inline T4 getCubePosition(int linear_position)
+__device__ inline T4 getCubePosition(int linear_position, const int domainCells_x, const int domainCells_y)
 {
 	T4 pos;
 
 	// TODO: use AND operation to speed up
 	// (but this function is only used during initialization)
-	pos.x = (T)((int)linear_position % (int)DOMAIN_CELLS_X);
-	linear_position /= DOMAIN_CELLS_X;
+	pos.x = (T)((int)linear_position % (int)domainCells_x);
+	linear_position /= domainCells_x;
 
-	pos.y = (T)((int)linear_position % (int)DOMAIN_CELLS_Y);
-	linear_position /= DOMAIN_CELLS_Y;
+	pos.y = (T)((int)linear_position % (int)domainCells_y);
+	linear_position /= domainCells_y;
 
 	pos.z = linear_position;// % CUBE_SIZE_Z;
 	return pos;
@@ -34,11 +34,16 @@ extern "C" __global__ void init_kernel(
 		T 	*velocity_array,	// velocity array (first all x components, then all y components, then z...)
 		T 	*density,	// densities
 		int *bc, 		///< boundary conditions
-		T 	drivenCavityVelocity			// velocity parameters for modification of density distributions
+		T 	drivenCavityVelocity,			// velocity parameters for modification of density distributions
+        const int domainCells_x,
+        const int domainCells_y,
+        const int domainCells_z
 		)
 {
 	//const size_t gid = get_global_id(0);
 	// const size_t gid = threadIdx.x + blockDim.x * blockIdx.x;
+	const int DOMAIN_CELLS = domainCells_x * domainCells_y * domainCells_z;
+
 	const size_t idx_x = threadIdx.x + blockDim.x * blockIdx.x;
 	const size_t idx_y = threadIdx.y + blockDim.y * blockIdx.y;
 	const size_t idx_z = threadIdx.z + blockDim.z * blockIdx.z;
@@ -46,14 +51,14 @@ extern "C" __global__ void init_kernel(
 	const size_t idx_xy = idx_y * (blockDim.x * gridDim.x) + idx_x;
 	const size_t gid = idx_z * (blockDim.x * gridDim.x + blockDim.y * gridDim.y) + idx_xy;
 
-	if (gid >= GLOBAL_WORK_GROUP_SIZE)
+	if (gid >= DOMAIN_CELLS)
 		return;
 
 	//__global T *current_dds = &global_dd[gid];
 	T *current_dds = &global_dd[gid];
 
 	// initialize flag field
-	T4 pos = getCubePosition(gid);
+	T4 pos = getCubePosition(gid, domainCells_x, domainCells_y);
 	pos.w = 0;
 
 	T velocity_x = 0;
@@ -64,25 +69,25 @@ extern "C" __global__ void init_kernel(
 
 	if( pos.x == 0)
 		flag = bc[0];
-	else if( pos.x == DOMAIN_CELLS_X-1 )
+	else if( pos.x == domainCells_x-1 )
 		flag = bc[1];
 
 	else if( pos.y == 0)
 		flag = bc[2];
-	else if( pos.y == DOMAIN_CELLS_Y-1 )
+	else if( pos.y == domainCells_y-1 )
 		flag = bc[3];
 
 	else if( pos.z == 0)
 		flag = bc[4];
-	else if( pos.z == DOMAIN_CELLS_Z-1 )
+	else if( pos.z == domainCells_z-1 )
 		flag = bc[5];
 
-//	else if (pos.y == DOMAIN_CELLS_Y-2)
+//	else if (pos.y == domainCells_y-2)
 //		flag = FLAG_VELOCITY_INJECTION;
 
 #if 0
 	if (	pos.x == 0 || pos.y == 0 || pos.z == 0 ||
-		pos.x == DOMAIN_CELLS_X-1 || pos.y == DOMAIN_CELLS_Y-1 || pos.z == DOMAIN_CELLS_Z-1
+		pos.x == domainCells_x-1 || pos.y == domainCells_y-1 || pos.z == domainCells_z-1
 	)
 	{
 		flag = FLAG_OBSTACLE;
@@ -90,7 +95,7 @@ extern "C" __global__ void init_kernel(
 	else
 	{
 #if 1
-		if (pos.y == DOMAIN_CELLS_Y-2)
+		if (pos.y == domainCells_y-2)
 			flag = FLAG_VELOCITY_INJECTION;
 #endif
 #if 0
@@ -109,19 +114,19 @@ extern "C" __global__ void init_kernel(
 			velocity_x = 10;
 #endif
 #if 0
-		if ((pos.x == DOMAIN_CELLS_X/2 || pos.x == DOMAIN_CELLS_X-2) && pos.y <= DOMAIN_CELLS_Y/2)
+		if ((pos.x == domainCells_x/2 || pos.x == domainCells_x-2) && pos.y <= domainCells_y/2)
 		{
 			flag = FLAG_INTERFACE;
 		}
-		else if ((pos.y == DOMAIN_CELLS_Y/2 || pos.y == 1) && pos.x >= DOMAIN_CELLS_X/2)
+		else if ((pos.y == domainCells_y/2 || pos.y == 1) && pos.x >= domainCells_x/2)
 		{
 			flag = FLAG_INTERFACE;
 		}
-		else if ((pos.z == DOMAIN_CELLS_Z-1 || pos.z == 1) && pos.x >= DOMAIN_CELLS_X/2 && pos.y <= DOMAIN_CELLS_Y/2)
+		else if ((pos.z == domainCells_z-1 || pos.z == 1) && pos.x >= domainCells_x/2 && pos.y <= domainCells_y/2)
 		{
 			flag = FLAG_INTERFACE;
 		}
-		else if (pos.x < DOMAIN_CELLS_X/2 || pos.y > DOMAIN_CELLS_Y/2)
+		else if (pos.x < domainCells_x/2 || pos.y > domainCells_y/2)
 		{
 			flag = FLAG_GAS;
 		}
@@ -232,8 +237,7 @@ extern "C" __global__ void init_kernel(
 	// flag
 	flags[gid] = flag;
 
-// #if STORE_VELOCITY
-#if 1
+#if STORE_VELOCITY
 	// store velocity
 	current_dds = &velocity_array[gid];
 	*current_dds = velocity_x;	current_dds += DOMAIN_CELLS;
@@ -242,10 +246,9 @@ extern "C" __global__ void init_kernel(
 #endif
 
 #if STORE_DENSITY
-// #if 1
 	// store density
-	density[gid] = rho;
-	// density[gid] = flag;
+	// density[gid] = rho;
+	density[gid] = flag;
 #endif
 
 }

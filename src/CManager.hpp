@@ -75,12 +75,13 @@ public:
 #endif
 	}
 
-	void initSimulation(int my_rank) {
+	void initSimulation(int my_rank, int num_procs) {
 		// initialize the boundary condition
 		int BC[3][2] = { /* x BC */{ FLAG_GHOST_LAYER, FLAG_GHOST_LAYER },
 		/* y BC */{ FLAG_GHOST_LAYER, FLAG_GHOST_LAYER },
 		/* z BC */{ FLAG_GHOST_LAYER, FLAG_GHOST_LAYER } };
 		int id = my_rank;
+		int nprocs = num_procs;
 		if (id < 0)
 			id = 0;
 
@@ -117,18 +118,7 @@ public:
 		if (nz == (_subdomain_nums[2] - 1))
 			BC[2][1] = FLAG_OBSTACLE;
 
-		for (int i = 0; i < 2; i++)
-		{
-			if (id == i)
-			{
-				printf("ID: %i, NX: %i, NY: %i, NZ: %i, FLAG_GHOST_LAYER: %i\n", id, nx, ny, nz, 1<<3);
-				printf("BC[1][1]: %i, BC[1][2]: %i\n", BC[1][1], BC[1][2]);
-				printf("BC[2][1]: %i, BC[2][2]: %i\n", BC[2][1], BC[2][2]);
-				printf("BC[3][1]: %i, BC[3][2]: %i\n", BC[3][1], BC[3][2]);
-			}
-		}
-
-		_lbm_controller = new CController<T>(id, *subdomain, BC);
+		_lbm_controller = new CController<T>(id, num_procs, *subdomain, BC);
 
 		// Initializing the Controller's communication classes based on the already computed boundary conditions
 		if (BC[0][0] == FLAG_GHOST_LAYER) {

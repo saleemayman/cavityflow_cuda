@@ -881,7 +881,7 @@ public:
         )
         {
             int err_ret;
-            // std::cout << "Executing Compile command --> " << command << std::endl;
+            std::cout << "Executing Compile command --> " << command << std::endl;
             err_ret = system(command.c_str());
 
             if (err_ret != 0)
@@ -971,11 +971,6 @@ public:
                             CMem &cmem ///< OpenCL memory object
         )
         {
-/*          cl_int ret_val = clSetKernelArg(kernel, arg_index, sizeof(cl_mem), &(cmem.memobj));
-
-            if (ret_val != CL_SUCCESS)
-                error << cclGetErrorString(ret_val) << std::endl;   */
-            //kernelArgsVec.push_back(cmem);
             kernelArgsVec[arg_index] = &(cmem.memobj);
         }
 
@@ -986,10 +981,6 @@ public:
                             float &arg      ///< reference to float argument
         )
         {
-/*          cl_int ret_val = clSetKernelArg(kernel, arg_index, sizeof(float), &arg);
-
-            if (ret_val != CL_SUCCESS)
-                error << cclGetErrorString(ret_val) << std::endl;   */
             kernelArgsVec[arg_index] = &arg;
         }
 
@@ -1000,10 +991,6 @@ public:
                             double &arg     ///< reference to float argument
         )
         {
-/*          cl_int ret_val = clSetKernelArg(kernel, arg_index, sizeof(double), &arg);
-
-            if (ret_val != CL_SUCCESS)
-                error << cclGetErrorString(ret_val) << std::endl;   */
             kernelArgsVec[arg_index] = &arg;
         }
 
@@ -1014,21 +1001,24 @@ public:
                             int &arg
         )
         {
-/*          cl_int ret_val = clSetKernelArg(kernel, arg_index, sizeof(cl_int), &size);
-
-            if (ret_val != CL_SUCCESS)
-                error << cclGetErrorString(ret_val) << std::endl;   */
             kernelArgsVec[arg_index] = &arg;
         }
+
+        /**
+         * set size_t kernel argument
+         */
+        inline void setArg( int arg_index,
+                            size_t &arg
+        )
+        {
+            kernelArgsVec[arg_index] = &arg;
+        }
+
 
         inline void setArg( int arg_index,
                             const int &arg
         )
         {
-/*          cl_int ret_val = clSetKernelArg(kernel, arg_index, sizeof(cl_int), &size);
-
-            if (ret_val != CL_SUCCESS)
-                error << cclGetErrorString(ret_val) << std::endl;   */
             kernelArgsVec[arg_index] = const_cast<int *>(&arg); //const_cast < new_type > ( expression )        
         }
     };
@@ -1127,6 +1117,7 @@ public:
         {
             //command_queue = 0;
             cuda_stream = 0;
+            create();
         }
 
         inline ~CCommandQueue()
@@ -1265,7 +1256,7 @@ public:
             sharedMemBytes = threadsPerBlock.x;// * threadsPerBlock.y * threadsPerBlock.z;
 
             // get handle for the cuda stream
-            create();
+            // create();
 
             CudaCallCheckError( cuLaunchKernel(cKernel.kernel,
                                                 numBlocks.x,
@@ -1328,7 +1319,8 @@ public:
         int max_constant_buffer_size;           ///< maximum bytes for constant buffer
         int local_mem_size;                     ///< size of local memory
         int available;                          ///< true, if device available
-        int execution_capabilities;             ///< kernel execution capabilities
+        int execution_capabilities_major;             ///< kernel execution capabilities
+        int execution_capabilities_minor;             ///< kernel execution capabilities
         int queue_properties;                   ///< queue properties
         
         char *name;             ///< name of device
@@ -1420,14 +1412,14 @@ public:
             getCudaDrvErrorString( cuDeviceGetAttribute(&max_constant_buffer_size, CU_DEVICE_ATTRIBUTE_TOTAL_CONSTANT_MEMORY, device_id) );
             getCudaDrvErrorString( cuDeviceGetAttribute(&local_mem_size, CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK, device_id) );
             getCudaDrvErrorString( cuDeviceGetAttribute(&available, CU_DEVICE_ATTRIBUTE_COMPUTE_MODE, device_id) );
-            getCudaDrvErrorString( cuDeviceComputeCapability(&execution_capabilities, NULL, device_id) );
+            getCudaDrvErrorString( cuDeviceComputeCapability(&execution_capabilities_major, &execution_capabilities_minor, device_id) );
             getCudaDrvErrorString( cuDeviceGetAttribute(&queue_properties, CU_DEVICE_ATTRIBUTE_CONCURRENT_KERNELS, device_id) );
 
             getCudaDrvErrorString( cuDeviceGetName(name, 256, device_id) ); 
             getCudaDrvErrorString( cuDriverGetVersion(&driver_version) );
             getCudaDrvErrorString( cuDeviceGetProperties(&device_prop, cDevice.device_id));
 
-            // printf("Test!! Device Compute capability: %d \n", execution_capabilities);
+            // printf("Test!! Device Compute capability: %i, %i \n", execution_capabilities_major, execution_capabilities_minor);
         }
 
         /**
@@ -1459,7 +1451,7 @@ public:
 
             std::cout << sLinePrefix << "LOCAL_MEM_SIZE: " << local_mem_size << std::endl;
             std::cout << sLinePrefix << "AVAILABLE: " << available << std::endl;
-            std::cout << sLinePrefix << "COMPUTE_CAPABILITY: " << execution_capabilities << std::endl;
+            std::cout << sLinePrefix << "COMPUTE_CAPABILITY: " << execution_capabilities_major << std::endl;
             std::cout << sLinePrefix << "CONCURRENT_KERNELS: " << queue_properties << std::endl;
             std::cout << sLinePrefix << "NAME: " << name << std::endl;
             std::cout << sLinePrefix << "DRIVER_VERSION: " << driver_version << std::endl;
