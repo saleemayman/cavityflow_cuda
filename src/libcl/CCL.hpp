@@ -1008,6 +1008,16 @@ public:
          * set size_t kernel argument
          */
         inline void setArg( int arg_index,
+                            bool &arg
+        )
+        {
+            kernelArgsVec[arg_index] = &arg;
+        }
+
+        /**
+         * set size_t kernel argument
+         */
+        inline void setArg( int arg_index,
                             size_t &arg
         )
         {
@@ -1253,7 +1263,7 @@ public:
             // printf("threadsPerBlock: [%u, %u, %u] \n", threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z);
             // printf("numBlocks: [%u, %u, %u] \n", numBlocks.x, numBlocks.y, numBlocks.z);
 
-            sharedMemBytes = threadsPerBlock.x;// * threadsPerBlock.y * threadsPerBlock.z;
+            sharedMemBytes = 12 * threadsPerBlock.x * threadsPerBlock.y * threadsPerBlock.z;
 
             // get handle for the cuda stream
             // create();

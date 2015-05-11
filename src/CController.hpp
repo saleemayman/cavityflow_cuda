@@ -55,7 +55,6 @@ template<typename T>
 class CController
 {
 	int _UID; ///< Unique ID of each controller
-	int _NProcs;
 	CDomain<T> _domain; ///< Domain data
 
 	ILbmVisualization<T>* cLbmVisualization; ///< Visualization class
@@ -146,7 +145,7 @@ class CController
 		cCommandQueue = new CCL::CCommandQueue();
 
 		// INIT LATTICE BOLTZMANN!
-		cLbmPtr = new CLbmSolver<T>(_UID, _NProcs, *cCommandQueue, *cContext, *cDevice,
+		cLbmPtr = new CLbmSolver<T>(_UID, *cCommandQueue, *cContext, *cDevice,
 				_BC, _domain, 
 				ConfigSingleton::Instance()->gravitation, // gravitation vector
 				ConfigSingleton::Instance()->viscosity,
@@ -176,8 +175,8 @@ class CController
 
 public:
 
-	CController(int UID, int num_procs, CDomain<T> domain, int BC[3][2]) :
-			_UID(UID), _NProcs(num_procs), _domain(domain), cLbmVisualization(NULL)
+	CController(int UID, CDomain<T> domain, int BC[3][2]) :
+			_UID(UID), _domain(domain), cLbmVisualization(NULL)
 	{
 		for (int i = 0; i < 3; i++)
 			for (int j = 0; j < 2; j++)

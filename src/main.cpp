@@ -330,7 +330,7 @@ int main(int argc, char** argv)
         }
 
         if (my_rank != num_procs - 1) {
-            manager->initSimulation(my_rank, num_procs);
+            manager->initSimulation(my_rank);
             manager->startSimulation();
 
             // getting the local data
@@ -375,7 +375,7 @@ int main(int argc, char** argv)
             CManager<T> validataion_manager(validatiaon_domain, CVector<3,int>(1,1,1));
             std::cout <<  my_rank << "--> Compute the results for one domain." << std::endl;
 
-            validataion_manager.initSimulation(-1, num_procs);
+            validataion_manager.initSimulation(-1);
             validataion_manager.startSimulation();
             T* sub_global_data = new T[local_size_without_halo.elements()*3];
             // getting the global data
@@ -437,7 +437,7 @@ int main(int argc, char** argv)
         }
 
         // printf("main() before initSimulation. \n");
-        manager->initSimulation(my_rank, num_procs);
+        manager->initSimulation(my_rank);
 
         // printf("main() start simulation. \n");
         manager->startSimulation();

@@ -247,8 +247,8 @@ extern "C" __global__ void init_kernel(
 
 #if STORE_DENSITY
 	// store density
-	// density[gid] = rho;
-	density[gid] = flag;
+	density[gid] = rho;
+	// density[gid] = flag;
 #endif
 
 }

@@ -505,7 +505,7 @@ extern "C" __global__ void lbm_kernel_alpha(
 
 #if STORE_DENSITY
 	// store density (not necessary)
-	// density[gid] = rho;
-	density[gid] = flag;
+	density[gid] = rho;
+	// density[gid] = flag;
 #endif
 }

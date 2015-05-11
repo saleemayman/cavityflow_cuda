@@ -75,15 +75,23 @@ public:
 #endif
 	}
 
-	void initSimulation(int my_rank, int num_procs) {
+	void initSimulation(int my_rank) {
 		// initialize the boundary condition
-		int BC[3][2] = { /* x BC */{ FLAG_GHOST_LAYER, FLAG_GHOST_LAYER },
-		/* y BC */{ FLAG_GHOST_LAYER, FLAG_GHOST_LAYER },
-		/* z BC */{ FLAG_GHOST_LAYER, FLAG_GHOST_LAYER } };
+		int BC[3][2] = {/* x BC */{ FLAG_GHOST_LAYER, FLAG_GHOST_LAYER },
+						/* y BC */{ FLAG_GHOST_LAYER, FLAG_GHOST_LAYER },
+						/* z BC */{ FLAG_GHOST_LAYER, FLAG_GHOST_LAYER } };
 		int id = my_rank;
-		int nprocs = num_procs;
 		if (id < 0)
 			id = 0;
+
+        for (int i = 0; i < 2; i++)
+        {
+            if (id == i)
+            {
+				printf("CManager id: %i, my_rank: %i\n", id, my_rank);
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
 
 		int tmpid = id;
 		int nx, ny, nz;
@@ -118,7 +126,7 @@ public:
 		if (nz == (_subdomain_nums[2] - 1))
 			BC[2][1] = FLAG_OBSTACLE;
 
-		_lbm_controller = new CController<T>(id, num_procs, *subdomain, BC);
+		_lbm_controller = new CController<T>(id, *subdomain, BC);
 
 		// Initializing the Controller's communication classes based on the already computed boundary conditions
 		if (BC[0][0] == FLAG_GHOST_LAYER) {

@@ -20,13 +20,13 @@
   <grid>
     <!-- grid resolution in x, y and z direction -->
     <domain-size>
-      <x>32</x>
+      <x>30</x>
       <y>32</y>
-      <z>8</z>
+      <z>4</z>
     </domain-size>
     <!-- number of subdomains  in x, y and z direction -->
     <subdomain-num>
-      <x>1</x>
+      <x>2</x>
       <y>2</y>
       <z>1</z>
     </subdomain-num>

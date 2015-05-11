@@ -70,7 +70,6 @@ public:
     static const size_t SIZE_DD_HOST = 19;
 private:
     int _UID;
-    int _NProcs;
     bool _isDomainSizePowOfTwo;
     bool _isLocalSizePowOfTwo;
 
@@ -203,7 +202,7 @@ public:
     // viscosity parameters:
     // http://en.wikipedia.org/wiki/Viscosity
     //
-    CLbmSolver(int UID, int num_procs, CCL::CCommandQueue &p_cCommandQueue,
+    CLbmSolver(int UID, CCL::CCommandQueue &p_cCommandQueue,
             CCL::CContext &p_cContext, CCL::CDevice &p_cDevice, int BC[3][2],
             CDomain<T> &domain, CVector<3, T> &p_d_gravitation, T p_d_viscosity,
             size_t p_computation_kernel_count,
@@ -215,7 +214,7 @@ public:
             std::list<int> &p_lbm_opencl_number_of_registers_list ///< list with number of registers for each thread threads for each successively created kernel
             ) :
             CLbmSkeleton<T>(CDomain<T>(domain), _drivenCavityVelocity), //drivenCavityVelocity(100.0, 0,0, 1),
-            drivenCavityVelocity(_drivenCavityVelocity), _UID(UID), _NProcs(num_procs), cCommandQueue(
+            drivenCavityVelocity(_drivenCavityVelocity), _UID(UID), cCommandQueue(
                     p_cCommandQueue), cContext(p_cContext), cDevice(p_cDevice), cDeviceInfo(
                     p_cDevice), computation_kernel_count(p_computation_kernel_count),
                     threads_per_dimension(p_threads_per_dimension), lbm_opencl_number_of_work_items_list(
@@ -303,13 +302,15 @@ public:
         domain_cells_count = this->domain_cells.elements();
         _isDomainSizePowOfTwo = isDomainPowerOfTwo(domain_cells_count);
         _isLocalSizePowOfTwo = isDomainPowerOfTwo(cLbmKernelBeta_WorkGroupSize);
-        
+
+
         /**
          * program defines
          */
         domain_x = this->domain_cells.data[0];
         domain_y = this->domain_cells.data[1];
         domain_z = this->domain_cells.data[2];
+
 
         std::ostringstream cuda_program_defines;
 
@@ -331,17 +332,17 @@ public:
                 bc_linear[i * 2 + j] = _BC[i][j];
 
 #if DEBUG
-for (int i = 0; i < 2; i++)
-{
-    if (_UID == i)
-    {
-        std::cout << "RANK: " << _UID <<" BOUNDARY CONDITION: "<< std::endl;
-        for(int i = 0; i < 6; i++)
-            std::cout << " " << bc_linear[i];
-        std::cout << std::endl;
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-}
+        for (int i = 0; i < 2; i++)
+        {
+            if (_UID == i)
+            {
+                std::cout << "RANK: " << _UID <<" BOUNDARY CONDITION: "<< std::endl;
+                for(int i = 0; i < 6; i++)
+                    std::cout << " " << bc_linear[i];
+                std::cout << std::endl;
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
 #endif
 
         cMemBC.createCopyToDevice(cContext, sizeof(int) * 6, bc_linear);
@@ -471,6 +472,7 @@ for (int i = 0; i < 2; i++)
         cLbmKernelBeta.setArg(12, cLbmKernelBeta_WorkGroupSize);
         cLbmKernelBeta.setArg(13, _isDomainSizePowOfTwo);
         cLbmKernelBeta.setArg(14, _isLocalSizePowOfTwo);
+
 
         cKernelCopyRect.create(cProgramCopyRect, "copy_buffer_rect"); // attach kernel to CUDA module
 
@@ -862,29 +864,36 @@ private:
 public:
     void debug_print()
     {
-        // read out DensityDistributions
-        std::cout << "DENSITY DISTRIBUTIONS:";
-        //debugFloat(cMemDensityDistributions, SIZE_DD_HOST);
-        debugFloat(cMemDensityDistributions, 16);
-        std::cout << std::endl;
+        for (int i = 0; i < 2; i++)
+        {
+            if (_UID == i)
+            {
+                // read out DensityDistributions
+                // std::cout << "Rank: " << _UID << " DENSITY DISTRIBUTIONS:";
+                // //debugFloat(cMemDensityDistributions, SIZE_DD_HOST);
+                // debugFloat(cMemDensityDistributions, 16);
+                // std::cout << std::endl;
 
-        // read out Velocity
-        std::cout << std::endl;
-        std::cout << "VELOCITY:";
-        debugFloat(cMemVelocity, 4 * 3);
-        std::cout << std::endl;
+                // read out Velocity
+                std::cout << std::endl;
+                std::cout << "Rank: " << _UID << " VELOCITY:";
+                debugFloat(cMemVelocity, 4 * 3);
+                std::cout << std::endl;
 
-        // read out VelocityDensity
-        std::cout << std::endl;
-        std::cout << "DENSITY:";
-        debugFloat(cMemDensity, 4);
-        std::cout << std::endl;
+                // read out Density
+                std::cout << std::endl;
+                std::cout << "Rank: " << _UID << " DENSITY:";
+                debugFloat(cMemDensity, 4);
+                std::cout << std::endl;
 
-        // read out Flags
-        std::cout << std::endl;
-        std::cout << "FLAGS:";
-        debugChar(cMemCellFlags, 4 * 4);
-        std::cout << std::endl;
+                // read out Flags
+                std::cout << std::endl;
+                std::cout << "Rank: " << _UID << " FLAGS:";
+                debugChar(cMemCellFlags, 4 * 4);
+                std::cout << std::endl;
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
     }
 
     /**
@@ -948,7 +957,10 @@ public:
         float checksum = 0;
         for (int a = 0; a < this->domain_cells.elements(); a++)
             if (flags[a] == FLAG_FLUID)
+            {
                 checksum += velx[a] + vely[a] + velz[a];
+                // printf("%f, %f, %f\n", velx[a], vely[a], velz[a]);
+            }
 
         delete[] flags;
         delete[] velocity;

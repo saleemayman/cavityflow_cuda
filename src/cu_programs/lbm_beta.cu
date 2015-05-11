@@ -10,12 +10,12 @@
 
 __device__ inline size_t DOMAIN_WRAP(size_t A, const size_t DOMAIN_CELLS, const bool isPowTwo)
 {
-    return ( isPowTwo * (A & (DOMAIN_CELLS-1)) + (!isPowTwo) * (A % DOMAIN_CELLS) );
+    return ( (int)isPowTwo*(A & (DOMAIN_CELLS-1)) + (int)(!isPowTwo)*(A % DOMAIN_CELLS) );
 }
 
 __device__ inline size_t LOCAL_WORK_GROUP_WRAP(size_t A, const size_t LOCAL_WORK_GROUP_SIZE, const bool isPowTwo)
 {
-    return ( isPowTwo * (A & (LOCAL_WORK_GROUP_SIZE-1)) + (!isPowTwo) * (A % LOCAL_WORK_GROUP_SIZE) );
+    return ( (int)isPowTwo * (A & (LOCAL_WORK_GROUP_SIZE-1)) + (int)(!isPowTwo) * (A % LOCAL_WORK_GROUP_SIZE) );
 }
 
 
@@ -42,17 +42,19 @@ extern "C" __global__ void lbm_kernel_beta(
 {
     //const size_t gid = get_global_id(0);
     // const size_t gid = threadIdx.x + blockDim.x * blockIdx.x;
+    const int DOMAIN_CELLS_X = domainCells_x;
     const int LOCAL_WORK_GROUP_SIZE = localWorkGroup;
-    const int DOMAIN_CELLS = domainCells_x * domainCells_y * domainCells_z;
-    const int DOMAIN_SLICE_CELLS = domainCells_x * domainCells_y;
+    const int DOMAIN_CELLS = DOMAIN_CELLS_X * domainCells_y * domainCells_z;
+    const int DOMAIN_SLICE_CELLS = DOMAIN_CELLS_X * domainCells_y;
 
     const int DELTA_POS_X = 1;
     const int DELTA_NEG_X = DOMAIN_CELLS - 1;
-    const int DELTA_POS_Y = domainCells_x;
-    const int DELTA_NEG_Y = DOMAIN_CELLS - domainCells_x;
+    const int DELTA_POS_Y = DOMAIN_CELLS_X;
+    const int DELTA_NEG_Y = DOMAIN_CELLS - DOMAIN_CELLS_X;
     const int DELTA_POS_Z = DOMAIN_SLICE_CELLS;
     const int DELTA_NEG_Z = DOMAIN_CELLS - DOMAIN_SLICE_CELLS;
 
+    // get uniwue thread id
     const size_t idx_x = threadIdx.x + blockDim.x * blockIdx.x;
     const size_t idx_y = threadIdx.y + blockDim.y * blockIdx.y;
     const size_t idx_z = threadIdx.z + blockDim.z * blockIdx.z;
@@ -220,7 +222,7 @@ extern "C" __global__ void lbm_kernel_beta(
 
 #else
     //__local T dd_buf[12][LOCAL_WORK_GROUP_SIZE];
-    __shared__ T dd_buf[12][LOCAL_WORK_GROUP_SIZE];
+    extern __shared__ T dd_buf[12][LOCAL_WORK_GROUP_SIZE];
 
     //const size_t lid = get_local_id(0);
     size_t lid = threadIdx.x;
@@ -276,7 +278,7 @@ extern "C" __global__ void lbm_kernel_beta(
     int pos_x_wrap = LOCAL_WORK_GROUP_WRAP(lid + 1, LOCAL_WORK_GROUP_SIZE, isLocalPowOfTwo);
     int neg_x_wrap = LOCAL_WORK_GROUP_WRAP(lid + (LOCAL_WORK_GROUP_SIZE - 1), LOCAL_WORK_GROUP_SIZE, isLocalPowOfTwo);
 
-#if (LOCAL_WORK_GROUP_SIZE/DOMAIN_CELLS_X)*DOMAIN_CELLS_X == LOCAL_WORK_GROUP_SIZE
+#if (LOCAL_WORK_GROUP_SIZE/16)*DOMAIN_CELLS_X == LOCAL_WORK_GROUP_SIZE
     /*
      * handle domain x-sizes specially if LOCAL_WORK_GROUP_SIZE is a multiple of DOMAIN_CELLS_X
      * in this case, we dont have to read unaligned data!!!
@@ -548,7 +550,7 @@ extern "C" __global__ void lbm_kernel_beta(
     dd18 = current_dds[gid];
     rho += dd18;
 
-#endif
+#endif // !USE_SHARED_MEMORY
 
     T vel2;     // vel*vel
     T vela2;
@@ -885,7 +887,6 @@ extern "C" __global__ void lbm_kernel_beta(
 
 #if STORE_DENSITY
     // store density (not necessary)
-    // density[gid] = rho;
-    density[gid] = flag;
+    density[gid] = rho;
 #endif
 }
