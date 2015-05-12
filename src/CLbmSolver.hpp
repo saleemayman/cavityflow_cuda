@@ -332,17 +332,10 @@ public:
                 bc_linear[i * 2 + j] = _BC[i][j];
 
 #if DEBUG
-        for (int i = 0; i < 2; i++)
-        {
-            if (_UID == i)
-            {
-                std::cout << "RANK: " << _UID <<" BOUNDARY CONDITION: "<< std::endl;
-                for(int i = 0; i < 6; i++)
-                    std::cout << " " << bc_linear[i];
-                std::cout << std::endl;
-            }
-            MPI_Barrier(MPI_COMM_WORLD);
-        }
+        std::cout << "RANK: " << _UID <<" BOUNDARY CONDITION: "<< std::endl;
+        for(int i = 0; i < 6; i++)
+            std::cout << " " << bc_linear[i];
+        std::cout << std::endl;
 #endif
 
         cMemBC.createCopyToDevice(cContext, sizeof(int) * 6, bc_linear);
@@ -864,10 +857,10 @@ private:
 public:
     void debug_print()
     {
-        for (int i = 0; i < 2; i++)
-        {
-            if (_UID == i)
-            {
+        // for (int i = 0; i < 2; i++)
+        // {
+        //     if (_UID == i)
+        //     {
                 // read out DensityDistributions
                 // std::cout << "Rank: " << _UID << " DENSITY DISTRIBUTIONS:";
                 // //debugFloat(cMemDensityDistributions, SIZE_DD_HOST);
@@ -891,9 +884,9 @@ public:
                 std::cout << "Rank: " << _UID << " FLAGS:";
                 debugChar(cMemCellFlags, 4 * 4);
                 std::cout << std::endl;
-            }
-            MPI_Barrier(MPI_COMM_WORLD);
-        }
+        //     }
+        //     MPI_Barrier(MPI_COMM_WORLD);
+        // }
     }
 
     /**
