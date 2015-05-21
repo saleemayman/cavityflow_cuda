@@ -1,0 +1,41 @@
+all:
+	mkdir build/build_lbm_opencl_dc_mpicxx_release/lib
+	mkdir build/build_lbm_opencl_dc_mpicxx_release/libvis
+	
+	nvcc -x cu -keep -keep-dir src/cu_programs/  -arch=sm_30 -m64 	 											\
+	-I. -dc src/cu_programs/lbm_init.cu -o src/cu_programs/lbm_init.o
+
+	nvcc -x cu -keep -keep-dir src/cu_programs/  -arch=sm_30 -m64 	 											\
+	-I. -dc src/cu_programs/lbm_alpha.cu -o src/cu_programs/lbm_alpha.o
+
+	nvcc -x cu -keep -keep-dir src/cu_programs/  -arch=sm_30 -m64 	 											\
+	-I. -dc src/cu_programs/lbm_beta.cu -o src/cu_programs/lbm_beta.o
+
+	nvcc -x cu -keep -keep-dir src/cu_programs/  -arch=sm_30 -m64 	 \
+	-I. -dc src/cu_programs/copy_buffer_rect.cu -o src/cu_programs/copy_buffer_rect.o
+
+	mpicxx -o build/build_lbm_opencl_dc_mpicxx_release/lib/CBitmap.o -c -fmessage-length=0 -DNDEBUG=1 -O3  					\
+	-g -mtune=native -I/home/ayman/CSE/turbulent_lbm_multigpu/src/ -I/home/ayman/CSE/turbulent_lbm_multigpu/src/include/ 	\
+	-Iinclude/UnitTest++ -Iinclude/tinyxml2 -Ibuild/build_lbm_opencl_dc_mpicxx_release -Isrc 								\
+	-Ibuild/build_lbm_opencl_dc_mpicxx_release/src -Isrc/src src/lib/CBitmap.cpp 
+
+	mpicxx -o build/build_lbm_opencl_dc_mpicxx_release/libvis/VTK_Common.o -c -fmessage-length=0 -DNDEBUG=1 -O3 	\
+	-g -mtune=native -I/home/ayman/CSE/turbulent_lbm_multigpu/src/ -I/home/ayman/CSE/turbulent_lbm_multigpu/src/include/ 	\
+	-Iinclude/UnitTest++ -Iinclude/tinyxml2 -Ibuild/build_lbm_opencl_dc_mpicxx_release -Isrc 	\
+	-Ibuild/build_lbm_opencl_dc_mpicxx_release/src -Isrc/src src/libvis/VTK_Common.cpp
+
+	mpicxx -o build/build_lbm_opencl_dc_mpicxx_release/main.o -c -fmessage-length=0 -DNDEBUG=1 -O3 -g -mtune=native 	\
+	-I/home/ayman/CSE/turbulent_lbm_multigpu/src/ -I/home/ayman/CSE/turbulent_lbm_multigpu/src/include/ 	\
+	-Iinclude/UnitTest++ -Iinclude/tinyxml2 -Ibuild/build_lbm_opencl_dc_mpicxx_release -Isrc 	\
+	-Ibuild/build_lbm_opencl_dc_mpicxx_release/src -Isrc/src src/main.cpp
+
+	mpicxx -o build/lbm_opencl_dc_mpicxx_release build/build_lbm_opencl_dc_mpicxx_release/main.o 	\
+	 build/build_lbm_opencl_dc_mpicxx_release/lib/CBitmap.o build/build_lbm_opencl_dc_mpicxx_release/libvis/VTK_Common.o \
+	 -Llibs -Lsrc/libcuda -L/usr/local/cuda/lib64 -lrt -lcudadevrt -lcudadevrt -lcuda -lcudart -lUnitTest++ -ltinyxml2
+
+clean:
+	rm -f build/lbm_opencl_dc_mpicxx_release
+	rm -r build/build_lbm_opencl_dc_mpicxx_release/lib
+	rm -r build/build_lbm_opencl_dc_mpicxx_release/libvis
+	rm -r output/vtk/*
+	rm src/cu_programs/*.cpp* src/cu_programs/*.cudafe* src/cu_programs/*.fatbin* src/cu_programs/*.hash src/cu_programs/*.module_id src/cu_programs/*.sm_*
