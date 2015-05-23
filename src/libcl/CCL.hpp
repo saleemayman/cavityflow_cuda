@@ -19,7 +19,7 @@
 #define CCOMPLANG_HPP
 
 //#include <CL/cl.h>    // remove this once all OpenCL commands are gone.
-#include </usr/local/cuda/include/cuda.h>   // check if it actually reads the definitions from cuda.h
+// #include </usr/local/cuda/include/cuda.h>   // check if it actually reads the definitions from cuda.h
 //#include <helper_cuda_drvapi.h>
 #include <iostream>
 #include <strings.h>
@@ -1264,8 +1264,9 @@ public:
             // printf("numBlocks: [%u, %u, %u] \n", numBlocks.x, numBlocks.y, numBlocks.z);
 
             // sharedMemBytes = 12 * threadsPerBlock.x * threadsPerBlock.y * threadsPerBlock.z;
-            sharedMemBytes = threadsPerBlock.x;
-
+            // sharedMemBytes = local_work_size * 12;
+            sharedMemBytes = sizeof(T) * local_work_size * 12;
+            // printf("dim: %i, sharedMemBytes: %i \n", work_dim, sharedMemBytes);
             // get handle for the cuda stream
             // create();
 
