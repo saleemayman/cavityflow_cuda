@@ -17,9 +17,9 @@
 
 #ifndef CCOMPLANGERRORS_HH__
 #define CCOMPLANGERRORS_HH__
-#include </usr/local/cuda/include/cuda.h>
-#include "/home/ayman/CSE/turbulent_lbm_multigpu/src/libcuda/drvapi_error_string.h"
-#include "/home/ayman/CSE/turbulent_lbm_multigpu/src/libcuda/builtin_types.h"
+//#include </usr/local/cuda/include/cuda.h>
+#include "drvapi_error_string.h"
+#include "builtin_types.h"
 
 // Define this to turn on error checking
 #define CUDA_ERROR_CHECK
