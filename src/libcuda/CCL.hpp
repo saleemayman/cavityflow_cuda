@@ -19,7 +19,6 @@
 #define CCOMPLANG_HPP
 
 //#include <CL/cl.h>    // remove this once all OpenCL commands are gone.
-// #include </usr/local/cuda/include/cuda.h>   // check if it actually reads the definitions from cuda.h
 //#include <helper_cuda_drvapi.h>
 #include <iostream>
 #include <strings.h>

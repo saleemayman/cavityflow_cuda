@@ -18,7 +18,7 @@
 #define CLBMOPENCL_HH
 
 #include "CLbmSkeleton.hpp"
-#include "libcl/CCL.hpp"
+#include "libcuda/CCL.hpp"
 #include "lib/CError.hpp"
 #include "libmath/CVector.hpp"
 #include <typeinfo>

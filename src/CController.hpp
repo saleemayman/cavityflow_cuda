@@ -25,7 +25,7 @@
 #include <sstream>
 #include <fstream>
 
-#include "libcl/CCL.hpp"
+#include "libcuda/CCL.hpp"
 #include "libtools/CStopwatch.hpp"
 
 #include "CDomain.hpp"
