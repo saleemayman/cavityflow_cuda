@@ -43,7 +43,11 @@ extern "C" __global__ void lbm_kernel_beta(
     //const size_t gid = get_global_id(0);
     // const size_t gid = threadIdx.x + blockDim.x * blockIdx.x;
     const int DOMAIN_CELLS_X = domainCells_x;
+
+#if USE_SHARED_MEMORY
     const int LOCAL_WORK_GROUP_SIZE = localWorkGroup;
+#endif
+
     const int DOMAIN_CELLS = DOMAIN_CELLS_X * domainCells_y * domainCells_z;
     const int DOMAIN_SLICE_CELLS = DOMAIN_CELLS_X * domainCells_y;
 
