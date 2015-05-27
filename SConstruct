@@ -108,13 +108,15 @@ if re.match("atsccs.*", hostname):
     env.Append(LIBPATH=['/usr/lib/nvidia-current/'])
 
 env.Append(LIBPATH=['./libs/'])
+env.Append(LIBPATH=['/usr/local/cuda/lib64'])
+env.Append(LIBPATH=['./src/libcuda'])
 
 #env.Append(LIBPATH=[os.environ['HOME']+'/local/lib'])
 #env.Append(LIBS=['GL'])
-if env ['PLATFORM'] == "darwin":
-        env['FRAMEWORKS'] = ['OpenCL']
-else:
-        env.Append(LIBS=['OpenCL'])
+# if env ['PLATFORM'] == "darwin":
+#         env['FRAMEWORKS'] = ['OpenCL']
+# else:
+env.Append(LIBS=['cuda'])
 
 # linking to the unit test library
 env.Append(LIBS=['UnitTest++'])
@@ -277,7 +279,7 @@ for i in ['src/', 'src/include/']:
 ######################
 # setup PROGRAM NAME base on parameters
 ######################
-program_name = 'lbm_opencl_dc'
+program_name = 'lbm_cuda_dc'
 
 # compiler
 program_name += '_'+env['compiler']
