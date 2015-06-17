@@ -20,15 +20,15 @@
   <grid>
     <!-- grid resolution in x, y and z direction -->
     <domain-size>
-      <x>128</x>
-      <y>128</y>
+      <x>64</x>
+      <y>64</y>
       <z>32</z>
     </domain-size>
     <!-- number of subdomains  in x, y and z direction -->
     <subdomain-num>
       <x>2</x>
       <y>2</y>
-      <z>2</z>
+      <z>1</z>
     </subdomain-num>
     <domian-length>
       <x>0.1</x>

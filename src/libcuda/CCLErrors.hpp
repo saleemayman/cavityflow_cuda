@@ -17,7 +17,7 @@
 
 #ifndef CCOMPLANGERRORS_HH__
 #define CCOMPLANGERRORS_HH__
-//#include </usr/local/cuda/include/cuda.h>
+#include "cuda.h"
 #include "drvapi_error_string.h"
 #include "builtin_types.h"
 

@@ -31,11 +31,13 @@ all:
 
 	mpicxx -o build/lbm_opencl_dc_mpicxx_release build/build_lbm_opencl_dc_mpicxx_release/main.o 	\
 	 build/build_lbm_opencl_dc_mpicxx_release/lib/CBitmap.o build/build_lbm_opencl_dc_mpicxx_release/libvis/VTK_Common.o \
-	 -Llibs -Lsrc/libcuda -L/usr/local/cuda/lib64 -lrt -lcudadevrt -lcudadevrt -lcuda -lcudart -lUnitTest++ -ltinyxml2
+	 -Llibs -Lsrc/libcuda -L/usr/local/cuda/lib64 -lcuda -lUnitTest++ -ltinyxml2
+	 # -Llibs -Lsrc/libcuda -L/usr/local/cuda/lib64 -lrt -lcudadevrt -lcuda -lcudart -lUnitTest++ -ltinyxml2
+
 
 clean:
 	rm -f build/lbm_opencl_dc_mpicxx_release
 	rm -r build/build_lbm_opencl_dc_mpicxx_release/lib
 	rm -r build/build_lbm_opencl_dc_mpicxx_release/libvis
 	rm -r output/vtk/*
-	rm src/cu_programs/*.cpp* src/cu_programs/*.cudafe* src/cu_programs/*.fatbin* src/cu_programs/*.hash src/cu_programs/*.module_id src/cu_programs/*.sm_*
+	rm src/cu_programs/*.cuda* src/cu_programs/*.cpp* src/cu_programs/*.fatbin* src/cu_programs/*.hash src/cu_programs/*.module_id src/cu_programs/*.sm_*

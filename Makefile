@@ -11,7 +11,7 @@ all:
 	nvcc -x cu -keep -keep-dir src/cu_programs/  -arch=sm_30 -m64           \
 	-I. -dc src/cu_programs/copy_buffer_rect.cu -o src/cu_programs/copy_buffer_rect.o
 
-	scons
+	scons --profiler=$(PROF)
 
 doc:
 	doxygen ./docs/Doxyfile

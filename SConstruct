@@ -80,7 +80,6 @@ if (env['mode'] == None or (env['mode'] not in ['release', 'debug'])):
     env['mode'] = 'release'
 
 
-
 #
 # profiler (scalasca)
 #
@@ -93,8 +92,11 @@ AddOption(  '--profiler',
 
 env['profiler'] = GetOption('profiler')
 
-if (env['profiler'] != None and (env['profiler'] not in ['scalasca','manual' ])):
+#if (env['profiler'] != None and (env['profiler'] not in ['scalasca','manual' ])):
+#    env['profiler'] = 'scalasca'
+if (env['profiler'] != None and (env['profiler'] not in ['scalasca','scorep','manual' ])):
     env['profiler'] = 'scalasca'
+print env['profiler']
 
 
 ###################################################################
@@ -243,6 +245,8 @@ else:
 if (env['profiler'] == 'scalasca'):
     #env.Replace(CXX= 'scalasca -instrument -comp=none -mode=MPI '+ env['CXX'])
     env.Replace(LINK= 'scalasca -instrument -comp=none -mode=MPI '+ env['LINK'])
+elif (env['profiler'] == 'scorep'):
+    env.Replace(LINK= 'scorep '+ env['LINK'])
 
 if ARGUMENTS.get('benchmark', 0):
     env.Append(CXXFLAGS=' -DBENCHMARK=1')
