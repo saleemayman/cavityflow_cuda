@@ -97,6 +97,7 @@ env['profiler'] = GetOption('profiler')
 if (env['profiler'] != None and (env['profiler'] not in ['scalasca','scorep','manual' ])):
     env['profiler'] = 'scalasca'
 print env['profiler']
+print env['compiler']
 
 
 ###################################################################
@@ -197,6 +198,11 @@ if env['compiler'] == 'mpiCC':
     env.Append(CXXFLAGS=' -fmessage-length=0')
     env.Replace(CXX = 'mpiCC')
 
+if env['compiler'] == 'mpicc':
+    # eclipse specific flag
+    env.Append(CXXFLAGS=' -fmessage-length=0')
+    env.Replace(CXX = 'mpicc')
+
 if env['compiler'] == 'CC':
     # eclipse specific flag
     # env.Append(CXXFLAGS=' -fmessage-length=0')
@@ -244,9 +250,10 @@ else:
 
 if (env['profiler'] == 'scalasca'):
     #env.Replace(CXX= 'scalasca -instrument -comp=none -mode=MPI '+ env['CXX'])
-    env.Replace(LINK= 'scalasca -instrument -comp=none -mode=MPI '+ env['LINK'])
+    env.Replace(CXX= 'scalasca -instrument -comp=none ' + env['CXX'])
+
 elif (env['profiler'] == 'scorep'):
-    env.Replace(LINK= 'scorep '+ env['LINK'])
+    env.Replace(CXX= 'scorep '+ env['CXX'])
 
 if ARGUMENTS.get('benchmark', 0):
     env.Append(CXXFLAGS=' -DBENCHMARK=1')
@@ -303,6 +310,7 @@ SConscript('src/SConscript', variant_dir='build/build_'+program_name, duplicate=
 Import('env')
 
 print
+print env['compiler']
 print 'Building program "'+program_name+'"'
 print
 

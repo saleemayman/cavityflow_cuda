@@ -1265,7 +1265,7 @@ public:
             // sharedMemBytes = 12 * threadsPerBlock.x * threadsPerBlock.y * threadsPerBlock.z;
             // sharedMemBytes = local_work_size * 12;
             sharedMemBytes = sizeof(T) * local_work_size * 12;
-            // printf("dim: %i, sharedMemBytes: %i \n", work_dim, sharedMemBytes);
+            //printf("dim: %i, sharedMemBytes: %i \n", work_dim, sharedMemBytes);
             // get handle for the cuda stream
             // create();
 
