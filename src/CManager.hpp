@@ -75,7 +75,8 @@ public:
 #endif
     }
 
-    void initSimulation(int my_rank) {
+    void initSimulation(int my_rank) 
+	{
         // initialize the boundary condition
         int BC[3][2] = {/* x BC */{ FLAG_GHOST_LAYER, FLAG_GHOST_LAYER },
                         /* y BC */{ FLAG_GHOST_LAYER, FLAG_GHOST_LAYER },

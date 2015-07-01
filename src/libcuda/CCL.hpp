@@ -72,7 +72,7 @@ public:
     public:
         //cl_platform_id platform_id;   ///< OpenCL platform handler
 
-        char *profile;  ///< profile string
+//        char *profile;  ///< profile string
         char *version;  ///< version string
         char *name;     ///< name string
         char *vendor;   ///< vendor string
@@ -84,7 +84,7 @@ private:
          */
         inline void initCPlatform()
         {
-            profile = NULL;
+//            profile = NULL;
             version = NULL;
             name = NULL;
             vendor = NULL;
@@ -103,7 +103,7 @@ private:
          */
         inline void cleanupCPlatform()
         {
-            delete[] profile;
+//            delete[] profile;
             delete[] version;
             delete[] name;
             delete[] vendor;
@@ -862,7 +862,7 @@ public:
         )
         {
             CUresult errcode_ret;
-            //program = clCreateProgramWithSource(cContext.context, count, strings, lengths, &errcode_ret);
+			//printf("cudaKernelFileName: %s\n", cudaKernelFileName);
             errcode_ret = cuModuleLoad(&program, cudaKernelFileName);
             if (errcode_ret != CUDA_SUCCESS)
             {
@@ -1249,9 +1249,9 @@ public:
         )
         {
             // printf(" -> CCL::enqueueNDRangeKernel()");
-#if PROFILE
-          event = new cl_event();
-#endif
+//#if PROFILE
+//          event = new cl_event();
+//#endif
             dim3 threadsPerBlock; //  threads per grid dimension = dim3(32, 1, 1);
             dim3 numBlocks;  //  number of blocks to launch = dim3((size + threadsPerBlock.x - 1) / threadsPerBlock.x, 1, 1);
             int sharedMemBytes;
@@ -1283,19 +1283,19 @@ public:
                                                 ) );
 // TODO: Check if size_t is a valid argument for cuLaunchKernel() for numBlocks and threadsPerBlock variables.
 
-#if PROFILE
-            clWaitForEvents(1, event);
-            char kernel_name[128];
-            CL_CHECK_ERROR( clGetKernelInfo (cKernel.kernel,
-                             CL_KERNEL_FUNCTION_NAME,
-                             128,
-                             kernel_name,
-                             NULL
-                             ));
-            CProfilerEvent* profEvent = new CProfilerEvent(kernel_name, event);
-            ProfilerSingleton::Instance()->addProfilerEvent(profEvent);
-            delete event;
-#endif
+//#if PROFILE
+//            clWaitForEvents(1, event);
+//            char kernel_name[128];
+//            CL_CHECK_ERROR( clGetKernelInfo (cKernel.kernel,
+//                             CL_KERNEL_FUNCTION_NAME,
+//                             128,
+//                             kernel_name,
+//                             NULL
+//                             ));
+//            CProfilerEvent* profEvent = new CProfilerEvent(kernel_name, event);
+//            ProfilerSingleton::Instance()->addProfilerEvent(profEvent);
+//            delete event;
+//#endif
         }
 
         /**

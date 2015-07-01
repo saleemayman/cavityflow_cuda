@@ -263,7 +263,7 @@ public:
 
             cLbmPtr->setDensityDistribution(recv_buffer, recv_origin,
                     recv_size);
-            cLbmPtr->wait();
+            //cLbmPtr->wait();
 
             delete[] send_buffer;
             delete[] recv_buffer;
@@ -328,7 +328,7 @@ public:
             // TODO: OPTIMIZATION: you need to wait only for receiving to execute following command
             cLbmPtr->setDensityDistribution(recv_buffer, recv_origin, recv_size,
                     normal);
-            cLbmPtr->wait();
+            //cLbmPtr->wait();
 
             delete[] send_buffer;
             delete[] recv_buffer;
@@ -456,24 +456,24 @@ public:
 
         std::cout << "done." << std::endl;
 
-#if PROFILE
-        std::stringstream profile_file_name;
-        profile_file_name << "./" << PROFILE_OUTPUT_DIR << "/" <<
-        "profile_" << ConfigSingleton::Instance()->subdomain_num.elements() << "_" << _UID
-        << ".ini";
-        const std::string& tmp = profile_file_name.str();
-        const char* pcstr = tmp.c_str();
-        std::ofstream prof_file (pcstr, std::ios::out | std::ios::app );
-        if (prof_file.is_open()) {
-            prof_file << "[METADATA]" << std::endl;
-            prof_file << "TOTAL_NUM_PROC : " << ConfigSingleton::Instance()->subdomain_num.elements() << std::endl;
-            prof_file << "CURRENT_PROC_ID : " << _UID << std::endl;
-            prof_file << std::endl;
-        } else std::cout << "Unable to open file: " << pcstr << std::endl;
-        // const std::string& tmp = profile_file_name.str();
-        // const char* cstr = tmp.c_str();
-        ProfilerSingleton::Instance()->saveEvents(profile_file_name.str());
-#endif
+//#if PROFILE
+//        std::stringstream profile_file_name;
+//        profile_file_name << "./" << PROFILE_OUTPUT_DIR << "/" <<
+//        "profile_" << ConfigSingleton::Instance()->subdomain_num.elements() << "_" << _UID
+//        << ".ini";
+//        const std::string& tmp = profile_file_name.str();
+//        const char* pcstr = tmp.c_str();
+//        std::ofstream prof_file (pcstr, std::ios::out | std::ios::app );
+//        if (prof_file.is_open()) {
+//            prof_file << "[METADATA]" << std::endl;
+//            prof_file << "TOTAL_NUM_PROC : " << ConfigSingleton::Instance()->subdomain_num.elements() << std::endl;
+//            prof_file << "CURRENT_PROC_ID : " << _UID << std::endl;
+//            prof_file << std::endl;
+//        } else std::cout << "Unable to open file: " << pcstr << std::endl;
+//        // const std::string& tmp = profile_file_name.str();
+//        // const char* cstr = tmp.c_str();
+//        ProfilerSingleton::Instance()->saveEvents(profile_file_name.str());
+//#endif
         return EXIT_SUCCESS;
     }
 

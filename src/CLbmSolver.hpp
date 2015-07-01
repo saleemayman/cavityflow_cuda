@@ -488,6 +488,7 @@ public:
                 cKernelInit_WorkGroupSize,
                 cKernelInit.kernelArgsVec);
 
+//		printf("rank: %i, initKernel: after launch\n", _UID);
         cCommandQueue.enqueueBarrier();
 
 #if DEBUG

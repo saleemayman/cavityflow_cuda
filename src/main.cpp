@@ -436,18 +436,17 @@ int main(int argc, char** argv)
             exit(EXIT_FAILURE);
         }
 
-        // printf("main() before initSimulation. \n");
+        //printf("main() before initSimulation. \n");
         manager->initSimulation(my_rank);
 
-        // printf("main() start simulation. \n");
+        //printf("main() start simulation. \n");
         manager->startSimulation();
-        delete manager;
+//        delete manager;
 
-        // printf("Rank: %i done.\n", my_rank);
+        printf("Rank: %i done.\n", my_rank);
         MPI_Finalize();    /// Cleanup MPI
     }
 
-    // printf("main() Complete! \n");
     return 0;
 
 }
