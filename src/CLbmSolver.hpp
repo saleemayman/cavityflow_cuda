@@ -18,6 +18,7 @@
 #define CLBMOPENCL_HH
 
 #include "CLbmSkeleton.hpp"
+//#include "CComm.hpp" //included in CLbmSkeleton
 #include "libcuda/CCL.hpp"
 #include "lib/CError.hpp"
 #include "libmath/CVector.hpp"
@@ -123,6 +124,15 @@ private:
     bool store_velocity; // store velocity for visualization
     bool store_density;
 private:
+	// initialize density buffers once
+	// list of communication vector
+    std::vector<CComm<T>*> _comm_container; ///< A std::Vector containing all the communcation objects for the subdomain
+	std::vector< CVector<3, int> > send_size_vec;
+	std::vector< CVector<3, int> > recv_size_vec;
+	CCL::CMem *cStoreDensityBuffer;
+	CCL::CMem *cSetDensityBuffer;
+	//cStoreBuffer.create(cContext, sizeof(T) * size.elements() * SIZE_DD_HOST);
+
 
     std::vector<std::string> split(const std::string& str,
             const std::string& delimiter = " ")
@@ -241,6 +251,12 @@ public:
 
         reload();
     }
+
+    ~CLbmSolver()
+	{
+		delete[] cStoreDensityBuffer;
+		delete[] cSetDensityBuffer;
+	}
 
     void addDrivenCavityValue(T value)
     {
@@ -547,6 +563,46 @@ public:
         simulation_step_counter++;
     }
 
+	// accept communication vector from Controller
+    void setGhostLayerBuffers(std::vector<CComm<T> *> &comm)
+	{
+		this->_comm_container = comm;
+        typename std::vector<CComm<T>*>::iterator it = this->_comm_container.begin();
+
+		// add the CVector objects to the vector container
+		for(; it != this->_comm_container.end(); it++)
+		{
+			send_size_vec.push_back( (*it)->getSendSize() );	
+			recv_size_vec.push_back( (*it)->getRecvSize() );	
+		}
+
+		// number of CMem objects to be created for send and recv buffers
+		int i = 0;
+		size_t storeMemObjects = send_size_vec.size(); 
+		size_t setMemObjects = recv_size_vec.size();
+		
+		cStoreDensityBuffer = new CCL::CMem[storeMemObjects]; 
+		cSetDensityBuffer = new CCL::CMem[setMemObjects]; 
+
+		// allocate the buffer objects by accessing the CVector container objects
+        typename std::vector<CVector<3, int> >::iterator it_s = this->send_size_vec.begin();
+        typename std::vector<CVector<3, int> >::iterator it_r = this->recv_size_vec.begin();
+		//for(; it_s != this->send_size_vec.end(); it_s++, i++)
+		it = this->_comm_container.begin();
+		for(; it != this->_comm_container.end(); it++, it_s++, it_r++, i++)
+		{
+			cStoreDensityBuffer[i] = CCL::CMem();
+			cSetDensityBuffer[i] = CCL::CMem();
+			cStoreDensityBuffer[i].create(cContext, sizeof(T) * (*it_s).elements() * SIZE_DD_HOST);
+			cSetDensityBuffer[i].create(cContext, sizeof(T) * (*it_r).elements() * SIZE_DD_HOST);
+#if DEBUG
+			std::cout << "Solver --> rank: " << _UID ", send_size: " << (*it_s).elements() << ", recv_size: " << (*it_r).elements() << std::endl;
+			std::cout << "Solver --> send_elems: " << (*it_s).data[0] << ", " << (*it_s).data[1] << ", " << (*it_s).data[2] << std::endl;
+			std::cout << "Solver --> recv_elems: " << (*it_r).data[0] << ", " << (*it_r).data[1] << ", " << (*it_r).data[2] << std::endl;
+#endif
+		}
+	}
+
     /**
      * wait until all kernels have finished
      */
@@ -567,34 +623,40 @@ public:
     }
 
     void storeDensityDistribution(T *dst, CVector<3, int> &origin,
-            CVector<3, int> &size)
+            CVector<3, int> &size, int i)
     {
-        CCL::CMem cBuffer;
-        cBuffer.create(cContext, sizeof(T) * size.elements() * SIZE_DD_HOST);
+        //CCL::CMem cBuffer;
+        //cBuffer.create(cContext, sizeof(T) * size.elements() * SIZE_DD_HOST);
 
         for (int f = 0; f < SIZE_DD_HOST; f++)
         {
-            enqueueCopyRectKernel(cMemDensityDistributions, cBuffer,
+            //enqueueCopyRectKernel(cMemDensityDistributions, cBuffer,
+            enqueueCopyRectKernel(cMemDensityDistributions, cStoreDensityBuffer[i],
                     f * this->domain_cells_count, origin,
                     this->domain_cells, f * size.elements(),
                     CVector<3, int>(0, 0, 0), size, size, false);
         }
         cCommandQueue.enqueueBarrier();
 
-        cCommandQueue.enqueueReadBuffer(cBuffer, CU_TRUE, // sync reading
-                0, cBuffer.getSize(), dst);
+        //cCommandQueue.enqueueReadBuffer(cBuffer, CU_TRUE, 0, cBuffer.getSize(), dst);
+        cCommandQueue.enqueueReadBuffer(cStoreDensityBuffer[i], CU_TRUE, 
+			0, cStoreDensityBuffer[i].getSize(), dst);
     }
 
     void setDensityDistribution(T *src, CVector<3, int> &origin,
-            CVector<3, int> &size)
+            CVector<3, int> &size, int i)
     {
         
-        CCL::CMem cBuffer;
-        cBuffer.createCopyToDevice(cContext, sizeof(T) * size.elements() * SIZE_DD_HOST, src);
+        //CCL::CMem cBuffer;
+        //cBuffer.create(cContext, sizeof(T) * size.elements() * SIZE_DD_HOST);
+		//cCommandQueue.enqueueWriteBuffer( cBuffer, CU_TRUE, 0, sizeof(T) * size.elements() * SIZE_DD_HOST, src);
+		cCommandQueue.enqueueWriteBuffer( cSetDensityBuffer[i], CU_TRUE, 0,
+			sizeof(T) * size.elements() * SIZE_DD_HOST, src);
 
         for (int f = 0; f < SIZE_DD_HOST; f++)
         {
-            enqueueCopyRectKernel(cBuffer, cMemDensityDistributions,
+            //enqueueCopyRectKernel(cBuffer, cMemDensityDistributions,
+            enqueueCopyRectKernel(cSetDensityBuffer[i], cMemDensityDistributions,
                     f * size.elements(), CVector<3, int>(0, 0, 0), size,
                     f * this->domain_cells_count, origin,
                     this->domain_cells, size, false);
@@ -603,18 +665,20 @@ public:
     }
 
     void setDensityDistribution(T *src, CVector<3, int> &origin,
-            CVector<3, int> &size, CVector<3, int> norm)
+            CVector<3, int> &size, CVector<3, int> norm, int i)
     {
-        CCL::CMem cBuffer;
-        cBuffer.createCopyToDevice(cContext, 
-                sizeof(T) * size.elements() * SIZE_DD_HOST, src);
-
+        //CCL::CMem cBuffer;
+        //cBuffer.create(cContext, sizeof(T) * size.elements() * SIZE_DD_HOST);
+		//cCommandQueue.enqueueWriteBuffer( cBuffer, CU_TRUE, 0, sizeof(T) * size.elements() * SIZE_DD_HOST, src);
+		cCommandQueue.enqueueWriteBuffer( cSetDensityBuffer[i], CU_TRUE, 0, 
+			sizeof(T) * size.elements() * SIZE_DD_HOST, src);
 
         for (int f = 0; f < SIZE_DD_HOST; f++)
         {
             if (norm.dotProd(lbm_units[f]) > 0)
             {
-                enqueueCopyRectKernel(cBuffer, cMemDensityDistributions,
+                //enqueueCopyRectKernel(cBuffer, cMemDensityDistributions,
+                enqueueCopyRectKernel(cSetDensityBuffer[i], cMemDensityDistributions,
                         f * size.elements(), CVector<3, int>(0, 0, 0), size,
                         f * this->domain_cells_count, origin,
                         this->domain_cells, size, false);
@@ -698,17 +762,6 @@ public:
         cCommandQueue.enqueueReadBuffer(cMemDensity, CU_TRUE, // sync reading
                 0, byte_size, dst);
 
-/*        printf("density as FLAGS: size= %i\n", byte_size/sizeof(T) );
-        for (size_t i = 0; i < byte_size/sizeof(T); i++)
-        {
-            printf(" %i ", (int)dst[i]);
-            if ((i + 1) % (domain_x) == 0)
-            {
-                printf("\n");
-            }
-        }
-        printf("\n");
-*/
     }
 
     /**

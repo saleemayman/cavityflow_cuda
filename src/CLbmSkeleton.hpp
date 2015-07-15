@@ -31,6 +31,7 @@
 #include "libmath/CVector.hpp"
 #include "lib/CError.hpp"
 #include "CDomain.hpp"
+#include "CComm.hpp"
 
 /**
  * \brief skeleton for lattice boltzmann simulation to handle parameters and to do the parametrization
@@ -46,6 +47,8 @@ public:
 	CVector<3,int> domain_cells;	///< available simulation cells in each dimension
 	int domain_cells_count;			///< overall number of simulation cells
 	CVector<4, T> d_drivenCavityVelocity;
+
+
 //protected:
 	// input values
 	T d_domain_x_length;		/**< domain length in x direction (meters)

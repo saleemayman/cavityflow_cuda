@@ -203,6 +203,9 @@ public:
             _lbm_controller->setGeometry();
         }
 
+		// add the communication containers to the Solver
+		_lbm_controller->addCommToSolver();
+
     }
 
     void startSimulation() {

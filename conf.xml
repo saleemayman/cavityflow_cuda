@@ -22,12 +22,12 @@
     <domain-size>
       <x>64</x>
       <y>64</y>
-      <z>32</z>
+      <z>16</z>
     </domain-size>
     <!-- number of subdomains  in x, y and z direction -->
     <subdomain-num>
       <x>2</x>
-      <y>2</y>
+      <y>1</y>
       <z>1</z>
     </subdomain-num>
     <domian-length>

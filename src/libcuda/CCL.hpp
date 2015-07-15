@@ -392,6 +392,7 @@ public:
             //cl_int err_ret;
             CUresult err_ret;
             err_ret = cuCtxCreate(&context, CU_CTX_SCHED_AUTO, cDevice.device_id);
+//            err_ret = cuCtxCreate(&context, CU_CTX_BLOCKING_SYNC, cDevice.device_id);
             CudaCallCheckError(err_ret);
             //cl_context_properties context_properties[] = {CL_CONTEXT_PLATFORM, (cl_context_properties)cPlatform.platform_id, 0, 0};
             //context = clCreateContext(context_properties, 1, &cDevice.device_id, NULL, NULL, &err_ret);
@@ -736,6 +737,22 @@ private:
             CudaCallCheckError(errcode_ret);
         }
 
+        /*
+         * same as create() but copies the data from host to device
+         * OpenCL equivalent is clCreateBuffer with  CL_MEM_COPY_HOST_PTR  flag
+         */
+        inline void createCopyToDevice( CContext&       cContext,   ///< context for buffer
+                                        size_t          size,       ///< Size of memory buffer
+                                        void*           host_ptr    ///< Host pointer to initialize buffer
+        )
+        {
+            // Allocate GPU memory
+            create(cContext, size);
+
+            // Copy data from host_ptr to GPU
+            CudaCallCheckError( cuMemcpyHtoD(memobj, host_ptr, size) );
+        }
+
         // for debugging
         inline void printVelMemObj(size_t elems)
         {
@@ -770,22 +787,6 @@ private:
             printf("\n");
 
             delete[] rho_memobj_h;
-        }
-
-        /*
-         * same as create() but copies the data from host to device
-         * OpenCL equivalent is clCreateBuffer with  CL_MEM_COPY_HOST_PTR  flag
-         */
-        inline void createCopyToDevice( CContext&       cContext,   ///< context for buffer
-                                        size_t          size,       ///< Size of memory buffer
-                                        void*           host_ptr    ///< Host pointer to initialize buffer
-        )
-        {
-            // Allocate GPU memory
-            create(cContext, size);
-
-            // Copy data from host_ptr to GPU
-            CudaCallCheckError( cuMemcpyHtoD(memobj, host_ptr, size) );
         }
 /*
  * CGlTexture has to be included before CCL.hpp to enable the creation of

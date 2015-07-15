@@ -218,8 +218,10 @@ public:
         // std::cout << "--> Sync alpha" << std::endl;
 #endif
         // TODO: OPTIMIZATION: communication of different neighbors can be done in Non-blocking way.
+		int i = 0;
         typename std::vector<CComm<T>*>::iterator it = _comm_container.begin();
-        for (; it != _comm_container.end(); it++) {
+        for (; it != _comm_container.end(); it++, i++)
+		{
             CVector<3, int> send_size = (*it)->getSendSize();
             CVector<3, int> recv_size = (*it)->getRecvSize();
             CVector<3, int> send_origin = (*it)->getSendOrigin();
@@ -234,13 +236,15 @@ public:
             int recv_buffer_size = recv_size.elements() * cLbmPtr->SIZE_DD_HOST;
             T* send_buffer = new T[send_buffer_size];
             T* recv_buffer = new T[recv_buffer_size];
+			
+			//printf("syncAlph--> rank: %i, send_size: %li, recv_size: %li \n", _UID, send_size.elements(), recv_size.elements());			
 
             MPI_Request req[2];
             MPI_Status status[2];
 
             // Download data from device to host
             cLbmPtr->storeDensityDistribution(send_buffer, send_origin,
-                    send_size);
+                    send_size, i);
             //cLbmPtr->wait();
             int my_rank, num_procs;
             MPI_Comm_rank(MPI_COMM_WORLD, &my_rank); /// Get current process id
@@ -262,7 +266,7 @@ public:
             MPI_Waitall(2, req, status);
 
             cLbmPtr->setDensityDistribution(recv_buffer, recv_origin,
-                    recv_size);
+                    recv_size, i);
             //cLbmPtr->wait();
 
             delete[] send_buffer;
@@ -275,17 +279,16 @@ public:
 #if DEBUG
         // std::cout << "--> Sync beta" << std::endl;
 #endif
-
+		int i = 0;
         // TODO: OPTIMIZATION: communication of different neighbors can be done in Non-blocking form.
         typename std::vector<CComm<T>*>::iterator it = _comm_container.begin();
-        for (; it != _comm_container.end(); it++)
+        for (; it != _comm_container.end(); it++, i++)
         {
             // the send and receive values in beta sync is the opposite values of
             // Comm instance related to current communication, since the ghost layer data
             // will be sent back to their origin
             CVector<3, int> send_size = (*it)->getRecvSize();
             CVector<3, int> recv_size = (*it)->getSendSize();
-            ;
             CVector<3, int> send_origin = (*it)->getRecvOrigin();
             CVector<3, int> recv_origin = (*it)->getSendOrigin();
             CVector<3, int> normal = (*it)->getCommDirection();
@@ -299,12 +302,14 @@ public:
             T* send_buffer = new T[send_buffer_size];
             T* recv_buffer = new T[recv_buffer_size];
 
+			//printf("syncBeta--> rank: %i, send_size: %li, recv_size: %li \n", _UID, send_size.elements(), recv_size.elements());
+
             MPI_Request req[2];
             MPI_Status status[2];
 
             // Download data from device to host
             cLbmPtr->storeDensityDistribution(send_buffer, send_origin,
-                    send_size);
+                    send_size, i);
             //cLbmPtr->wait();
             int my_rank, num_procs;
             MPI_Comm_rank(MPI_COMM_WORLD, &my_rank); /// Get current process id
@@ -327,7 +332,7 @@ public:
 
             // TODO: OPTIMIZATION: you need to wait only for receiving to execute following command
             cLbmPtr->setDensityDistribution(recv_buffer, recv_origin, recv_size,
-                    normal);
+                    normal, i);
             //cLbmPtr->wait();
 
             delete[] send_buffer;
@@ -455,25 +460,6 @@ public:
         std::cout << std::resetiosflags(std::ios::fixed);
 
         std::cout << "done." << std::endl;
-
-//#if PROFILE
-//        std::stringstream profile_file_name;
-//        profile_file_name << "./" << PROFILE_OUTPUT_DIR << "/" <<
-//        "profile_" << ConfigSingleton::Instance()->subdomain_num.elements() << "_" << _UID
-//        << ".ini";
-//        const std::string& tmp = profile_file_name.str();
-//        const char* pcstr = tmp.c_str();
-//        std::ofstream prof_file (pcstr, std::ios::out | std::ios::app );
-//        if (prof_file.is_open()) {
-//            prof_file << "[METADATA]" << std::endl;
-//            prof_file << "TOTAL_NUM_PROC : " << ConfigSingleton::Instance()->subdomain_num.elements() << std::endl;
-//            prof_file << "CURRENT_PROC_ID : " << _UID << std::endl;
-//            prof_file << std::endl;
-//        } else std::cout << "Unable to open file: " << pcstr << std::endl;
-//        // const std::string& tmp = profile_file_name.str();
-//        // const char* cstr = tmp.c_str();
-//        ProfilerSingleton::Instance()->saveEvents(profile_file_name.str());
-//#endif
         return EXIT_SUCCESS;
     }
 
@@ -481,6 +467,12 @@ public:
     {
         _comm_container.push_back(comm);
     }
+
+    void addCommToSolver()
+    {
+		cLbmPtr->setGhostLayerBuffers(_comm_container);	
+    }
+
 
     /*
      * This Function is used the set the geometry (e.g obstacles, velocity injections, ...) of corresponding domain
