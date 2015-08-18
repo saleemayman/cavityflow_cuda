@@ -18,8 +18,6 @@
 #ifndef CCOMPLANG_HPP
 #define CCOMPLANG_HPP
 
-//#include <CL/cl.h>    // remove this once all OpenCL commands are gone.
-//#include <helper_cuda_drvapi.h>
 #include <iostream>
 #include <strings.h>
 #include <string.h>
@@ -31,7 +29,6 @@
 #include "CCLErrors.hpp"
 #include "../lib/CError.hpp"
 #include "../lib/CFile.hpp"
-//#include "../libtools/CProfiler.hpp"
 #include "../libmath/CVector.hpp"
 #include "../common.h"
 #include <sys/types.h>
@@ -70,9 +67,6 @@ public:
     class CPlatform
     {
     public:
-        //cl_platform_id platform_id;   ///< OpenCL platform handler
-
-//        char *profile;  ///< profile string
         char *version;  ///< version string
         char *name;     ///< name string
         char *vendor;   ///< vendor string
@@ -84,7 +78,6 @@ private:
          */
         inline void initCPlatform()
         {
-//            profile = NULL;
             version = NULL;
             name = NULL;
             vendor = NULL;
@@ -103,7 +96,6 @@ private:
          */
         inline void cleanupCPlatform()
         {
-//            delete[] profile;
             delete[] version;
             delete[] name;
             delete[] vendor;
@@ -111,45 +103,6 @@ private:
         }
 
 public:
-
-#if 0
-        /**
-         * load information about platform and store to class
-         */
-        inline void loadPlatformInfo()
-        {
-            size_t size_retval;
-#define loadP(flag, variable)   \
-            CL_CHECK_ERROR(clGetPlatformInfo(   platform_id,    flag,   0,  NULL,   &size_retval));     \
-            variable = new char[size_retval];                                           \
-            CL_CHECK_ERROR(clGetPlatformInfo(   platform_id,    flag,   size_retval,    variable,   NULL)); \
-
-            loadP(CL_PLATFORM_PROFILE, profile)
-            loadP(CL_PLATFORM_VERSION, version)
-            loadP(CL_PLATFORM_NAME, name)
-            loadP(CL_PLATFORM_VENDOR, vendor)
-            loadP(CL_PLATFORM_EXTENSIONS, extensions)
-#undef load
-        }
-        /**
-         * setup platform id to load information for platform_id
-         */
-        inline void load(cl_platform_id p_platform_id)
-        {
-            cleanupCPlatform();
-            initCPlatform();
-            platform_id = p_platform_id;
-        }
-
-        /**
-         * load information about Platform given by platform_id
-         */
-        inline CPlatform(cl_platform_id p_platform_id)
-        {
-            initCPlatform();
-            load(p_platform_id);
-        }
-#endif
         inline void load()
         {
             initCPlatform();
@@ -173,7 +126,6 @@ public:
     class CDevice
     {
     public:
-        //cl_device_id  device_id;      ///< OpenCL Device ID
         CUdevice device_id;             ///< CUDA Device ID
 
         /**
@@ -231,8 +183,6 @@ public:
     class CDevices  : public std::vector<CDevice>
     {
     public:
-        //cl_context context;           ///< OpenCL context
-        //cl_device_id *device_ids; ///< array with devices available for the context
         CUcontext context;
         CUdevice *device_ids;
         int device_ids_count;       ///< number of contexts in device_ids[]
@@ -241,19 +191,14 @@ public:
          * load device list belonging to context cContext
          * \param cContext  existing context
          */
-        //inline void load(CContext &cContext)
          inline void load()
         {
             // load device information
-//          int value_size_ret;
-//          CL_CHECK_ERROR(clGetContextInfo(cContext.context, CL_CONTEXT_DEVICES, 0, NULL, &value_size_ret));
             CudaCallCheckError( cuDeviceGetCount(&device_ids_count) );
-            //device_ids_count = value_size_ret / sizeof(cl_device_id);
             if (device_ids_count == 0)  std::cerr << "Warning: no device found!" << std::endl;
             delete device_ids;
             device_ids = new CUdevice[device_ids_count];
 
-            //CL_CHECK_ERROR(clGetContextInfo(cContext.context, CL_CONTEXT_DEVICES, value_size_ret, device_ids, NULL));
             /// get a handle for each device available
             for (int i = 0; i < device_ids_count; i++)
             {
@@ -263,26 +208,6 @@ public:
             initDeviceVector();
         }
 
-
-        /**
-         * load device list of type 'device type' belonging to platform cPlatform
-         */
-#if 0        
-        inline void load(   CPlatform &cPlatform,
-                            cl_device_type device_type = CL_DEVICE_TYPE_ALL
-        )
-        {
-            // read out device ids for given platform
-            CL_CHECK_ERROR(clGetDeviceIDs(  cPlatform.platform_id, device_type, 0, NULL, &device_ids_count));
-
-            delete device_ids;
-            device_ids = new cl_device_id[device_ids_count];
-
-            CL_CHECK_ERROR(clGetDeviceIDs(  cPlatform.platform_id, device_type, device_ids_count, device_ids, NULL));
-
-            initDeviceVector();
-        }
-#endif
         /**
          * initialize device list with NULL
          */
@@ -292,15 +217,6 @@ public:
             device_ids_count = 0;
             clear();
         }
-
-        /**
-         * initialize devices
-         */
-        /*inline CDevices()
-        {
-            initCDevices();
-        }*/
-
         /**
          * load device list belonging to cContext
          */
@@ -310,16 +226,6 @@ public:
             load();
         }
 
-        /**
-         * load device list of type 'device type' belonging to platform cPlatform
-         */
-#if 0        
-        inline CDevices(CPlatform &cPlatform, cl_device_type device_type = CL_DEVICE_TYPE_ALL)
-        {
-            initCDevices();
-            load(cPlatform, device_type);
-        }
-#endif
         /**
          * deconstructor: free unnecessary device data
          */
@@ -333,19 +239,12 @@ public:
     private:
         inline void initDeviceVector()
         {
-            //clear();
             (*this).resize(device_ids_count);
             for (uint i = 0; i < device_ids_count; i++)
             {
                 (*this)[i].set(device_ids[i]);
             }
         }
-/*
-        inline CDevices operator=(const CDevices& c)
-        {
-            return c;
-        }
-*/
     };
 
 
@@ -359,47 +258,17 @@ public:
         CUresult error;     ///< error handler
         CUcontext context;  ///< OpenCL context id
 
-
-#if 0
-        /**
-         * load context and device list by platform and type
-         */
-        inline void load(   const CPlatform &cPlatform,     ///< platform for parameters
-                            cl_device_type device_type      ///< type of context and device list
-        )
-        {
-            release();
-
-            cl_int err_ret;
-            cl_context_properties context_properties[] = {CL_CONTEXT_PLATFORM, (cl_context_properties)cPlatform.platform_id, 0, 0};
-            context = clCreateContextFromType(context_properties, device_type, NULL, NULL, &err_ret);
-            CL_CHECK_ERROR(err_ret);
-
-            retain();
-        }
-#endif
         /**
          * load context by platform and device
-         
-        inline void load(   const CPlatform &cPlatform, ///< platform for parameters
-                            const CDevice &cDevice      ///< OpenCL device
-        )*/
+         */
         inline void load(   const CDevice &cDevice      ///< CUDA device
         )
         {
             release();
 
-            //cl_int err_ret;
             CUresult err_ret;
             err_ret = cuCtxCreate(&context, CU_CTX_SCHED_AUTO, cDevice.device_id);
-//            err_ret = cuCtxCreate(&context, CU_CTX_BLOCKING_SYNC, cDevice.device_id);
             CudaCallCheckError(err_ret);
-            //cl_context_properties context_properties[] = {CL_CONTEXT_PLATFORM, (cl_context_properties)cPlatform.platform_id, 0, 0};
-            //context = clCreateContext(context_properties, 1, &cDevice.device_id, NULL, NULL, &err_ret);
-            //CL_CHECK_ERROR(err_ret);
-/*
-            cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev);
-*/
             retain();
         }
 
@@ -424,55 +293,6 @@ public:
 #endif
 
 
-#if 0
-#ifdef C_GL_TEXTURE_HPP
-
-        /**
-         * load context from currently running GL context
-         * \param cPlatform desired CL Platform information
-         */
-        inline bool loadCurrentGlContext(CPlatform &cPlatform)
-        {
-            release();
-
-            cl_int err_ret;
-
-#ifdef WIN32
-    #error TODO
-#elifdef MACOSX
-    #error TODO
-#else
-            GLXContext glxContext = glXGetCurrentContext();
-            if (glxContext == NULL)
-            {
-                error << "no current glx context found" << std::endl;
-                return false;
-            }
-
-            Display *display = glXGetCurrentDisplay();
-            if (display == NULL)
-            {
-                error << "no current glx display found" << std::endl;
-                return false;
-            }
-
-            cl_context_properties context_properties[] = {
-                            CL_CONTEXT_PLATFORM, (cl_context_properties)cPlatform.platform_id,
-                            CL_GL_CONTEXT_KHR,  (cl_context_properties)glxContext,
-                            CL_GLX_DISPLAY_KHR, (cl_context_properties)display,
-                            NULL, NULL
-                    };
-#endif
-            context = clCreateContextFromType(context_properties, CL_DEVICE_TYPE_GPU, NULL, NULL, &err_ret);
-//          context = clCreateContext(context_properties, 0, NULL, NULL, NULL, &err_ret);
-            CL_CHECK_ERROR(err_ret);
-
-            retain();
-            return true;
-        }
-#endif
-#endif
-
         /**
          * initialize with NULL context
          */
@@ -489,44 +309,16 @@ public:
             context = NULL;
         }
 
-#if 0
-        /**
-         * initialize and load context with device_type and platform
-         */
-        inline CContext(    const CPlatform &cPlatform, ///< platform for parameters
-                            cl_device_type device_type  ///< type of context and device list
-        )
-        {
-            initCContext();
-            load(cPlatform, device_type);
-        }
-#endif
         /**
          * initialize and load context with device and platform
-
-        inline CContext(    CPlatform &cPlatform,   ///< platform for parameters
-                            CDevice &cDevice        ///< OpenCL device
-        )*/
+         */
         inline CContext(    CDevice &cDevice        ///< OpenCL device
         )
         {
-            //load(cPlatform, cDevice);
             load(cDevice);
         }
 
 
-#if 0
-        /**
-         * load context by platform and device list
-         */
-        inline CContext(    CPlatform &cPlatform,   ///< platform for parameters
-                            CDevices &cDevices      ///< device list available for context
-        )
-        {
-            initCContext();
-            load(cPlatform, cDevices);
-        }
-#endif
         inline ~CContext()
         {
             release();
@@ -545,24 +337,12 @@ public:
 
 
 private:
-        /*
-        inline CContext(const CContext &)
-        {
-        }
-        */
-/*
-        inline const CContext& operator=(const CContext &c)
-        {
-            return c;
-        }
-*/
         /**
          * increment reference counter to context to avoid deletion of context if
          * multiple classes use the same context
          */
         inline void retain()
         {
-            //CL_CHECK_ERROR(clRetainContext(context));
             CudaCallCheckError( cuCtxAttach(&context, 0) );
         }
 
@@ -573,7 +353,6 @@ private:
         {
             if (context != NULL)
             {
-                //clReleaseContext(context);
                 cuCtxDetach(context);
                 context = NULL;
             }
@@ -586,8 +365,6 @@ private:
     class CPlatforms
     {
     public:
-        /*cl_platform_id *platform_ids; ///< array with platform ids
-        cl_uint platform_ids_count;     ///< number of platforms in platform array*/
         CUresult err_ret;
 
         /**
@@ -601,8 +378,6 @@ private:
                 CudaCallCheckError(err_ret);
                 std::cerr << "Warning: CUDA Driver API not initialized!" << std::endl;
             }
-            /*platform_ids = NULL;
-            platform_ids_count = 0;*/
         }
 
         /**
@@ -611,21 +386,6 @@ private:
         inline void load()
         {
             initCPlatforms();
-
-            /*CL_CHECK_ERROR(clGetPlatformIDs(
-                        0,
-                        0,
-                        &platform_ids_count
-                    ));
-
-            delete platform_ids;
-            platform_ids = new cl_platform_id[platform_ids_count];
-
-            CL_CHECK_ERROR(clGetPlatformIDs(
-                        platform_ids_count,
-                        platform_ids,
-                        NULL
-                    ));*/
         }
 
         /**
@@ -638,8 +398,6 @@ private:
 
         inline ~CPlatforms()
         {
-            /*if (platform_ids != NULL)
-                delete platform_ids;*/
         }
     };
 
@@ -651,7 +409,6 @@ private:
     class CMem
     {
     public:
-        //cl_mem memobj;    ///< OpenCL memory object handler
         CUdeviceptr memobj;
 
         inline CMem()
@@ -670,17 +427,11 @@ private:
         /**
          * create OpenCL memory buffer
          */
-/*      inline CMem(    CContext&       cContext,   ///< context for buffer
-                        unsigned int    flags,      ///< CUDA flags
-                        size_t          size,       ///< Size of memory buffer
-                        void*           host_ptr    ///< Host pointer to initialize buffer
-            )   */
         inline CMem(    CContext&       cContext,   ///< context for buffer
                         size_t          size        ///< Size of memory buffer
             )
         {
             memobj = '\0';  //NULL;
-            //create(cContext, flags, size, host_ptr);  
             create(cContext, size); 
         }
 
@@ -690,7 +441,6 @@ private:
         void release()
         {
             if (memobj != '\0')     //if (memobj != NULL)
-                //clReleaseMemObject(memobj);
                 CudaCallCheckError( cuMemFree(memobj) );
             memobj = '\0';  //NULL;
         }
@@ -710,22 +460,13 @@ private:
         {
             CUdeviceptr pbase;
             size_t mem_size;
-            // CudaCallCheckError( cuMemGetAddressRange(NULL, &mem_size, memobj) );
             CudaCallCheckError( cuMemGetAddressRange(&pbase, &mem_size, memobj) );
-            // printf(" ->getSize() mem_size: %lu, pbase: %llu\n", mem_size, pbase);
             return mem_size;        ///< returns the size of memobj in size_t
         }
 
         /**
          * create new memory object
          */
-        /*inline void create(
-                        CContext&       cContext,   ///< context for buffer
-                        unsigned int    flags,      ///< CUDA flags
-                        size_t          size,       ///< Size of memory buffer
-                        void*           host_ptr    ///< Host pointer to initialize buffer
-            )
-        {*/
         inline void create( CContext&       cContext,   ///< context for buffer
                             size_t          size        ///< Size of memory buffer
         )
@@ -863,7 +604,6 @@ public:
         )
         {
             CUresult errcode_ret;
-			//printf("cudaKernelFileName: %s\n", cudaKernelFileName);
             errcode_ret = cuModuleLoad(&program, cudaKernelFileName);
             if (errcode_ret != CUDA_SUCCESS)
             {
@@ -953,8 +693,6 @@ public:
          */
         inline ~CKernel()
         {
-/*          if (kernel != NULL)
-                CL_CHECK_ERROR(clReleaseKernel(kernel));    */
         }
 
         /**
@@ -1054,7 +792,6 @@ public:
         {
             if (event != 0)
             {
-                //CL_CHECK_ERROR(clWaitForEvents(1, &event));
                 CudaCallCheckError( cuEventSynchronize(event) );
                 release();
                 event = 0;
@@ -1066,8 +803,6 @@ public:
          */
         inline CUresult getExecutionStatus()
         {
-            //cl_int param_value;
-            //CL_CHECK_ERROR(clGetEventInfo(event, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof(cl_int), &param_value, NULL));
             CUresult param_value;
             param_value = cuEventQuery(event);
             CudaCallCheckError(param_value);
@@ -1078,7 +813,6 @@ public:
         inline ~CEvent()
         {
             if (event != 0)
-                //clReleaseEvent(event);
                 CudaCallCheckError( cuEventDestroy(event) );
         }
 
@@ -1087,7 +821,6 @@ public:
          */
         inline void release()
         {
-            //clReleaseEvent(event);
             CudaCallCheckError( cuEventDestroy(event) );
             event = 0;
         }
@@ -1118,14 +851,12 @@ public:
         {
             if (cuda_stream != 0)   // check if this is correct
             {
-                //CL_CHECK_ERROR(clReleaseCommandQueue(command_queue));
                 CudaCallCheckError(cuStreamDestroy(cuda_stream));
             }
         }
 
         inline CCommandQueue()
         {
-            //command_queue = 0;
             cuda_stream = 0;
             create();
         }
@@ -1140,7 +871,6 @@ public:
          */
         inline void enqueueBarrier()
         {
-            //cl_int errcode_ret;
             CUresult errcode_ret;   // cuda error type
             errcode_ret = cuStreamSynchronize(cuda_stream);
             if (errcode_ret != CUDA_SUCCESS)
@@ -1162,12 +892,10 @@ public:
             if (block_write)    // sync write
             {
                 CudaCallCheckError( cuMemcpyHtoD(cMem.memobj, buffer_ptr, buffer_size));
-                //CUresult cuMemcpyHtoD(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCount);
             }
             else    // async write
             {
                 CudaCallCheckError( cuMemcpyHtoDAsync(cMem.memobj, buffer_ptr, buffer_size, cuda_stream) );
-                // CUresult cuMemcpyHtoDAsync(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCount, CUstream hStream);
             }
         }
 
@@ -1181,7 +909,6 @@ public:
                                         void *buffer_ptr        ///< host memory pointer
         )
         {
-            // printf(" -> CCL::enqueueReadBuffer()\n");
             if (block_write)    // sync write
             {
                 CudaCallCheckError( cuMemcpyDtoH(buffer_ptr, cMem.memobj, buffer_size) );
@@ -1214,12 +941,9 @@ public:
             else if(work_dim == 2)
             {
                 threadsPerBlock = dim3(local_work_size, local_work_size, 1);
-                // threadsPerBlock = dim3(1, 1, 1);
                 totalThreadsPerBlock = threadsPerBlock.x * threadsPerBlock.y * threadsPerBlock.z;
 
                 grids_x = sqrt((total_elements + threadsPerBlock.x * threadsPerBlock.y - 1) / totalThreadsPerBlock);
-                // grids_x = global_work_size[0];
-                // grids_y = global_work_size[1];
                 grids_y = grids_x;
 
                 numBlocks = dim3(grids_x + 1, grids_y + 1, 1);
@@ -1250,25 +974,13 @@ public:
         )
         {
             // printf(" -> CCL::enqueueNDRangeKernel()");
-//#if PROFILE
-//          event = new cl_event();
-//#endif
             dim3 threadsPerBlock; //  threads per grid dimension = dim3(32, 1, 1);
             dim3 numBlocks;  //  number of blocks to launch = dim3((size + threadsPerBlock.x - 1) / threadsPerBlock.x, 1, 1);
             int sharedMemBytes;
 
             setGridAndBlockSize(numBlocks, threadsPerBlock, work_dim, local_work_size, total_elements, global_work_size);
 
-            // printf("\n");
-            // printf("threadsPerBlock: [%u, %u, %u] \n", threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z);
-            // printf("numBlocks: [%u, %u, %u] \n", numBlocks.x, numBlocks.y, numBlocks.z);
-
-            // sharedMemBytes = 12 * threadsPerBlock.x * threadsPerBlock.y * threadsPerBlock.z;
-            // sharedMemBytes = local_work_size * 12;
             sharedMemBytes = sizeof(T) * local_work_size * 12;
-            //printf("dim: %i, sharedMemBytes: %i \n", work_dim, sharedMemBytes);
-            // get handle for the cuda stream
-            // create();
 
             CudaCallCheckError( cuLaunchKernel(cKernel.kernel,
                                                 numBlocks.x,
@@ -1282,21 +994,6 @@ public:
                                                 &kernelParams[0],
                                                 0        // extra     
                                                 ) );
-// TODO: Check if size_t is a valid argument for cuLaunchKernel() for numBlocks and threadsPerBlock variables.
-
-//#if PROFILE
-//            clWaitForEvents(1, event);
-//            char kernel_name[128];
-//            CL_CHECK_ERROR( clGetKernelInfo (cKernel.kernel,
-//                             CL_KERNEL_FUNCTION_NAME,
-//                             128,
-//                             kernel_name,
-//                             NULL
-//                             ));
-//            CProfilerEvent* profEvent = new CProfilerEvent(kernel_name, event);
-//            ProfilerSingleton::Instance()->addProfilerEvent(profEvent);
-//            delete event;
-//#endif
         }
 
         /**
@@ -1304,7 +1001,6 @@ public:
          */
         inline void finish()
         {
-            //CL_CHECK_ERROR(   clFinish(command_queue));
             CudaCallCheckError( cuStreamSynchronize(cuda_stream) );
         }
     };
@@ -1315,8 +1011,6 @@ public:
     class CDeviceInfo : public CDevice
     {
     public:
-        //cl_device_type device_type;       ///< OpenCL device type
-        //cl_uint vendor_id;                ///< OpenCL vendor id
         CUdevprop device_prop;
         int max_compute_units;      ///< maximum compute units available
         int max_work_item_dimensions;   ///< maximum number of dimensions
@@ -1346,11 +1040,7 @@ public:
             max_work_item_sizes = NULL;
 
             name = NULL;
-//          vendor = NULL;
             driver_version = '\0';  //NULL;
-//          profile = NULL;
-//          version = NULL;
-//          extensions = NULL;
         }
 
         inline CDeviceInfo()
@@ -1373,11 +1063,6 @@ public:
         {
             delete[] max_work_item_sizes;
             delete[] name;
-//          delete[] vendor;
-//          delete[] driver_version;
-//          delete[] profile;
-//          delete[] version;
-//          delete[] extensions;
 
         }
 
@@ -1387,18 +1072,6 @@ public:
         inline const char* getTypeString()
         {
             return "GPU";
-// CUDA Driver API only deals with device type GPU          
-#if 0
-            switch(device_type)
-            {
-                case CL_DEVICE_TYPE_CPU:    return "CPU";
-                case CL_DEVICE_TYPE_GPU:    return "GPU";
-                case CL_DEVICE_TYPE_ACCELERATOR:    return "ACCELERATOR";
-                case CL_DEVICE_TYPE_DEFAULT:    return "DEFAULT";
-                case CL_DEVICE_TYPE_ALL:    return "ALL";
-                default:            return "unknown";
-            }
-#endif
         }
 
         /**
