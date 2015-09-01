@@ -191,12 +191,13 @@ private:
 
         // enqueue the CopyRect kernel
         cCommandQueue.enqueueNDRangeKernel(cKernelCopyRect, // kernel
-                2, // dimensions
-                NULL,   //this->domain_cells,       // subdomain size in each directions
+                2, 									// dimensions
+                NULL,   						    // subdomain size in each directions
                 this->domain_cells.elements(),
-                NULL, // global work offset
+				NULL, 								// global work offset
+				CU_FALSE,							// shared memory use flag
                 lGlobalSize,
-                cKernelCopyRect_WorkGroupSize, //NULL,
+                cKernelCopyRect_WorkGroupSize, 		//NULL,
                 cKernelCopyRect.kernelArgsVec); 
         if (withBarrier)
             cCommandQueue.enqueueBarrier();
@@ -500,6 +501,7 @@ public:
                 NULL,   //this->domain_cells.size(),
                 domain_cells_count,                     ///< total elements to process 
                 NULL,                                   ///< global work offset
+				CU_FALSE,								// shared memory use flag
                 &cKernelInit_GlobalWorkGroupSize,
                 cKernelInit_WorkGroupSize,
                 cKernelInit.kernelArgsVec);
@@ -524,6 +526,7 @@ public:
                 NULL,   //this->domain_cells.size(),
                 domain_cells_count, // total number of elements
                 NULL,               // global work offset
+				CU_FALSE,			// shared memory use flag
                 &cLbmKernelAlpha_GlobalWorkGroupSize,
                 cLbmKernelAlpha_WorkGroupSize,
                 cLbmKernelAlpha.kernelArgsVec);
@@ -535,11 +538,12 @@ public:
         // std::cout << "--> Running BETA kernel" << std::endl;
 #endif
         cCommandQueue.enqueueNDRangeKernel(
-                cLbmKernelBeta, // kernel
-                1, // dimensions
-                NULL,   //this->domain_cells.size(),
+                cLbmKernelBeta, 	// kernel
+                1, 					// dimensions
+                NULL,
                 domain_cells_count,
-                NULL, // global work offset
+                NULL, 				// global work offset
+				CU_TRUE,			// shared memory use flag
                 &cLbmKernelBeta_GlobalWorkGroupSize,
                 cLbmKernelBeta_WorkGroupSize,
                 cLbmKernelBeta.kernelArgsVec);

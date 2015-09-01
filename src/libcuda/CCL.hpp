@@ -968,19 +968,32 @@ public:
                                             int *dummy, //const CVector<3, int> &subdomain_size,        ///< number of elements in the concerned domain
                                             const size_t total_elements,        ///< total number of elements to process
                                             const size_t *global_work_offset,   ///< global work offset
+											bool use_shared_mem,       			///< shared memory flag needed only for Beta kernel
                                             size_t *global_work_size,           ///< global work size
                                             size_t &local_work_size,            ///< local work size
                                             std::vector<void *>& kernelParams   ///< kernel input arguments
         )
         {
-            // printf(" -> CCL::enqueueNDRangeKernel()");
-            dim3 threadsPerBlock; //  threads per grid dimension = dim3(32, 1, 1);
-            dim3 numBlocks;  //  number of blocks to launch = dim3((size + threadsPerBlock.x - 1) / threadsPerBlock.x, 1, 1);
-            int sharedMemBytes;
+            dim3 threadsPerBlock; 	//  threads per grid dimension = dim3(32, 1, 1);
+            dim3 numBlocks;  		//  number of blocks to launch = dim3((size + threadsPerBlock.x - 1) / threadsPerBlock.x, 1, 1);
+            unsigned int sharedMemBytes;
 
             setGridAndBlockSize(numBlocks, threadsPerBlock, work_dim, local_work_size, total_elements, global_work_size);
+		
+			// allocate shared memory only when required by kernel			
+			if (use_shared_mem)
+			{
+				// Total amount of shared memory per block:       49152 bytes
+            	sharedMemBytes = sizeof(T) * local_work_size * 12;
+			}
+			else
+			{
+				sharedMemBytes = 0;			
+			}
 
-            sharedMemBytes = sizeof(T) * local_work_size * 12;
+//			printf("sharedMemory: %u bytes\n", sharedMemBytes);	
+//			printf("threadsPerBlock: [%u, %u, %u] \n", threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z);
+//			printf("numBlocks: [%u, %u, %u] \n", numBlocks.x, numBlocks.y, numBlocks.z);
 
             CudaCallCheckError( cuLaunchKernel(cKernel.kernel,
                                                 numBlocks.x,
