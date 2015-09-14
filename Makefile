@@ -10,13 +10,14 @@ all:
 #
 #	nvcc -x cu -keep -keep-dir src/cu_programs                             
 #	-I.  src/cu_programs/copy_buffer_rect.cu -o src/cu_programs/copy_buffer_rect.o
-	nvcc -ptx  src/cu_programs/lbm_init.cu -o src/cu_programs/lbm_init.ptx
-                                                                 
-	nvcc -ptx  src/cu_programs/lbm_alpha.cu -o src/cu_programs/lbm_alpha.ptx
-                                                                   
-	nvcc -ptx  src/cu_programs/lbm_beta.cu -o src/cu_programs/lbm_beta.ptx
-
-	nvcc -ptx  src/cu_programs/copy_buffer_rect.cu -o src/cu_programs/copy_buffer_rect.ptx
+	nvcc -ptx  -Xptxas -v src/cu_programs/lbm_init.cu -o src/cu_programs/lbm_init.ptx
+	ptxas -v src/cu_programs/lbm_init.ptx
+	nvcc -ptx  -Xptxas -v src/cu_programs/lbm_alpha.cu -o src/cu_programs/lbm_alpha.ptx
+	ptxas -v src/cu_programs/lbm_alpha.ptx
+	nvcc -ptx  -Xptxas -v src/cu_programs/lbm_beta.cu -o src/cu_programs/lbm_beta.ptx
+	ptxas -v src/cu_programs/lbm_beta.ptx
+	nvcc -ptx  -Xptxas -v src/cu_programs/copy_buffer_rect.cu -o src/cu_programs/copy_buffer_rect.ptx
+	ptxas -v src/cu_programs/copy_buffer_rect.ptx
 
 cleandoc:
 	rm -rf ./docs/html ./docs/latex

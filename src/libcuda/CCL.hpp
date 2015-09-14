@@ -965,7 +965,7 @@ public:
          */
         inline void enqueueNDRangeKernel(   CKernel &cKernel,           ///< enqueue a OpenCL kernel
                                             unsigned int work_dim,      ///< number of work dimensions (0, 1 or 2)
-                                            int *dummy, //const CVector<3, int> &subdomain_size,        ///< number of elements in the concerned domain
+                                            int *dummy, 				///< const CVector<3, int> &subdomain_size,        ///< number of elements in the concerned domain
                                             const size_t total_elements,        ///< total number of elements to process
                                             const size_t *global_work_offset,   ///< global work offset
 											bool use_shared_mem,       			///< shared memory flag needed only for Beta kernel

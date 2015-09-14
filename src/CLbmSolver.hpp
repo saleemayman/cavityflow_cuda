@@ -497,7 +497,7 @@ public:
         std::cout << "Init Simulation: " << std::flush;
 #endif
         cCommandQueue.enqueueNDRangeKernel(cKernelInit, ///< kernel
-                1,                                      ///< dimensions
+                2,                                      ///< dimensions
                 NULL,   //this->domain_cells.size(),
                 domain_cells_count,                     ///< total elements to process 
                 NULL,                                   ///< global work offset
@@ -522,7 +522,7 @@ public:
 #endif
         cCommandQueue.enqueueNDRangeKernel(
                 cLbmKernelAlpha,    // kernel
-                1,                  // dimensions
+                2,                  // dimensions
                 NULL,   //this->domain_cells.size(),
                 domain_cells_count, // total number of elements
                 NULL,               // global work offset
@@ -539,7 +539,7 @@ public:
 #endif
         cCommandQueue.enqueueNDRangeKernel(
                 cLbmKernelBeta, 	// kernel
-                1, 					// dimensions
+                2, 					// dimensions
                 NULL,
                 domain_cells_count,
                 NULL, 				// global work offset
