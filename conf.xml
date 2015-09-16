@@ -20,14 +20,14 @@
   <grid>
     <!-- grid resolution in x, y and z direction -->
     <domain-size>
-      <x>64</x>
-      <y>64</y>
-      <z>16</z>
+      <x>128</x>
+      <y>128</y>
+      <z>32</z>
     </domain-size>
     <!-- number of subdomains  in x, y and z direction -->
     <subdomain-num>
       <x>2</x>
-      <y>1</y>
+      <y>2</y>
       <z>1</z>
     </subdomain-num>
     <domian-length>
@@ -42,7 +42,7 @@
     <!-- timestep default: -1 for automatic detection -->
     <timestep>-1.0</timestep>
     <visualization>
-      <VTK>1</VTK>
+      <VTK>0</VTK>
     </visualization>
     <validate>0</validate>
   </simulation>
@@ -50,7 +50,7 @@
   <device>
     <!-- number of kernels to run -->
     <kernel-count>128</kernel-count>
-    <threads-per-dim>32</threads-per-dim>
+    <threads-per-dim>16</threads-per-dim>
     <!-- select device or -1 list available devices -->
     <device-number>0</device-number>
   </device>
