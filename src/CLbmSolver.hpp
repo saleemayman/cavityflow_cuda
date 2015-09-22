@@ -195,13 +195,7 @@ private:
 
         // enqueue the CopyRect kernel
         cCommandQueue.enqueueNDRangeKernel(cKernelCopyRect, // kernel
-                2, 									// dimensions
-                NULL,   						    // subdomain size in each directions
-                this->domain_cells.elements(),
-				NULL, 								// global work offset
 				CU_FALSE,							// shared memory use flag
-                lGlobalSize,
-                cKernelCopyRect_ThreadsPerDim, 		//NULL,
                 cKernelCopyRect.kernelArgsVec); 
         if (withBarrier)
             cCommandQueue.enqueueBarrier();
@@ -520,13 +514,7 @@ public:
         std::cout << "Init Simulation: " << std::flush;
 #endif
         cCommandQueue.enqueueNDRangeKernel(cKernelInit, ///< kernel
-                2,                                      ///< dimensions
-                NULL,   //this->domain_cells.size(),
-                domain_cells_count,                     ///< total elements to process 
-                NULL,                                   ///< global work offset
 				CU_FALSE,								// shared memory use flag
-                &cKernelInit_GlobalWorkGroupSize,
-                cKernelInit_ThreadsPerDim,
                 cKernelInit.kernelArgsVec);
 
 //		printf("rank: %i, initKernel: after launch\n", _UID);
@@ -545,13 +533,7 @@ public:
 #endif
         cCommandQueue.enqueueNDRangeKernel(
                 cLbmKernelAlpha,    // kernel
-                2,                  // dimensions
-                NULL,   //this->domain_cells.size(),
-                domain_cells_count, // total number of elements
-                NULL,               // global work offset
 				CU_FALSE,			// shared memory use flag
-                &cLbmKernelAlpha_GlobalWorkGroupSize,
-                cLbmKernelAlpha_ThreadsPerDim,
                 cLbmKernelAlpha.kernelArgsVec);
     }
 
@@ -562,13 +544,7 @@ public:
 #endif
         cCommandQueue.enqueueNDRangeKernel(
                 cLbmKernelBeta, 	// kernel
-                2, 					// dimensions
-                NULL,
-                domain_cells_count,
-                NULL, 				// global work offset
 				CU_TRUE,			// shared memory use flag
-                &cLbmKernelBeta_GlobalWorkGroupSize,
-                cLbmKernelBeta_ThreadsPerDim,
                 cLbmKernelBeta.kernelArgsVec);
 	
     }
