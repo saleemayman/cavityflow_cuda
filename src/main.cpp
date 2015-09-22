@@ -33,7 +33,7 @@
 #include "CController.hpp"
 #include "CDomain.hpp"
 #include "CManager.hpp"
-#include "Singleton.hpp"
+#include "CSingleton.hpp"
 
 CVector<3,int> E0(1,0,0)    ;
 CVector<3,int> E1(-1,0,0)   ;
