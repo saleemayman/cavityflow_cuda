@@ -1,10 +1,13 @@
 #ifndef __CCONFIGURATION_HPP__
 #define __CCONFIGURATION_HPP__
 
-#include "tinyxml2.h"
+#include <cstdlib>
 #include <iostream>
-#include <iomanip>
 #include <list>
+
+#include "tinyxml2.h"
+
+#include "libmath/CVector.hpp"
 
 /*
  * Class CConfiguration stores the necessary information for the simulation process.

@@ -1,5 +1,8 @@
 /*
- * Copyright 2010 Martin Schreiber
+ * Copyright
+ * 2010 Martin Schreiber
+ * 2013 Arash Bakhtiari
+ * 2016 Christoph Riesinger, Ayman Saleem
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,27 +17,23 @@
  * limitations under the License.
  */
 
-#include "mpi.h"
-// standard
-#include <stdlib.h>
-#include <iostream>
-#include <list>
-#include <string>
-#include <cmath>
+#include <getopt.h>
 
-// externals
-#include <UnitTest++.h>
-#include <../externals/unittest-cpp/UnitTest++/src/UnitTest++.h>
+// MPI
+#include "mpi.h"
+// TinyXML2
+#include "tinyxml2.h"
+// UnitTest++
 #include "TestReporterStdout.h"
+#include "UnitTest++.h"
 
 // internals
-#include "CDomain.hpp"
-#include "CController.hpp"
 #include "common.h"
-#include "CManager.hpp"
 #include "CConfiguration.hpp"
+#include "CController.hpp"
+#include "CDomain.hpp"
+#include "CManager.hpp"
 #include "Singleton.hpp"
-#include "tinyxml2.h"
 
 CVector<3,int> E0(1,0,0)    ;
 CVector<3,int> E1(-1,0,0)   ;

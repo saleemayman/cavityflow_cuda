@@ -5,13 +5,15 @@
  *      Author: Arash Bakhtiari
  */
 
-#ifndef COMMON_H_
-#define COMMON_H_
-#include "mpi.h"
+#ifndef __COMMON_H__
+#define __COMMON_H__
+
 #include <stdio.h>
 #include <string>
 #include <sstream>
 #include <fstream>
+
+#include "mpi.h"
 
 #include "CConfiguration.hpp"
 #include "Singleton.hpp"
