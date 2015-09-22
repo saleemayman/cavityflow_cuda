@@ -84,24 +84,24 @@ private:
 
     // INITIALIZATION KERNEL
     CCL::CKernel cKernelInit;
-    size_t cKernelInit_WorkGroupSize;
+    size_t cKernelInit_ThreadsPerDim;
     size_t cKernelInit_GlobalWorkGroupSize;
     size_t cKernelInit_MaxRegisters;
 
     // COLLISION KERNELS
     CCL::CKernel cLbmKernelAlpha;
-    size_t cLbmKernelAlpha_WorkGroupSize;
+    size_t cLbmKernelAlpha_ThreadsPerDim;
     size_t cLbmKernelAlpha_GlobalWorkGroupSize;
     size_t cLbmKernelAlpha_MaxRegisters;
 
     CCL::CKernel cLbmKernelBeta;
-    size_t cLbmKernelBeta_WorkGroupSize;
+    size_t cLbmKernelBeta_ThreadsPerDim;
     size_t cLbmKernelBeta_GlobalWorkGroupSize;
     size_t cLbmKernelBeta_MaxRegisters;
 
     // INITIALIZATION KERNEL
     CCL::CKernel cKernelCopyRect;
-    size_t cKernelCopyRect_WorkGroupSize;
+    size_t cKernelCopyRect_ThreadsPerDim;
     size_t cKernelCopyRect_GlobalWorkGroupSize;
     size_t cKernelCopyRect_MaxRegisters;
 
@@ -123,6 +123,7 @@ private:
 
     bool store_velocity; // store velocity for visualization
     bool store_density;
+
 private:
 	// initialize density buffers once
 	// list of communication vector
@@ -161,6 +162,7 @@ private:
             CVector<3, int> dst_origin, CVector<3, int> dst_size,
             CVector<3, int> block_size, bool withBarrier = true)
     {
+
         // set kernel args
         // source args
         cKernelCopyRect.setArg(0, src);
@@ -189,6 +191,8 @@ private:
         lGlobalSize[0] = block_size[1]; 
         lGlobalSize[1] = block_size[2]; 
 
+		cKernelCopyRect.setGridAndBlockSize(2, cKernelCopyRect_ThreadsPerDim, domain_cells_count);
+
         // enqueue the CopyRect kernel
         cCommandQueue.enqueueNDRangeKernel(cKernelCopyRect, // kernel
                 2, 									// dimensions
@@ -197,7 +201,7 @@ private:
 				NULL, 								// global work offset
 				CU_FALSE,							// shared memory use flag
                 lGlobalSize,
-                cKernelCopyRect_WorkGroupSize, 		//NULL,
+                cKernelCopyRect_ThreadsPerDim, 		//NULL,
                 cKernelCopyRect.kernelArgsVec); 
         if (withBarrier)
             cCommandQueue.enqueueBarrier();
@@ -275,25 +279,25 @@ public:
         /**
          * WORK GROUP SIZE
          *
-         * initialize the variable (postfixed appropriately with _WorkGroupSize and _MaxRegisters)
+         * initialize the variable (postfixed appropriately with _ThreadsPerDim and _MaxRegisters)
          * with either the standard value (max_local_work_group_size) or with the value from the list
          */
 #define INIT_WORK_GROUP_SIZE(variable)                                      \
         if (it != this->lbm_opencl_number_of_work_items_list.end())     \
         {                                                               \
-            /*variable##_WorkGroupSize = (*it != 0 ? *it : computation_kernel_count);*/ \
-            variable##_WorkGroupSize = (*it != 0 ? *it : threads_per_dimension); \
+            /*variable##_ThreadsPerDim = (*it != 0 ? *it : computation_kernel_count);*/ \
+            variable##_ThreadsPerDim = (*it != 0 ? *it : threads_per_dimension); \
             it++;                                                       \
         }                                                               \
         else                                                            \
         {                                                               \
-            /*variable##_WorkGroupSize = computation_kernel_count;*/    \
-            variable##_WorkGroupSize = threads_per_dimension;           \
+            /*variable##_ThreadsPerDim = computation_kernel_count;*/    \
+            variable##_ThreadsPerDim = threads_per_dimension;           \
         }                                                               \
                                                                         \
         /* enlarge global work group size to be a multiple of collprop_work_group_size */   \
-        if (domain_cells_count % variable##_WorkGroupSize != 0)         \
-            variable##_GlobalWorkGroupSize = (domain_cells_count / variable##_WorkGroupSize + 1) * variable##_WorkGroupSize;    \
+        if (domain_cells_count % variable##_ThreadsPerDim != 0)         \
+            variable##_GlobalWorkGroupSize = (domain_cells_count / variable##_ThreadsPerDim + 1) * variable##_ThreadsPerDim;    \
                                                                         \
         if (ir != this->lbm_opencl_number_of_registers_list.end())      \
         {                                                               \
@@ -318,7 +322,7 @@ public:
         
         domain_cells_count = this->domain_cells.elements();
         _isDomainSizePowOfTwo = isDomainPowerOfTwo(domain_cells_count);
-        _isLocalSizePowOfTwo = isDomainPowerOfTwo(cLbmKernelBeta_WorkGroupSize);
+        _isLocalSizePowOfTwo = isDomainPowerOfTwo(cLbmKernelBeta_ThreadsPerDim);
 
 
         /**
@@ -327,7 +331,7 @@ public:
         domain_x = this->domain_cells.data[0];
         domain_y = this->domain_cells.data[1];
         domain_z = this->domain_cells.data[2];
-
+		printf("domain: [%li, %li, %li]", domain_x, domain_y, domain_z);		
 
         std::ostringstream cuda_program_defines;
 
@@ -368,10 +372,10 @@ public:
          * INIT kernel
          */
         cKernelInit_GlobalWorkGroupSize = domain_cells_count;
-        if (cKernelInit_GlobalWorkGroupSize % cKernelInit_WorkGroupSize != 0)
+        if (cKernelInit_GlobalWorkGroupSize % cKernelInit_ThreadsPerDim != 0)
             cKernelInit_GlobalWorkGroupSize = (cKernelInit_GlobalWorkGroupSize
-                    / cKernelInit_WorkGroupSize + 1)
-                    * cKernelInit_WorkGroupSize;
+                    / cKernelInit_ThreadsPerDim + 1)
+                    * cKernelInit_ThreadsPerDim;
 
         // Load init_lbm.ptx file with a CUDA module(program)
         CCL::CProgram cProgramInit;
@@ -380,7 +384,7 @@ public:
         cProgramInit.load(cContext, initKernelModuleFileName.c_str());
 
 #if DEBUG
-        std::cout << "KernelInit:   local_work_group_size: " << cKernelInit_WorkGroupSize << "      max_registers: " << cKernelInit_MaxRegisters << std::endl;
+        std::cout << "KernelInit:   local_work_group_size: " << cKernelInit_ThreadsPerDim << "      max_registers: " << cKernelInit_MaxRegisters << std::endl;
 #endif
 
         /*
@@ -392,7 +396,7 @@ public:
         cProgramAlpha.load(cContext, alphaKernelModuleFileName.c_str());
 
 #if DEBUG
-        std::cout << "KernelAlpha:  local_work_group_size: " << cLbmKernelAlpha_WorkGroupSize << "      max_registers: " << cLbmKernelAlpha_MaxRegisters << std::endl;
+        std::cout << "KernelAlpha:  local_work_group_size: " << cLbmKernelAlpha_ThreadsPerDim << "      max_registers: " << cLbmKernelAlpha_MaxRegisters << std::endl;
 #endif
         /*
          * BETA
@@ -403,7 +407,7 @@ public:
         cProgramBeta.load(cContext, betaKernelModuleFileName.c_str());
 
 #if DEBUG
-        std::cout << "KernelBeta:   local_work_group_size: " << cLbmKernelBeta_WorkGroupSize << "       max_registers: " << cLbmKernelBeta_MaxRegisters << std::endl;
+        std::cout << "KernelBeta:   local_work_group_size: " << cLbmKernelBeta_ThreadsPerDim << "       max_registers: " << cLbmKernelBeta_MaxRegisters << std::endl;
 #endif
 
         /*
@@ -415,7 +419,7 @@ public:
         cProgramCopyRect.load(cContext, copyRectKernelModuleFileName.c_str());
 
 #if DEBUG
-        std::cout << "KernelCopyRect:   local_work_group_size: " << cKernelCopyRect_WorkGroupSize << "      max_registers: " << cKernelCopyRect_MaxRegisters << std::endl;
+        std::cout << "KernelCopyRect:   local_work_group_size: " << cKernelCopyRect_ThreadsPerDim << "      max_registers: " << cKernelCopyRect_MaxRegisters << std::endl;
 #endif
 
         /**
@@ -433,6 +437,20 @@ public:
             std::cout << "gravitaton: " << this->gravitation << std::endl;
         }
 #endif
+
+		// set the grid and block size for all kernels
+		cKernelInit.setGridAndBlockSize(3, cKernelInit_ThreadsPerDim, domain_cells_count);
+		cLbmKernelAlpha.setGridAndBlockSize(3, cLbmKernelAlpha_ThreadsPerDim, domain_cells_count);
+		cLbmKernelBeta.setGridAndBlockSize(3, cLbmKernelBeta_ThreadsPerDim, domain_cells_count);
+		cLbmKernelBeta_ThreadsPerDim = cLbmKernelBeta.blockSize.x * cLbmKernelBeta.blockSize.y * cLbmKernelBeta.blockSize.z;
+
+		printf("BetaKernel --> blockSize: [%u, %u, %u] \n", cLbmKernelBeta.blockSize.x, cLbmKernelBeta.blockSize.y, cLbmKernelBeta.blockSize.z);
+		printf("BetaKernel --> gridSize: [%u, %u, %u] \n", cLbmKernelBeta.gridSize.x, cLbmKernelBeta.gridSize.y, cLbmKernelBeta.gridSize.z);
+ 
+		printf("AlphaKernel --> blockSize: [%u, %u, %u] \n", cLbmKernelAlpha.blockSize.x, cLbmKernelAlpha.blockSize.y, cLbmKernelAlpha.blockSize.z);
+		printf("AlphaKernel --> gridSize: [%u, %u, %u] \n", cLbmKernelAlpha.gridSize.x, cLbmKernelAlpha.gridSize.y, cLbmKernelAlpha.gridSize.z);
+
+
         /**
          * SETUP ARGUMENTS
          */
@@ -476,10 +494,15 @@ public:
         cLbmKernelBeta.setArg(7, this->gravitation[2]);
         // cLbmKernelBeta.setArg(8, paramDrivenCavityVelocity[0]);
         cLbmKernelBeta.setArg(8, CLbmSkeleton<T>::drivenCavityVelocity[0]);
-        cLbmKernelBeta.setArg(9, domain_x);
-        cLbmKernelBeta.setArg(10, domain_y);
-        cLbmKernelBeta.setArg(11, domain_z);
-        cLbmKernelBeta.setArg(12, cLbmKernelBeta_WorkGroupSize);
+        cLbmKernelBeta.setArg(9, this->domain_cells.data[0]);
+        cLbmKernelBeta.setArg(10, this->domain_cells.data[1]);
+        cLbmKernelBeta.setArg(11, this->domain_cells.data[2]);
+        cLbmKernelBeta.setArg(12, cLbmKernelBeta_ThreadsPerDim);
+
+//		printf("cLbmKernelBeta_ThreadsPerDim: %u\n", cLbmKernelBeta_ThreadsPerDim);
+//		printf("(cLbmKernelBeta.blockSize.x * cLbmKernelBeta.blockSize.y * cLbmKernelBeta.blockSize.z): %u \n", (cLbmKernelBeta.blockSize.x * cLbmKernelBeta.blockSize.y * cLbmKernelBeta.blockSize.z));
+//		printf("blockSize: [%u, %u, %u] \n", cLbmKernelBeta.blockSize.x, cLbmKernelBeta.blockSize.y, cLbmKernelBeta.blockSize.z);
+//		printf("gridSize: [%u, %u, %u] \n", cLbmKernelBeta.gridSize.x, cLbmKernelBeta.gridSize.y, cLbmKernelBeta.gridSize.z);
         cLbmKernelBeta.setArg(13, _isDomainSizePowOfTwo);
         cLbmKernelBeta.setArg(14, _isLocalSizePowOfTwo);
 
@@ -503,7 +526,7 @@ public:
                 NULL,                                   ///< global work offset
 				CU_FALSE,								// shared memory use flag
                 &cKernelInit_GlobalWorkGroupSize,
-                cKernelInit_WorkGroupSize,
+                cKernelInit_ThreadsPerDim,
                 cKernelInit.kernelArgsVec);
 
 //		printf("rank: %i, initKernel: after launch\n", _UID);
@@ -528,7 +551,7 @@ public:
                 NULL,               // global work offset
 				CU_FALSE,			// shared memory use flag
                 &cLbmKernelAlpha_GlobalWorkGroupSize,
-                cLbmKernelAlpha_WorkGroupSize,
+                cLbmKernelAlpha_ThreadsPerDim,
                 cLbmKernelAlpha.kernelArgsVec);
     }
 
@@ -545,8 +568,9 @@ public:
                 NULL, 				// global work offset
 				CU_TRUE,			// shared memory use flag
                 &cLbmKernelBeta_GlobalWorkGroupSize,
-                cLbmKernelBeta_WorkGroupSize,
+                cLbmKernelBeta_ThreadsPerDim,
                 cLbmKernelBeta.kernelArgsVec);
+	
     }
 
     /**
@@ -600,9 +624,10 @@ public:
 			cStoreDensityBuffer[i].create(cContext, sizeof(T) * (*it_s).elements() * SIZE_DD_HOST);
 			cSetDensityBuffer[i].create(cContext, sizeof(T) * (*it_r).elements() * SIZE_DD_HOST);
 #if DEBUG
-			std::cout << "Solver --> rank: " << _UID ", send_size: " << (*it_s).elements() << ", recv_size: " << (*it_r).elements() << std::endl;
+/*			std::cout << "Solver --> rank: " << _UID ", send_size: " << (*it_s).elements() << ", recv_size: " << (*it_r).elements() << std::endl;
 			std::cout << "Solver --> send_elems: " << (*it_s).data[0] << ", " << (*it_s).data[1] << ", " << (*it_s).data[2] << std::endl;
 			std::cout << "Solver --> recv_elems: " << (*it_r).data[0] << ", " << (*it_r).data[1] << ", " << (*it_r).data[2] << std::endl;
+*/
 #endif
 		}
 	}
@@ -1007,11 +1032,15 @@ public:
 
         float checksum = 0;
         for (int a = 0; a < this->domain_cells.elements(); a++)
+		{
+//			if (_UID == 0)
+//				printf("D: %i, [%f, %f, %f] \n", a, velx[a], vely[a], velz[a]);
+
             if (flags[a] == FLAG_FLUID)
             {
                 checksum += velx[a] + vely[a] + velz[a];
-                // printf("%f, %f, %f\n", velx[a], vely[a], velz[a]);
             }
+		}
 
         delete[] flags;
         delete[] velocity;

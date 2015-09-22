@@ -23,17 +23,12 @@ extern "C" __global__ void lbm_kernel_alpha(
             const int domainCellsZ
         )
 {
-    //const size_t gid = get_global_id(0);
-    // const size_t gid = threadIdx.x + blockDim.x * blockIdx.x;
-    const int DOMAIN_CELLS = domainCellsX * domainCellsY * domainCellsZ;
+    size_t DOMAIN_CELLS = domainCellsX * domainCellsY * domainCellsZ;
 
-    const size_t idx_x = threadIdx.x + blockDim.x * blockIdx.x;
-    const size_t idx_y = threadIdx.y + blockDim.y * blockIdx.y;
-    const size_t idx_z = threadIdx.z + blockDim.z * blockIdx.z;
+	// get unique global thread ID    
+	size_t blockId = blockIdx.x + (size_t)(blockIdx.y * gridDim.x) + (size_t)(gridDim.x * gridDim.y * blockIdx.z);
+	size_t gid = blockId * (size_t)(blockDim.x * blockDim.y * blockDim.z) + (size_t)(threadIdx.z * (blockDim.x * blockDim.y)) + (size_t)(threadIdx.y * blockDim.x) + threadIdx.x;
 
-    const size_t idx_xy = idx_y * (blockDim.x * gridDim.x) + idx_x;
-    const size_t gid = idx_z * (blockDim.x * gridDim.x + blockDim.y * gridDim.y) + idx_xy;
-    
     if (gid >= DOMAIN_CELLS)
         return;
 

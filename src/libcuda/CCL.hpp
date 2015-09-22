@@ -648,6 +648,9 @@ public:
         CUresult error;     ///< cuda error handler
         std::vector<void *> kernelArgsVec;  ///< vector to hold list of kernel input parameters
 
+		dim3 blockSize; 		///< threads per grid dimension = dim3(32, 1, 1);
+		dim3 gridSize;  		///< number of blocks to launch = dim3((size + blockSize.x - 1) / blockSize.x, 1, 1);
+
         /**
          * create kernel from OpenCL program
          */
@@ -769,6 +772,49 @@ public:
         {
             kernelArgsVec[arg_index] = const_cast<int *>(&arg); //const_cast < new_type > ( expression )        
         }
+
+        /**
+         * set the number of grid size and threads per block for GPU
+         */
+        void setGridAndBlockSize(   unsigned int work_dim,
+                                    size_t &threads_per_dim, const size_t total_elements
+        )
+        {
+            unsigned int totalThreadsPerBlock;
+            unsigned int grids_x, grids_y, grids_z;
+
+            if (work_dim == 1)
+            {
+                blockSize = dim3(threads_per_dim, 1, 1);
+                totalThreadsPerBlock = blockSize.x * blockSize.y * blockSize.z;
+
+                grids_x = (total_elements + blockSize.x - 1)/totalThreadsPerBlock;
+
+                gridSize = dim3(grids_x + 1, 1, 1);
+            }
+            else if(work_dim == 2)
+            {
+                blockSize = dim3(threads_per_dim, threads_per_dim, 1);
+                totalThreadsPerBlock = blockSize.x * blockSize.y * blockSize.z;
+
+                grids_x = sqrt((total_elements + blockSize.x * blockSize.y - 1) / totalThreadsPerBlock);
+                grids_y = grids_x;
+
+                gridSize = dim3(grids_x + 1, grids_y + 1, 1);
+            }
+            else
+            {
+                blockSize = dim3(threads_per_dim, threads_per_dim, 1);
+                totalThreadsPerBlock = blockSize.x * blockSize.y * blockSize.z;
+
+                grids_x = pow((total_elements + totalThreadsPerBlock - 1)/totalThreadsPerBlock, 1./3.);
+                grids_y = grids_x;
+                grids_z = grids_x;
+
+                gridSize = dim3(grids_x + 1, grids_y + 1, grids_z + 1);
+            }
+        }
+
     };
 
     /**
@@ -833,7 +879,7 @@ public:
     class CCommandQueue
     {
     public:
-        CError error;       ///< error handler
+		CError error;       	///< error handler
         CUstream cuda_stream;   ///< CUDA stream handler
 
         /**
@@ -919,46 +965,6 @@ public:
             }
         }
 
-        /**
-         * set the number of grid size and threads per block for GPU
-         */
-        void setGridAndBlockSize(   dim3 &numBlocks, dim3 &threadsPerBlock, unsigned int work_dim,
-                                    size_t &local_work_size, const size_t total_elements, size_t *global_work_size
-        )
-        {
-            size_t totalThreadsPerBlock;
-            size_t grids_x, grids_y, grids_z;
-
-            if (work_dim == 1)
-            {
-                threadsPerBlock = dim3(local_work_size, 1, 1);
-                totalThreadsPerBlock = threadsPerBlock.x * threadsPerBlock.y * threadsPerBlock.z;
-
-                grids_x = (total_elements + threadsPerBlock.x - 1)/totalThreadsPerBlock;
-
-                numBlocks = dim3(grids_x + 1, 1, 1);
-            }
-            else if(work_dim == 2)
-            {
-                threadsPerBlock = dim3(local_work_size, local_work_size, 1);
-                totalThreadsPerBlock = threadsPerBlock.x * threadsPerBlock.y * threadsPerBlock.z;
-
-                grids_x = sqrt((total_elements + threadsPerBlock.x * threadsPerBlock.y - 1) / totalThreadsPerBlock);
-                grids_y = grids_x;
-
-                numBlocks = dim3(grids_x + 1, grids_y + 1, 1);
-            }
-            else
-            {
-                threadsPerBlock = dim3(local_work_size, local_work_size, 1);
-
-                grids_x = pow((total_elements + totalThreadsPerBlock - 1)/totalThreadsPerBlock, 1./3.);
-                grids_y = grids_x;
-                grids_z = grids_x;
-
-                numBlocks = dim3(grids_x + 1, grids_y + 1, grids_z + 1);
-            }
-        }
 
         /**
          * enqueue nd range kernel
@@ -970,38 +976,36 @@ public:
                                             const size_t *global_work_offset,   ///< global work offset
 											bool use_shared_mem,       			///< shared memory flag needed only for Beta kernel
                                             size_t *global_work_size,           ///< global work size
-                                            size_t &local_work_size,            ///< local work size
+                                            size_t &threads_per_dim,            ///< local work size
                                             std::vector<void *>& kernelParams   ///< kernel input arguments
         )
         {
-            dim3 threadsPerBlock; 	//  threads per grid dimension = dim3(32, 1, 1);
-            dim3 numBlocks;  		//  number of blocks to launch = dim3((size + threadsPerBlock.x - 1) / threadsPerBlock.x, 1, 1);
+            //dim3 blockSize;
+            //dim3 gridSize;
             unsigned int sharedMemBytes;
 
-            setGridAndBlockSize(numBlocks, threadsPerBlock, work_dim, local_work_size, total_elements, global_work_size);
-		
 			// allocate shared memory only when required by kernel			
 			if (use_shared_mem)
 			{
 				// Total amount of shared memory per block:       49152 bytes
-            	sharedMemBytes = sizeof(T) * local_work_size * 12;
+            	sharedMemBytes = sizeof(T) * (size_t)(12 * cKernel.blockSize.x * cKernel.blockSize.y * cKernel.blockSize.z);
 			}
 			else
 			{
 				sharedMemBytes = 0;			
 			}
-
+		
 //			printf("sharedMemory: %u bytes\n", sharedMemBytes);	
-//			printf("threadsPerBlock: [%u, %u, %u] \n", threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z);
-//			printf("numBlocks: [%u, %u, %u] \n", numBlocks.x, numBlocks.y, numBlocks.z);
+//			printf("blockSize: [%u, %u, %u] \n", cKernel.blockSize.x, cKernel.blockSize.y, cKernel.blockSize.z);
+//			printf("gridSize: [%u, %u, %u] \n", cKernel.gridSize.x, cKernel.gridSize.y, cKernel.gridSize.z);
 
             CudaCallCheckError( cuLaunchKernel(cKernel.kernel,
-                                                numBlocks.x,
-                                                numBlocks.y,
-                                                numBlocks.z,
-                                                threadsPerBlock.x,
-                                                threadsPerBlock.y,
-                                                threadsPerBlock.z,
+                                                cKernel.gridSize.x,
+                                                cKernel.gridSize.y,
+                                                cKernel.gridSize.z,
+                                                cKernel.blockSize.x,
+                                                cKernel.blockSize.y,
+                                                cKernel.blockSize.z,
                                                 sharedMemBytes,
                                                 cuda_stream,   //cuda_stream,
                                                 &kernelParams[0],

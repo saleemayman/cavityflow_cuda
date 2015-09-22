@@ -40,16 +40,11 @@ extern "C" __global__ void init_kernel(
         const int domainCells_z
         )
 {
-    //const size_t gid = get_global_id(0);
-    // const size_t gid = threadIdx.x + blockDim.x * blockIdx.x;
-    const int DOMAIN_CELLS = domainCells_x * domainCells_y * domainCells_z;
+    size_t DOMAIN_CELLS = domainCells_x * domainCells_y * domainCells_z;
 
-    const size_t idx_x = threadIdx.x + blockDim.x * blockIdx.x;
-    const size_t idx_y = threadIdx.y + blockDim.y * blockIdx.y;
-    const size_t idx_z = threadIdx.z + blockDim.z * blockIdx.z;
-
-    const size_t idx_xy = idx_y * (blockDim.x * gridDim.x) + idx_x;
-    const size_t gid = idx_z * (blockDim.x * gridDim.x + blockDim.y * gridDim.y) + idx_xy;
+	// get unique global ID
+	size_t blockId = blockIdx.x + (size_t)(blockIdx.y * gridDim.x) + (size_t)(gridDim.x * gridDim.y * blockIdx.z);
+	size_t gid = blockId * (size_t)(blockDim.x * blockDim.y * blockDim.z) + (size_t)(threadIdx.z * (blockDim.x * blockDim.y)) + (size_t)(threadIdx.y * blockDim.x) + threadIdx.x;
 
     if (gid >= DOMAIN_CELLS)
         return;
