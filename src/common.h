@@ -16,7 +16,7 @@
 #include "mpi.h"
 
 #include "CConfiguration.hpp"
-#include "Singleton.hpp"
+#include "CSingleton.hpp"
 
 #include "common_cpu_gpu.h"
 
@@ -62,7 +62,7 @@ extern CVector<3, int> E18;
 
 extern CVector<3, int> lbm_units[];
 
-typedef Singleton<CConfiguration<T> > ConfigSingleton; // Global declaration
+// typedef Singleton<CConfiguration<T> > ConfigSingleton; // Global declaration
 //typedef Singleton<CProfiler> ProfilerSingleton; // Global declaration
 
 typedef enum {
