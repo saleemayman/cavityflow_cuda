@@ -1,50 +1,62 @@
-#include "lbm_header.h"
-
-/**
- * return 3D position
- * \input linear_position   linear position in 3D cube (ordering: X,Y,Z)
- * \return  Vector with 3D position in cube
+/*
+ * Copyright
+ * 2010 Martin Schreiber
+ * 2013 Arash Bakhtiari
+ * 2016 Christoph Riesinger, Ayman Saleem
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-__device__ inline T4 getCubePosition(int linear_position, const int domainCells_x, const int domainCells_y)
-{
-    T4 pos;
 
-    // TODO: use AND operation to speed up
-    // (but this function is only used during initialization)
-    pos.x = (T)((int)linear_position % (int)domainCells_x);
+#include "vector_types.h"
+
+#include "../common.h"
+
+__device__ int3 getCubePosition(int linear_position, const int domainCells_x, const int domainCells_y)
+{
+    int3 pos;
+
+    /*
+     * TODO
+     * use AND operation to speed up (but this function is only used during initialization)
+     */
+    pos.x = linear_position % domainCells_x;
     linear_position /= domainCells_x;
 
-    pos.y = (T)((int)linear_position % (int)domainCells_y);
+    pos.y = linear_position % domainCells_y;
     linear_position /= domainCells_y;
 
     pos.z = linear_position;// % CUBE_SIZE_Z;
+
     return pos;
 }
 
-
-/**
- * INIT KERNEL
- *
- * \param dd    density distributions
- * \param flags flags of cells
- */
-extern "C" __global__ void init_kernel(
-        T   *global_dd, // density distributions
-        int *flags, // flags
-        T   *velocity_array,    // velocity array (first all x components, then all y components, then z...)
-        T   *density,   // densities
-        int *bc,        ///< boundary conditions
-        T   drivenCavityVelocity,           // velocity parameters for modification of density distributions
+template<typename T>
+__global__ void init_kernel(
+        T *global_dd,           // density distributions
+        int *flags,             // flags
+        T *velocity_array,      // velocity array (first all x components, then all y components, then z...)
+        T *density,             // densities
+        int *bc,                // boundary conditions
+        T drivenCavityVelocity, // velocity parameters for modification of density distributions
         const int domainCells_x,
         const int domainCells_y,
-        const int domainCells_z
-        )
+        const int domainCells_z)
 {
     size_t DOMAIN_CELLS = domainCells_x * domainCells_y * domainCells_z;
 
-	// get unique global ID
-	size_t blockId = blockIdx.x + (size_t)(blockIdx.y * gridDim.x) + (size_t)(gridDim.x * gridDim.y * blockIdx.z);
-	size_t gid = blockId * (size_t)(blockDim.x * blockDim.y * blockDim.z) + (size_t)(threadIdx.z * (blockDim.x * blockDim.y)) + (size_t)(threadIdx.y * blockDim.x) + threadIdx.x;
+    // get unique global ID
+    size_t blockId = blockIdx.x + (size_t)(blockIdx.y * gridDim.x) + (size_t)(gridDim.x * gridDim.y * blockIdx.z);
+    size_t gid = blockId * (size_t)(blockDim.x * blockDim.y * blockDim.z) + (size_t)(threadIdx.z * (blockDim.x * blockDim.y)) + (size_t)(threadIdx.y * blockDim.x) + threadIdx.x;
 
     if (gid >= DOMAIN_CELLS)
         return;
@@ -53,8 +65,8 @@ extern "C" __global__ void init_kernel(
     T *current_dds = &global_dd[gid];
 
     // initialize flag field
-    T4 pos = getCubePosition(gid, domainCells_x, domainCells_y);
-    pos.w = 0;
+    int3 pos;
+    pos = getCubePosition(gid, domainCells_x, domainCells_y);
 
     T velocity_x = 0;
     T velocity_y = 0;
@@ -62,19 +74,19 @@ extern "C" __global__ void init_kernel(
 
     int flag = FLAG_FLUID;
 
-    if( pos.x == 0)
+    if(pos.x == 0)
         flag = bc[0];
-    else if( pos.x == domainCells_x-1 )
+    else if(pos.x == domainCells_x-1)
         flag = bc[1];
 
-    else if( pos.y == 0)
+    else if(pos.y == 0)
         flag = bc[2];
-    else if( pos.y == domainCells_y-1 )
+    else if(pos.y == domainCells_y-1)
         flag = bc[3];
 
-    else if( pos.z == 0)
+    else if(pos.z == 0)
         flag = bc[4];
-    else if( pos.z == domainCells_z-1 )
+    else if(pos.z == domainCells_z-1)
         flag = bc[5];
 
 //  else if (pos.y == domainCells_y-2)
@@ -245,5 +257,25 @@ extern "C" __global__ void init_kernel(
     density[gid] = rho;
     // density[gid] = flag;
 #endif
-
 }
+
+template __global__ void init_kernel<float>(
+        float *global_dd,
+        int *flags,
+        float *velocity_array,
+        float *density,
+        int *bc,
+        float drivenCavityVelocity,
+        const int domainCells_x,
+        const int domainCells_y,
+        const int domainCells_z);
+template __global__ void init_kernel<double>(
+        double *global_dd,
+        int *flags,
+        double *velocity_array,
+        double *density,
+        int *bc,
+        double drivenCavityVelocity,
+        const int domainCells_x,
+        const int domainCells_y,
+        const int domainCells_z);

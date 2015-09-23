@@ -3,8 +3,9 @@
 
 #include <stdlib.h>
 #include <iostream>
+
 #include "libmath/CVector.hpp"
-#include "common_cpu_gpu.h"
+#include "common.h"
 
 // simulation type
 // typedef float T;

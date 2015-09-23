@@ -1,69 +1,58 @@
 /*
- * common.h
+ * Copyright
+ * 2010 Martin Schreiber
+ * 2013 Arash Bakhtiari
+ * 2016 Christoph Riesinger, Ayman Saleem
  *
- *  Created on: May 16, 2013
- *      Author: Arash Bakhtiari
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
-#include <stdio.h>
-#include <string>
-#include <sstream>
+#include <cstdio>
 #include <fstream>
+#include <sstream>
+#include <string>
 
 #include "mpi.h"
 
-#include "CConfiguration.hpp"
-#include "CSingleton.hpp"
+#include "libmath/CVector.hpp"
+#include "constants.h"
 
-#include "common_cpu_gpu.h"
-
-// #define FLAG_OBSTACLE	(1 << 0)
-// #define FLAG_FLUID	(1 << 1)
-// #define FLAG_VELOCITY_INJECTION	(1 << 2)
-// #define FLAG_GHOST_LAYER (1 << 3)
-// #define FLAG_GHOST_LAYER_BETA (FLAG_GHOST_LAYER | (1 << 4))
-
- // #define GRID_SIZE_X (16)
-
-//#define HALO_SIZE 0
-#define BENCHMARK_OUTPUT_DIR "output/benchmark"
-#define PROFILE_OUTPUT_DIR "output/profile"
-#define VTK_OUTPUT_DIR "output/vtk"
-#define LOG_OUTPUT_DIR "output/log"
-
-#define LOG_OUTPUT_FILE_PREFIX "log"
-
-extern CVector<3, int> E0;
-extern CVector<3, int> E1;
-extern CVector<3, int> E2;
-extern CVector<3, int> E3;
-
-extern CVector<3, int> E4;
-extern CVector<3, int> E5;
-extern CVector<3, int> E6;
-extern CVector<3, int> E7;
-
-extern CVector<3, int> E8;
-extern CVector<3, int> E9;
-extern CVector<3, int> E10;
-extern CVector<3, int> E11;
-
-extern CVector<3, int> E12;
-extern CVector<3, int> E13;
-extern CVector<3, int> E14;
-extern CVector<3, int> E15;
-
-extern CVector<3, int> E16;
-extern CVector<3, int> E17;
-extern CVector<3, int> E18;
-
-extern CVector<3, int> lbm_units[];
+extern CVector<3,int> E0;
+extern CVector<3,int> E1;
+extern CVector<3,int> E2;
+extern CVector<3,int> E3;
+extern CVector<3,int> E4;
+extern CVector<3,int> E5;
+extern CVector<3,int> E6;
+extern CVector<3,int> E7;
+extern CVector<3,int> E8;
+extern CVector<3,int> E9;
+extern CVector<3,int> E10;
+extern CVector<3,int> E11;
+extern CVector<3,int> E12;
+extern CVector<3,int> E13;
+extern CVector<3,int> E14;
+extern CVector<3,int> E15;
+extern CVector<3,int> E16;
+extern CVector<3,int> E17;
+extern CVector<3,int> E18;
+extern CVector<3,int> lbm_units[];
 
 // typedef Singleton<CConfiguration<T> > ConfigSingleton; // Global declaration
-//typedef Singleton<CProfiler> ProfilerSingleton; // Global declaration
+// typedef Singleton<CProfiler> ProfilerSingleton; // Global declaration
 
 typedef enum {
 	MPI_COMM_DIRECTION_UNKNOWN = 0,
@@ -79,7 +68,7 @@ typedef enum {
 	MPI_COMM_DIRECTION_ALL,
 } MPI_COMM_DIRECTION;
 
-const char* get_string_direction(MPI_COMM_DIRECTION direction) {
+inline const char* get_string_direction(MPI_COMM_DIRECTION direction) {
 	std::string dir;
 	switch (direction) {
 	case MPI_COMM_DIRECTION_X:
@@ -116,35 +105,70 @@ const char* get_string_direction(MPI_COMM_DIRECTION direction) {
 	return dir.c_str();
 }
 
+/*
+ * we can reuse the following function because of its symmetry
+ * f(1,0,0), f(-1,0,0),  f(0,1,0),  f(0,-1,0) f(0,0,1) f(0,0,-1)
+ */
+#define eq_dd_a0(vela, vela2, rho_alpha) \
+	((1.0/18.0)*((rho_alpha) + (3.0)*(vela) + (9.0/2.0)*(vela2)))
+#define eq_dd_a1(vela, vela2, rho_alpha) \
+	((1.0/18.0)*((rho_alpha) + (-3.0)*(vela) + (9.0/2.0)*(vela2)))
+
+/*
+ * we can reuse the following functions because of the symmetry of the density distributions!
+ *
+ * f(1,1,0), f(-1,-1,0), f(1,-1,0), f(-1,1,0)
+ * f(1,0,1), f(-1,0,-1), f(1,0,-1), f(-1,0,1)
+ * f(0,1,1), f(0,-1,-1), f(0,1,-1), f(0,-1,1)
+ */
+#define eq_dd4(velx_add_vely, velx_add_vely_2, rho_alpha) \
+	((1.0/36.0)*((rho_alpha) + (3.0)*(velx_add_vely) + (9.0/2.0)*(velx_add_vely_2)))
+
+#define eq_dd5(velx_add_vely, velx_add_vely_2, rho_alpha) \
+	((1.0/36.0)*((rho_alpha) + (-3.0)*(velx_add_vely) + (9.0/2.0)*(velx_add_vely_2)))
+
+#define eq_dd6(velx_sub_vely, velx_sub_vely_2, rho_alpha) \
+	((1.0/36.0)*((rho_alpha) + (3.0)*(velx_sub_vely) + (9.0/2.0)*(velx_sub_vely_2)))
+
+#define eq_dd7(velx_sub_vely, velx_sub_vely_2, rho_alpha) \
+	((1.0/36.0)*((rho_alpha) + (-3.0)*(velx_sub_vely) + (9.0/2.0)*(velx_sub_vely_2)))
+
+/*
+ * f(0,0,0)
+ */
+#define eq_dd18(rho_alpha) \
+	((1.0/3.0)*(rho_alpha))
+
 #ifndef LOG_TO_FILE
 #define  DEBUGPRINT(...) \
-  { \
-  int my_rank; \
-  int num_procs;                           \
-  MPI_Comm_rank(MPI_COMM_WORLD, &my_rank); \
-  MPI_Comm_size(MPI_COMM_WORLD, &num_procs); \
-  fprintf(stderr, "P %d: ", my_rank); \
-  fprintf(stderr, __VA_ARGS__); \
-  }
+{ \
+	int my_rank; \
+	int num_procs; \
+	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank); \
+	MPI_Comm_size(MPI_COMM_WORLD, &num_procs); \
+	fprintf(stderr, "P %d: ", my_rank); \
+	fprintf(stderr, __VA_ARGS__); \
+}
 #else
 #define  DEBUGPRINT(...)			\
-  { \
-  int my_rank; \
-  int num_procs;                           \
-  MPI_Comm_rank(MPI_COMM_WORLD, &my_rank); \
-  MPI_Comm_size(MPI_COMM_WORLD, &num_procs); \
-  std::string outputfilename = LOG_OUTPUT_DIR; \
-  std::stringstream ss_file; \
-  ss_file << "./"  << LOG_OUTPUT_DIR  << "/" << LOG_OUTPUT_FILE_PREFIX << "_" << my_rank << ".log";	\
-  std::string outputfile = ss_file.str(); \
-  FILE* file = fopen(outputfile.c_str(),"a");	\
-  fprintf(file, "P %d: ", my_rank); \
-  fprintf(file, __VA_ARGS__); \
-file.close() \
-  }
+{ \
+	int my_rank; \
+	int num_procs;                           \
+	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank); \
+	MPI_Comm_size(MPI_COMM_WORLD, &num_procs); \
+	std::string outputfilename = LOG_OUTPUT_DIR; \
+	std::stringstream ss_file; \
+	ss_file << "./"  << LOG_OUTPUT_DIR  << "/" << LOG_OUTPUT_FILE_PREFIX << "_" << my_rank << ".log";	\
+	std::string outputfile = ss_file.str(); \
+	FILE* file = fopen(outputfile.c_str(),"a");	\
+	fprintf(file, "P %d: ", my_rank); \
+	fprintf(file, __VA_ARGS__); \
+	file.close() \
+}
 #endif
 
-static const char * mpiGetErrorString(int errorNum) {
+inline const char * mpiGetErrorString(int errorNum)
+{
 	switch (errorNum) {
 	case MPI_SUCCESS:
 		return "CL_SUCCESS";
@@ -155,11 +179,12 @@ static const char * mpiGetErrorString(int errorNum) {
 	}
 	return "UNKNOWN";
 }
-#define MPI_CHECK_ERROR(val_a)	if ((val_a) != MPI_SUCCESS)		\
-	{								\
-		std::cerr	<< "MPI_ERROR: file: '" << __FILE__	\
-	       			<< "', line: " << __LINE__		\
-	       			<< " - " << mpiGetErrorString(val_a) << std::endl;	\
-	}
 
-#endif /* COMMON_H_ */
+#define MPI_CHECK_ERROR(val_a)	if ((val_a) != MPI_SUCCESS)		\
+{								\
+	std::cerr	<< "MPI_ERROR: file: '" << __FILE__	\
+				<< "', line: " << __LINE__		\
+				<< " - " << mpiGetErrorString(val_a) << std::endl;	\
+}
+
+#endif

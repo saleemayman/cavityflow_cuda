@@ -1,7 +1,8 @@
 /*
- * Copyright 2010 Martin Schreiber
- * Copyright 2013 Arash Bakhtiari
- * Copyright 2016 Christoph Riesinger, Ayman Saleem
+ * Copyright
+ * 2010 Martin Schreiber
+ * 2013 Arash Bakhtiari
+ * 2016 Christoph Riesinger, Ayman Saleem
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +23,8 @@
 
 #include "libtools/CStopwatch.hpp"
 #include "libvis/CLbmVisualizationVTK.hpp"
+#include "CConfiguration.hpp"
+#include "CSingleton.hpp"
 
 template <class T>
 CController<T>::CController(int UID, CDomain<T> domain, int BC[3][2]) :

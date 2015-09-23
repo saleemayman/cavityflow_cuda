@@ -1,3 +1,24 @@
+/*
+ * Copyright
+ * 2010 Martin Schreiber
+ * 2013 Arash Bakhtiari
+ * 2016 Christoph Riesinger, Ayman Saleem
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "../common.cuh"
+#include "../common.h"
 
 #define GRAVITATION         0
 
@@ -5,40 +26,33 @@
 
 #define USE_SHARED_MEMORY   1
 
-#include "lbm_header.h"
-
-
-__device__ inline size_t DOMAIN_WRAP(size_t A, size_t DOMAIN_CELLS, bool isPowTwo)
+__device__ size_t DOMAIN_WRAP(size_t A, size_t DOMAIN_CELLS, bool isPowTwo)
 {
     return ( (int)isPowTwo*(A & (DOMAIN_CELLS-1)) + (int)(!isPowTwo)*(A % DOMAIN_CELLS) );
 }
 
-__device__ inline size_t LOCAL_WORK_GROUP_WRAP(size_t A, size_t LOCAL_WORK_GROUP_SIZE, bool isPowTwo)
+__device__ size_t LOCAL_WORK_GROUP_WRAP(size_t A, size_t LOCAL_WORK_GROUP_SIZE, bool isPowTwo)
 {
     return ( (int)isPowTwo * (A & (LOCAL_WORK_GROUP_SIZE-1)) + (int)(!isPowTwo) * (A % LOCAL_WORK_GROUP_SIZE) );
 }
 
-
-/**
- * COLLISION AND PROPAGATION KERNEL - BETA type
- */
-extern "C" __global__ void lbm_kernel_beta(
-            T *global_dd,       // density distributions
-            const int *flag_array,  // flags
-            T *velocity,        // velocities
-            T *density,     // densities
-            const T inv_tau,
-            const T gravitation_x,
-            const T gravitation_y,
-            const T gravitation_z,
-            const T drivenCavityVelocity,            // velocity parameters for modification of density distributions
-            const int domainCells_x,
-            const int domainCells_y,
-            const int domainCells_z,
-            const size_t localWorkGroup,
-            bool isDomainPowOfTwo,
-            bool isLocalPowOfTwo
-        )
+template<typename T>
+__global__ void lbm_kernel_beta(
+        T *global_dd,                 // density distributions
+        const int *flag_array,        // flags
+        T *velocity,                  // velocities
+        T *density,                   // densities
+        const T inv_tau,
+        const T gravitation_x,
+        const T gravitation_y,
+        const T gravitation_z,
+        const T drivenCavityVelocity, // velocity parameters for modification of density distributions
+        const int domainCells_x,
+        const int domainCells_y,
+        const int domainCells_z,
+        const size_t localWorkGroup,
+        bool isDomainPowOfTwo,
+        bool isLocalPowOfTwo)
 {
     //const size_t gid = get_global_id(0);
     const int DOMAIN_CELLS_X = domainCells_x;
@@ -58,8 +72,8 @@ extern "C" __global__ void lbm_kernel_beta(
     size_t DELTA_NEG_Z = DOMAIN_CELLS - DOMAIN_SLICE_CELLS;
 
     // get unique thread id
-	size_t blockId = blockIdx.x + (size_t)(blockIdx.y * gridDim.x) + (size_t)(gridDim.x * gridDim.y * blockIdx.z);
-	size_t gid = blockId * (size_t)(blockDim.x * blockDim.y * blockDim.z) + (size_t)(threadIdx.z * (blockDim.x * blockDim.y)) + (size_t)(threadIdx.y * blockDim.x) + threadIdx.x;
+    size_t blockId = blockIdx.x + (size_t)(blockIdx.y * gridDim.x) + (size_t)(gridDim.x * gridDim.y * blockIdx.z);
+    size_t gid = blockId * (size_t)(blockDim.x * blockDim.y * blockDim.z) + (size_t)(threadIdx.z * (blockDim.x * blockDim.y)) + (size_t)(threadIdx.y * blockDim.x) + threadIdx.x;
 
     if (gid >= DOMAIN_CELLS)
         return;
@@ -221,7 +235,9 @@ extern "C" __global__ void lbm_kernel_beta(
 
 #else
     //__local T dd_buf[12][LOCAL_WORK_GROUP_SIZE];
-    extern __shared__ T dd_buf[];
+    // extern __shared__ T dd_buf[];
+    SharedMemory<T> smem;
+    T* dd_buf = smem.getPointer();
 
     //const size_t lid = get_local_id(0);
     int lid = threadIdx.x + blockDim.x * threadIdx.y;
@@ -276,7 +292,7 @@ extern "C" __global__ void lbm_kernel_beta(
     int pos_x_wrap = LOCAL_WORK_GROUP_WRAP(lid + 1, LOCAL_WORK_GROUP_SIZE, isLocalPowOfTwo);
     int neg_x_wrap = LOCAL_WORK_GROUP_WRAP(lid + (LOCAL_WORK_GROUP_SIZE - 1), LOCAL_WORK_GROUP_SIZE, isLocalPowOfTwo);
 
-	bool local_to_global = ((LOCAL_WORK_GROUP_SIZE/DOMAIN_CELLS_X) * DOMAIN_CELLS_X == LOCAL_WORK_GROUP_SIZE);
+    bool local_to_global = ((LOCAL_WORK_GROUP_SIZE/DOMAIN_CELLS_X) * DOMAIN_CELLS_X == LOCAL_WORK_GROUP_SIZE);
 //#if (LOCAL_WORK_GROUP_SIZE/DOMAIN_CELLS_X)*DOMAIN_CELLS_X == LOCAL_WORK_GROUP_SIZE
 #if local_to_global 
     /*
@@ -316,7 +332,7 @@ extern "C" __global__ void lbm_kernel_beta(
     //__local T *dd_buf_lid = &dd_buf[1][lid];
     //extern __shared__    T dd_buf_lid[1];
     //T *dd_buf_lid = &dd_buf[1][lid];
-	T *dd_buf_lid = &dd_buf[1 * LOCAL_WORK_GROUP_SIZE + lid];
+    T *dd_buf_lid = &dd_buf[1 * LOCAL_WORK_GROUP_SIZE + lid];
 
 #define dd_read_delta_position_0    read_delta_neg_x
 #define dd_read_delta_position_1    read_delta_pos_x
@@ -792,7 +808,7 @@ extern "C" __global__ void lbm_kernel_beta(
     //dd_buf[0][pos_x_wrap] = dd0;
     //dd_buf[1][neg_x_wrap] = dd1;
     dd_buf[0 * LOCAL_WORK_GROUP_SIZE + pos_x_wrap] = dd0;
-  	dd_buf[1 * LOCAL_WORK_GROUP_SIZE + neg_x_wrap] = dd1;
+      dd_buf[1 * LOCAL_WORK_GROUP_SIZE + neg_x_wrap] = dd1;
     //barrier(CLK_LOCAL_MEM_FENCE);
     __syncthreads();
 
@@ -802,14 +818,14 @@ extern "C" __global__ void lbm_kernel_beta(
     current_dds[dd_read_delta_position_2] = dd3;        current_dds += DOMAIN_CELLS;
 
     /* f(1,1,0), f(-1,-1,0), f(1,-1,0), f(-1,1,0) */
-//	dd_buf[4][pos_x_wrap] = dd4;
-//	dd_buf[5][neg_x_wrap] = dd5;
-//	dd_buf[6][pos_x_wrap] = dd6;
-//	dd_buf[7][neg_x_wrap] = dd7;
-	dd_buf[4 * LOCAL_WORK_GROUP_SIZE + pos_x_wrap] = dd4;
-	dd_buf[5 * LOCAL_WORK_GROUP_SIZE + neg_x_wrap] = dd5;
-	dd_buf[6 * LOCAL_WORK_GROUP_SIZE + pos_x_wrap] = dd6;
-	dd_buf[7 * LOCAL_WORK_GROUP_SIZE + neg_x_wrap] = dd7;
+//    dd_buf[4][pos_x_wrap] = dd4;
+//    dd_buf[5][neg_x_wrap] = dd5;
+//    dd_buf[6][pos_x_wrap] = dd6;
+//    dd_buf[7][neg_x_wrap] = dd7;
+    dd_buf[4 * LOCAL_WORK_GROUP_SIZE + pos_x_wrap] = dd4;
+    dd_buf[5 * LOCAL_WORK_GROUP_SIZE + neg_x_wrap] = dd5;
+    dd_buf[6 * LOCAL_WORK_GROUP_SIZE + pos_x_wrap] = dd6;
+    dd_buf[7 * LOCAL_WORK_GROUP_SIZE + neg_x_wrap] = dd7;
     //barrier(CLK_LOCAL_MEM_FENCE);
     __syncthreads();
 
@@ -819,10 +835,10 @@ extern "C" __global__ void lbm_kernel_beta(
     current_dds[dd_read_delta_position_6] = *dd_buf_lid;    current_dds += DOMAIN_CELLS;    dd_buf_lid += LOCAL_WORK_GROUP_SIZE;
 
     /* f(1,0,1), f(-1,0,-1), f(1,0,-1), f(-1,0,1) */
-//	dd_buf[8][pos_x_wrap] = dd8;
-//	dd_buf[9][neg_x_wrap] = dd9;
-//	dd_buf[10][pos_x_wrap] = dd10;
-//	dd_buf[11][neg_x_wrap] = dd11;
+//    dd_buf[8][pos_x_wrap] = dd8;
+//    dd_buf[9][neg_x_wrap] = dd9;
+//    dd_buf[10][pos_x_wrap] = dd10;
+//    dd_buf[11][neg_x_wrap] = dd11;
     dd_buf[8 * LOCAL_WORK_GROUP_SIZE + pos_x_wrap] = dd8;
     dd_buf[9 * LOCAL_WORK_GROUP_SIZE + neg_x_wrap] = dd9;
     dd_buf[10 * LOCAL_WORK_GROUP_SIZE + pos_x_wrap] = dd10;
@@ -911,3 +927,36 @@ extern "C" __global__ void lbm_kernel_beta(
     density[gid] = rho;
 #endif
 }
+
+template __global__ void lbm_kernel_beta<float>(
+        float *global_dd,
+        const int *flag_array,
+        float *velocity,
+        float *density,
+        const float inv_tau,
+        const float gravitation_x,
+        const float gravitation_y,
+        const float gravitation_z,
+        const float drivenCavityVelocity,
+        const int domainCells_x,
+        const int domainCells_y,
+        const int domainCells_z,
+        const size_t localWorkGroup,
+        bool isDomainPowOfTwo,
+        bool isLocalPowOfTwo);
+template __global__ void lbm_kernel_beta<double>(
+        double *global_dd,
+        const int *flag_array,
+        double *velocity,
+        double *density,
+        const double inv_tau,
+        const double gravitation_x,
+        const double gravitation_y,
+        const double gravitation_z,
+        const double drivenCavityVelocity,
+        const int domainCells_x,
+        const int domainCells_y,
+        const int domainCells_z,
+        const size_t localWorkGroup,
+        bool isDomainPowOfTwo,
+        bool isLocalPowOfTwo);
