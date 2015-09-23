@@ -52,10 +52,10 @@ CXXFILES		:=	src/libmath/CMath.cpp \
 					src/main.cpp
 
 # cuda source files (compiled with $(NVCC))
-CUDAFILES		:=	cu_programs/copy_buffer_rect.cu \
-					cu_programs/lbm_alpha.cu \
-					cu_programs/lbm_beta.cu \
-					cu_programs/lbm_init.cu
+CUDAFILES		:=	gpukernels/copy_buffer_rect.cu \
+					gpukernels/lbm_alpha.cu \
+					gpukernels/lbm_beta.cu \
+					gpukernels/lbm_init.cu
 
 ################################################################################
 # compiler arguments and flags
@@ -93,7 +93,8 @@ NVCCLINKERFLAGS	+=	-dlink
 ################################################################################
 
 VPATH 			:=	src/ \
-					src/cu_programs/ \
+					src/cpukernels/ \
+					src/gpukernels/ \
 					src/libmath/ \
 					src/libvis/ \
 
