@@ -1,5 +1,5 @@
-#ifndef __CDOMAIN_HPP__
-#define __CDOMAIN_HPP__
+#ifndef CDOMAIN_HPP
+#define CDOMAIN_HPP
 
 #include <stdlib.h>
 #include <iostream>

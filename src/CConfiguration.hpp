@@ -1,5 +1,5 @@
-#ifndef __CCONFIGURATION_HPP__
-#define __CCONFIGURATION_HPP__
+#ifndef CCONFIGURATION_HPP
+#define CCONFIGURATION_HPP
 
 #include <cstdlib>
 #include <iostream>

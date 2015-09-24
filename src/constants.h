@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef __CONSTANTS_HPP__
-#define __CONSTANTS_HPP__
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
 
 #define TYPE float
 #define TYPE_FLOAT 1

@@ -22,8 +22,8 @@
  *      Author: martin
  */
 
-#ifndef CFLATTEXTURELAYOUT_HPP_
-#define CFLATTEXTURELAYOUT_HPP_
+#ifndef CFLATTEXTURELAYOUT_HPP
+#define CFLATTEXTURELAYOUT_HPP
 
 #include "libmath/CVector.hpp"
 

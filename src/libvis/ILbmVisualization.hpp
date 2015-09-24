@@ -1,7 +1,5 @@
-
-
-#ifndef CVISUALIZER_HPP
-#define CVISUALIZER_HPP
+#ifndef ILBMVISUALIZATION_HPP
+#define ILBMVISUALIZATION_HPP
 
 #include "../CLbmSolver.hpp"
 #include "../libmath/CVector.hpp"

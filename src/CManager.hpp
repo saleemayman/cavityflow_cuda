@@ -1,5 +1,5 @@
-#ifndef __CMANAGER_HPP__
-#define __CMANAGER_HPP__
+#ifndef CMANAGER_HPP
+#define CMANAGER_HPP
 
 #include <vector>
 #include <map>

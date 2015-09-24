@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef __CSINGLETON_HPP_
-#define __CSINGLETON_HPP_
+#ifndef CSINGLETON_HPP
+#define CSINGLETON_HPP
 
 #include <cstddef>
 

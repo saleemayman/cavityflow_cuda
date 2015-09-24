@@ -5,8 +5,8 @@
  *      Author: Arash
  */
 
-#ifndef VTK_COMMON_HPP_
-#define VTK_COMMON_HPP_
+#ifndef VTK_COMMON_HPP
+#define VTK_COMMON_HPP
 
 #include "../libmath/CVector.hpp"
 

@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef __CCONTROLLER_HPP__
-#define __CCONTROLLER_HPP__
+#ifndef CCONTROLLER_HPP
+#define CCONTROLLER_HPP
 
 #include <vector>
 

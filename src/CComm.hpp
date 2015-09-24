@@ -1,5 +1,5 @@
-#ifndef CMANAGER_H
-#define CMANAGER_H
+#ifndef CCOMM_HPP
+#define CCOMM_HPP
 
 /*
  * Class CComm provides necessary information for communication of data between two subdomains.

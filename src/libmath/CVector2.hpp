@@ -17,12 +17,12 @@
  * limitations under the License.
  */
 
-#ifndef __CVECTOR_HH
+#ifndef CVECTOR_HPP
 	#error "dont include CVector2.hpp directly!"
 #endif
 
-#ifndef __CVECTOR2_HH
-#define __CVECTOR2_HH
+#ifndef CVECTOR2_HPP
+#define CVECTOR2_HPP
 
 #include <iostream>
 

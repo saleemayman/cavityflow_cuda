@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef __CVECTOR_HH
-#define __CVECTOR_HH
+#ifndef CVECTOR_HPP
+#define CVECTOR_HPP
 
 /*
  * it's not possible to create templates dependend on dimension AND type parameters while specifying

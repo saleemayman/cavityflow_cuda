@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef CLBMOPENCL_HH
-#define CLBMOPENCL_HH
+#ifndef CLBMSOLVER_HPP
+#define CLBMSOLVER_HPP
 
 #include "CLbmSkeleton.hpp"
 //#include "CComm.hpp" //included in CLbmSkeleton
