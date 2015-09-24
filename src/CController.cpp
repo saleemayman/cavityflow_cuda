@@ -19,6 +19,9 @@
 
 #include "CController.hpp"
 
+#include <iomanip>
+#include <typeinfo>
+
 #include "mpi.h"
 
 #include "libtools/CStopwatch.hpp"
