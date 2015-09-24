@@ -47,6 +47,7 @@ CXXFILES		:=	src/libmath/CMath.cpp \
 					src/libmath/CVector3.cpp \
 					src/libmath/CVector4.cpp \
 					src/libvis/VTK_Common.cpp \
+					src/CComm.cpp \
 					src/CController.cpp \
 					src/CSingleton.cpp \
 					src/main.cpp
@@ -96,6 +97,7 @@ VPATH 			:=	src/ \
 					src/cpukernels/ \
 					src/gpukernels/ \
 					src/libmath/ \
+					src/libtools/ \
 					src/libvis/ \
 
 ################################################################################
