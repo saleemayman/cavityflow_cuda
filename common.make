@@ -50,6 +50,7 @@ CXXFILES		:=	src/libmath/CMath.cpp \
 					src/CConfiguration.cpp \
 					src/CComm.cpp \
 					src/CController.cpp \
+					src/CDomain.cpp \
 					src/CSingleton.cpp \
 					src/main.cpp
 

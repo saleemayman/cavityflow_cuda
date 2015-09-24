@@ -26,15 +26,15 @@ template<class T>
 class CSingleton
 {
 public:
-	static T* getInstance();
+    static T* getInstance();
 
 private:
-	static T* instance;
+    static T* instance;
 
-	CSingleton();
-	CSingleton(CSingleton const&);
-	~CSingleton();
-	CSingleton& operator=(CSingleton const&);
+    CSingleton();
+    CSingleton(CSingleton const&);
+    ~CSingleton();
+    CSingleton& operator=(CSingleton const&);
 };
 
 #endif

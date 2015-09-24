@@ -26,11 +26,11 @@
 template <class T>
 T* CSingleton<T>::getInstance()
 {
-	if(!instance)
-		instance = new T;
-	// assert(instance != NULL);
+    if(!instance)
+        instance = new T;
+    // assert(instance != NULL);
 
-	return instance;
+    return instance;
 }
 
 template<class T>

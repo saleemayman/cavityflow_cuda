@@ -46,7 +46,8 @@ int CConfiguration<T>::load_xml(std::string file_name)
 }
 
 template <class T>
-void CConfiguration<T>::interpret_physiscs_data(const txml::XMLNode* root) {
+void CConfiguration<T>::interpret_physiscs_data(const txml::XMLNode* root)
+{
 	// viscosity
 	const txml::XMLNode* child_one = root->FirstChildElement(TAG_NAME_CHILD_ONE);
 	viscosity = atof(child_one->FirstChildElement( "viscosity" )->GetText());
@@ -64,7 +65,8 @@ void CConfiguration<T>::interpret_physiscs_data(const txml::XMLNode* root) {
 }
 
 template <class T>
-void CConfiguration<T>::interpret_grid_data(const txml::XMLNode* root) {
+void CConfiguration<T>::interpret_grid_data(const txml::XMLNode* root)
+{
 	const txml::XMLNode* child_two = root->FirstChildElement(TAG_NAME_CHILD_TWO);
 	domain_size[0] = atoi(child_two->FirstChildElement( "domain-size" )->FirstChildElement( "x" )->GetText());
 	domain_size[1] = atoi(child_two->FirstChildElement( "domain-size" )->FirstChildElement( "y" )->GetText());
@@ -80,7 +82,8 @@ void CConfiguration<T>::interpret_grid_data(const txml::XMLNode* root) {
 }
 
 template <class T>
-void CConfiguration<T>::interpret_simulation_data(const txml::XMLNode* root) {
+void CConfiguration<T>::interpret_simulation_data(const txml::XMLNode* root)
+{
 	const txml::XMLNode* child_three = root->FirstChildElement(TAG_NAME_CHILD_THREE);
 	loops = atoi(child_three->FirstChildElement( "loops" )->GetText());
 	timestep = atof(child_three->FirstChildElement( "timestep" )->GetText());
@@ -89,7 +92,8 @@ void CConfiguration<T>::interpret_simulation_data(const txml::XMLNode* root) {
 }
 
 template <class T>
-void CConfiguration<T>::interpret_device_data(const txml::XMLNode* root) {
+void CConfiguration<T>::interpret_device_data(const txml::XMLNode* root)
+{
 	const txml::XMLNode* child_four = root->FirstChildElement(TAG_NAME_CHILD_FOUR);
 	computation_kernel_count = atoi(child_four->FirstChildElement( "kernel-count" )->GetText());
 	threads_per_dimension = atoi(child_four->FirstChildElement( "threads-per-dim" )->GetText());
@@ -97,7 +101,8 @@ void CConfiguration<T>::interpret_device_data(const txml::XMLNode* root) {
 }
 
 template <class T>
-void CConfiguration<T>::interpret_xml_doc() {
+void CConfiguration<T>::interpret_xml_doc()
+{
 	const txml::XMLNode* root = doc.FirstChildElement(TAG_NAME_ROOT);
 	interpret_device_data(root);
 	interpret_grid_data(root);
@@ -119,28 +124,28 @@ void CConfiguration<T>::loadFile(std::string file_name)
 }
 
 template <class T>
-void CConfiguration<T>::printMe() {
+void CConfiguration<T>::printMe()
+{
 	std::cout << "################" << std::endl;
 	std::cout << "# CONFIGURATION " << std::endl;
 	std::cout << "################" << std::endl;
-	std::cout <<  "PHYSICS: " << std::endl;
-	std::cout <<  "     VISCOSITY: " <<  viscosity << std::endl;
-	std::cout <<  "   GRAVITATION: " <<  gravitation<< std::endl;
-	std::cout <<  "     CAVITY VEL: " <<  drivenCavityVelocity << std::endl;
-	std::cout <<  "GRID: " << std::endl;
-	std::cout <<  "   DOMAIN_SIZE: " <<  domain_size << std::endl;
-	std::cout <<  " SUBDOMIAN_NUM: " <<  subdomain_num<< std::endl;
+	std::cout <<  "PHYSICS:" << std::endl;
+	std::cout <<  "       VISCOSITY: " << viscosity << std::endl;
+	std::cout <<  "     GRAVITATION: " << gravitation<< std::endl;
+	std::cout <<  "      CAVITY VEL: " << drivenCavityVelocity << std::endl;
+	std::cout <<  "GRID:" << std::endl;
+	std::cout <<  "     DOMAIN_SIZE: " << domain_size << std::endl;
+	std::cout <<  "   SUBDOMIAN_NUM: " << subdomain_num<< std::endl;
 	std::cout <<  "SIMULATION: " << std::endl;
-	std::cout <<  "         LOOPS: " <<  loops << std::endl;
-	std::cout <<  "      TIMESTEP: " <<  timestep << std::endl;
-	std::cout <<  "           VTK: " <<  do_visualization << std::endl;
-	std::cout <<  "      VALIDATE: " <<  do_validate << std::endl;
-	std::cout <<  "DEVICE: " << std::endl;
-	std::cout <<  "  KERNEL_COUNT: " <<  computation_kernel_count << std::endl;
-	std::cout <<  "  THREADS_PER_DIM: " <<  threads_per_dimension << std::endl;
-	std::cout <<  "     DEVICE_NR: " <<  device_nr << std::endl;
+	std::cout <<  "           LOOPS: " << loops << std::endl;
+	std::cout <<  "        TIMESTEP: " << timestep << std::endl;
+	std::cout <<  "             VTK: " << do_visualization << std::endl;
+	std::cout <<  "        VALIDATE: " << do_validate << std::endl;
+	std::cout <<  "DEVICE:" << std::endl;
+	std::cout <<  "     KERNEL_COUNT: " << computation_kernel_count << std::endl;
+	std::cout <<  "  THREADS_PER_DIM: " << threads_per_dimension << std::endl;
+	std::cout <<  "        DEVICE_NR: " << device_nr << std::endl;
 }
 
 template class CConfiguration<double>;
 template class CConfiguration<float>;
-

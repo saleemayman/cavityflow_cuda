@@ -20,14 +20,13 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#define TYPE float
-#define TYPE_FLOAT 1
+#define TYPE double
 
-#define FLAG_OBSTACLE           (1 << 0)
-#define FLAG_FLUID              (1 << 1)
-#define FLAG_VELOCITY_INJECTION (1 << 2)
-#define FLAG_GHOST_LAYER        (1 << 3)
-#define FLAG_GHOST_LAYER_BETA   (FLAG_GHOST_LAYER | (1 << 4))
+#define FLAG_OBSTACLE           (1<<0)
+#define FLAG_FLUID              (1<<1)
+#define FLAG_VELOCITY_INJECTION (1<<2)
+#define FLAG_GHOST_LAYER        (1<<3)
+#define FLAG_GHOST_LAYER_BETA   (FLAG_GHOST_LAYER | (1<<4))
 
 #define STORE_VELOCITY          1
 #define STORE_DENSITY           1
