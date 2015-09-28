@@ -52,15 +52,17 @@ CXXFILES		:=	src/libmath/CMath.cpp \
 					src/CController.cpp \
 					src/CDomain.cpp \
 					src/CLbmSolver.cpp \
+					src/CLbmSolverCPU.cpp \
 					src/CManager.cpp \
 					src/CSingleton.cpp \
 					src/main.cpp
 
 # cuda source files (compiled with $(NVCC))
-CUDAFILES		:=	gpukernels/copy_buffer_rect.cu \
-					gpukernels/lbm_alpha.cu \
-					gpukernels/lbm_beta.cu \
-					gpukernels/lbm_init.cu
+CUDAFILES		:=	src/gpukernels/copy_buffer_rect.cu \
+					src/gpukernels/lbm_alpha.cu \
+					src/gpukernels/lbm_beta.cu \
+					src/gpukernels/lbm_init.cu \
+					src/CLbmSolverGPU.cu
 
 ################################################################################
 # compiler arguments and flags

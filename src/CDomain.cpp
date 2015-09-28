@@ -20,7 +20,7 @@
 #include "CDomain.hpp"
 
 template <class T>
-CDomain<T>::CDomain(int UID, CVector<3, int> size, CVector<3, int> origin_cell, CVector<3, T> length) :
+CDomain<T>::CDomain(int UID, CVector<3,int> size, CVector<3,int> origin_cell, CVector<3,T> length) :
 		_UID(UID), _size(size), _origin_cell(origin_cell), _length(length)
 {
 }
@@ -29,8 +29,8 @@ template <class T>
 CDomain<T>::CDomain(int UID, CVector<3, int> size) :
 		_UID(UID), _size(size)
 {
-	_origin_cell = CVector<3, int>(0, 0, 0);
-	_length = CVector<3, T>(0.05, 0.05, 0.05);
+	_origin_cell = CVector<3,int>(0, 0, 0);
+	_length = CVector<3,T>(0.05, 0.05, 0.05);
 }
 
 template <class T>

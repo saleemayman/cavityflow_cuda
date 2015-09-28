@@ -122,7 +122,7 @@ template <class T>
 void CLbmSolver<T>::addDrivenCavityValue(T value)
 {
     drivenCavityVelocity[0] += value;
-    CVector<4, T> paramDrivenCavityVelocity = drivenCavityVelocity;
+    CVector<4,T> paramDrivenCavityVelocity = drivenCavityVelocity;
     paramDrivenCavityVelocity *= CLbmSkeleton<T>::d_timestep;
 
     cKernelInit.setArg(4, paramDrivenCavityVelocity[0]);

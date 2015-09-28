@@ -23,19 +23,22 @@
 #include "libmath/CVector.hpp"
 
 /*
- * Class CDomain contains data related to a subdomain of simulation grid
+ * Class CDomain contains meta data related to a subdomain of simulation grid.
+ * It does not contain the domain data itself like physical values (densities,
+ * velocities, etc.) or values which are specific for a certain cell of the
+ * domain.
  */
 template<typename T>
 class CDomain
 {
 private:
-    int _UID; ///< Unique id of the sub/domain
-    CVector<3,int> _size; ///< Size of the domain
-    CVector<3,int> _origin_cell; ///< Origin of the domain points if it is part of a bigger domain
-    CVector<3,T> _length; ///< Length of the domain in each direction
+    int _UID;                    // Unique id of the sub/domain
+    CVector<3,int> _size;        // Size of the domain in each direction
+    CVector<3,int> _origin_cell; // Origin of the domain points if it is part of a bigger domain
+    CVector<3,T> _length;        // Length of the domain in each direction
 
 public:
-    CDomain(int UID, CVector<3,int> size, CVector<3,int> origin_cell, CVector<3, T> length);
+    CDomain(int UID, CVector<3,int> size, CVector<3,int> origin_cell, CVector<3,T> length);
     CDomain(int UID, CVector<3,int> size);
     ~CDomain();
 

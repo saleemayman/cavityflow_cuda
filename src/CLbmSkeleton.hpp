@@ -46,7 +46,7 @@ public:
 	CDomain<T> domain;
 	CVector<3,int> domain_cells;	///< available simulation cells in each dimension
 	int domain_cells_count;			///< overall number of simulation cells
-	CVector<4, T> d_drivenCavityVelocity;
+	CVector<4,T> d_drivenCavityVelocity;
 
 
 //protected:
@@ -73,7 +73,7 @@ public:
 	T inv_tau;					///< inverse tau
 	T inv_trt_tau;				///< inverse two time relaxation model tau
 
-	CVector<4, T> drivenCavityVelocity;
+	CVector<4,T> drivenCavityVelocity;
 	CVector<3,T> gravitation;	///< gravitation vector
 
 	T max_sim_gravitation_length;	///< maximum length of dimensionless gravitation vector to restrict maximum force acting on fluid
