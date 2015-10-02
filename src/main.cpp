@@ -20,12 +20,12 @@
 #include <getopt.h>
 
 // MPI
-#include "mpi.h"
+#include <mpi.h>
 // TinyXML2
-#include "tinyxml2.h"
+#include <tinyxml2.h>
 // UnitTest++
-#include "TestReporterStdout.h"
-#include "UnitTest++.h"
+#include <TestReporterStdout.h>
+#include <UnitTest++.h>
 
 // internals
 // #include "helper.h"

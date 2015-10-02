@@ -22,40 +22,70 @@
 
 #include "CLbmSolver.hpp"
 
-#include <list>
 #include <vector>
 
-#include "vector_types.h"
+#include <vector_types.h>
 
 template<typename T>
 class CLbmSolverGPU : public CLbmSolver<T>
 {
 private:
 	T* densityDistributions;
-	int* flags;
+	Flag* flags;
 	T* velocities;
 	T* densities;
 	
-	std::vector<dim3> threadsPerBlock;
+	/*
+	 * Six slots for the halo layers of the six faces of a cuboid.
+	 * [g/s]etDensityDistributionsHalo[0]: halo layer for right face
+	 * [g/s]etDensityDistributionsHalo[1]: halo layer for left face
+	 * [g/s]etDensityDistributionsHalo[2]: halo layer for top face
+	 * [g/s]etDensityDistributionsHalo[3]: halo layer for bottom face
+	 * [g/s]etDensityDistributionsHalo[4]: halo layer for front face
+	 * [g/s]etDensityDistributionsHalo[5]: halo layer for back face
+	 */
+	std::array<T*,6> getDensityDistributionsHalo;
+	std::array<T*,6> setDensityDistributionsHalo;
+
+	/*
+	 * Four slots for the parallel setup (threads per block) for the four different GPU kernels.
+	 * threadsPerBlock[0]: number of threads per block for kernel lbm_init()
+	 * threadsPerBlock[1]: number of threads per block for kernel lbm_alpha()
+	 * threadsPerBlock[2]: number of threads per block for kernel lbm_beta()
+	 */
+	std::array<dim3,3> threadsPerBlock;
 
 public:
 	CLbmSolverGPU();
+	CLbmSolverGPU(
+			int id,
+			CDomain<T> &domain,
+			std::array<Flag,6> boundaryConditions,
+			T timestepSize,
+			CVector<3,T> &gravitation,
+			CVector<4,T> &drivenCavityVelocity,
+			T viscocity,
+			T massExchangeFactor = MASS_EXCHANGE_FACTOR,
+			T maxSimGravitationLength = MAX_SIM_GRAVITATION_LENGTH,
+			T tau = TAU,
+			bool storeDensities = false,
+			bool storeVelocities = false);
 	~CLbmSolverGPU();
 
 	void simulationStepAlpha();
-	void simulationStepAlphaRect();
+	void simulationStepAlphaRect(CVector<3,int> origin, CVector<3,int> size);
 	void simulationStepBeta();
-	void simulationStepBetaRect();
+	void simulationStepBetaRect(CVector<3,int> origin, CVector<3,int> size);
 	void reset();
 	void reload();
-	void getDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* dst);
-	void setDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* src);
-	void getFlags(CVector<3,int> &origin, CVector<3,int> &size, int* dst);
-	void setFlags(CVector<3,int> &origin, CVector<3,int> &size, int* src);
-	void getVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* dst);
-	void setVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* src);
-	void getDensities(CVector<3,int> &origin, CVector<3,int> &size, T* dst);
-	void setDensities(CVector<3,int> &origin, CVector<3,int> &size, T* src);
+	void getDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* hDensityDistributions);
+	void setDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* hDensityDistributions);
+	void getFlags(CVector<3,int> &origin, CVector<3,int> &size, int* hFlags);
+	void setFlags(CVector<3,int> &origin, CVector<3,int> &size, int* hFlags);
+	void getVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* hVelocities);
+	void setVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* hVelocities);
+	void getDensities(CVector<3,int> &origin, CVector<3,int> &size, T* hDensities);
+	void setDensities(CVector<3,int> &origin, CVector<3,int> &size, T* hDensities);
 };
 
 #endif

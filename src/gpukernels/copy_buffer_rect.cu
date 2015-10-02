@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "copy_buffer_rect.cuh"
+
 /*
  * COPY KERNEL
  *
@@ -80,7 +82,6 @@ __global__ void copy_buffer_rect(
     {
         dst[ dst_origin_idx + x_idx] = src[src_origin_idx + x_idx];
     }
-
 }
 
 template __global__ void copy_buffer_rect<float>(

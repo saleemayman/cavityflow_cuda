@@ -17,8 +17,7 @@
  * limitations under the License.
  */
 
-#include "../common.cuh"
-#include "../common.h"
+#include "lbm_beta.cuh"
 
 #define GRAVITATION         0
 
@@ -588,7 +587,7 @@ __global__ void lbm_kernel_beta(
 //  T dd_param; // modified rho as temporary variable
     switch(flag)
     {
-        case FLAG_FLUID:    // this is the whole collision operator
+        case Flag::FLUID:    // this is the whole collision operator
             vel2 = velocity_x*velocity_x + velocity_y*velocity_y + velocity_z*velocity_z;
             dd_param = rho - (T)(3.0f/2.0f)*(vel2);
 
@@ -652,7 +651,7 @@ __global__ void lbm_kernel_beta(
             dd18 += inv_tau*(eq_dd18(dd_param) - dd18);
             break;
 
-        case FLAG_OBSTACLE: // in case of an obstacle, we bounce back the values
+        case Flag::OBSTACLE: // in case of an obstacle, we bounce back the values
             // set to zero velocity and no fluid density
 #if STORE_VELOCITY
             velocity_x = 0.0f;
@@ -673,7 +672,7 @@ __global__ void lbm_kernel_beta(
 
             break;
 
-        case FLAG_VELOCITY_INJECTION:   // this flag specifies the injection area of the fluid
+        case Flag::VELOCITY_INJECTION:   // this flag specifies the injection area of the fluid
             velocity_x = drivenCavityVelocity;
             velocity_y = 0;
             velocity_z = 0;
@@ -745,7 +744,7 @@ __global__ void lbm_kernel_beta(
 
             dd18 = eq_dd18(dd_param);
             break;
-        case ( FLAG_GHOST_LAYER):
+        case ( Flag::GHOST_LAYER):
             break;
     }
 
@@ -757,7 +756,7 @@ __global__ void lbm_kernel_beta(
     */
 
 #define tmp vela2
-    if (flag != FLAG_OBSTACLE)
+    if (flag != Flag::OBSTACLE)
     {
         tmp = gravitation_x*(T)(1.0f/18.0f)*rho;
         dd0 += tmp;
@@ -911,7 +910,7 @@ __global__ void lbm_kernel_beta(
     current_dds[gid] = dd18;
 #endif
 
-    if ( flag == FLAG_GHOST_LAYER)
+    if ( flag == Flag::GHOST_LAYER)
         return;
 
 #if STORE_VELOCITY

@@ -32,20 +32,30 @@ template<typename T>
 class CDomain
 {
 private:
-    int _UID;                    // Unique id of the sub/domain
-    CVector<3,int> _size;        // Size of the domain in each direction
-    CVector<3,int> _origin_cell; // Origin of the domain points if it is part of a bigger domain
-    CVector<3,T> _length;        // Length of the domain in each direction
+    int id;                // Unique id of the sub/domain
+    CVector<3,T> length;   // Length of the domain in each direction
+    CVector<3,int> origin; // Origin of the domain points if it is part of a bigger domain
+    CVector<3,int> size;   // Size of the domain in each direction
 
 public:
-    CDomain(int UID, CVector<3,int> size, CVector<3,int> origin_cell, CVector<3,T> length);
-    CDomain(int UID, CVector<3,int> size);
+    CDomain(int id, CVector<3,int> size, CVector<3,int> originCell, CVector<3,T> length);
+    CDomain(int id, CVector<3,int> size);
     ~CDomain();
 
+    int getId() const;
+    CVector<3,T> getLength() const;
+    CVector<3,T> getLengthWithHalo() const;
+    int getNumOfCells() const;
+    int getNumOfCellsWithHalo() const;
+    int getNumOfXFaceCells() const;
+    int getNumOfXFaceCellsWithHalo() const;
+    int getNumOfYFaceCells() const;
+    int getNumOfYFaceCellsWithHalo() const;
+    int getNumOfZFaceCells() const;
+    int getNumOfZFaceCellsWithHalo() const;
     CVector<3,int> getOrigin() const;
     CVector<3,int> getSize() const;
-    int getUid() const;
-    CVector<3,T> getLength() const;
+    CVector<3,int> getSizeWithHalo() const;
 };
 
 #endif

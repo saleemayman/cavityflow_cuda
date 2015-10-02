@@ -25,7 +25,10 @@
 #include <sstream>
 #include <string>
 
-#include "mpi.h"
+#include <cuda.h>
+#include <cuda_runtime.h>
+
+#include <mpi.h>
 
 #include "libmath/CVector.hpp"
 #include "constants.h"
@@ -51,8 +54,55 @@ extern CVector<3,int> E17;
 extern CVector<3,int> E18;
 extern CVector<3,int> lbm_units[];
 
-// typedef Singleton<CConfiguration<T> > ConfigSingleton; // Global declaration
-// typedef Singleton<CProfiler> ProfilerSingleton; // Global declaration
+enum Flag
+{
+	OBSTACLE           = (1<<0),
+	FLUID              = (1<<1),
+	VELOCITY_INJECTION = (1<<2),
+	GHOST_LAYER        = (1<<3),
+	GHOST_LAYER_BETA   = (GHOST_LAYER | (1<<4))
+};
+
+#define GPU_ERROR_CHECK(code) { gpuErrorCheck((code), __FILE__, __LINE__); }
+
+inline void gpuErrorCheck(cudaError_t code, std::string file, int line, bool abort = true) {
+	// cudaDeviceSynchronize();
+	if (code != cudaSuccess) {
+		std::cerr << "!!! The following CUDA API error occurred !!! " << std::endl;
+		std::cerr << cudaGetErrorString(code) << std::endl;
+		std::cerr << "Info: file -> " << file << ", line -> " << line << std::endl;
+		if(abort) {
+			exit(code);
+		}
+	}
+}
+
+inline dim3 getBlocksPerGrid(int dim, CVector<3,int> size, dim3 threadsPerBlock)
+{
+	dim3 blocksPerGrid(1, 1, 1);
+
+	switch(dim)
+	{
+	case 1:
+		blocksPerGrid.x = ((size[0] - 1) / threadsPerBlock.x) + 1;
+		break;
+	case 2:
+		blocksPerGrid.x = ((size[0] - 1) / threadsPerBlock.x) + 1;
+		blocksPerGrid.y = ((size[1] - 1) / threadsPerBlock.y) + 1;
+		break;
+	case 3:
+		blocksPerGrid.x = ((size[0] - 1) / threadsPerBlock.x) + 1;
+		blocksPerGrid.y = ((size[1] - 1) / threadsPerBlock.y) + 1;
+		blocksPerGrid.z = ((size[2] - 1) / threadsPerBlock.z) + 1;
+		break;
+	default:
+		blocksPerGrid.x = ((size[0] - 1) / threadsPerBlock.x) + 1;
+		blocksPerGrid.y = ((size[1] - 1) / threadsPerBlock.y) + 1;
+		blocksPerGrid.z = ((size[2] - 1) / threadsPerBlock.z) + 1;
+	}
+
+	return blocksPerGrid;
+}
 
 typedef enum {
     MPI_COMM_DIRECTION_UNKNOWN = 0,

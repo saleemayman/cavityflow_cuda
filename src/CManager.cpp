@@ -19,9 +19,6 @@
 
 #include "CManager.hpp"
 
-// #include <vector>
-// #include <map>
-
 template <class T>
 CManager<T>::CManager(CDomain<T> domain, CVector<3, int> subdomainNums) :
         _domain(domain), _lbm_controller(NULL)
@@ -134,10 +131,8 @@ void CManager<T>::initSimulation(int my_rank)
     // Initializing the Controller's communication classes based on the already computed boundary conditions
     if (BC[0][0] == FLAG_GHOST_LAYER) {
         int comm_destination = id - 1;
-        CVector<3, int> send_size(1, _subdomain_size[1],
-                _subdomain_size[2]);
-        CVector<3, int> recv_size(1, _subdomain_size[1],
-                _subdomain_size[2]);
+        CVector<3, int> send_size(1, _subdomain_size[1], _subdomain_size[2]);
+        CVector<3, int> recv_size(1, _subdomain_size[1], _subdomain_size[2]);
         CVector<3, int> send_origin(1, 0, 0);
         CVector<3, int> recv_origin(0, 0, 0);
         CVector<3, int> comm_direction(1, 0, 0);
@@ -147,10 +142,8 @@ void CManager<T>::initSimulation(int my_rank)
     }
     if (BC[0][1] == FLAG_GHOST_LAYER) {
         int comm_destination = id + 1;
-        CVector<3, int> send_size(1, _subdomain_size[1],
-                _subdomain_size[2]);
-        CVector<3, int> recv_size(1, _subdomain_size[1],
-                _subdomain_size[2]);
+        CVector<3, int> send_size(1, _subdomain_size[1], _subdomain_size[2]);
+        CVector<3, int> recv_size(1, _subdomain_size[1], _subdomain_size[2]);
         CVector<3, int> send_origin(_subdomain_size[0] - 2, 0, 0);
         CVector<3, int> recv_origin(_subdomain_size[0] - 1, 0, 0);
         CVector<3, int> comm_direction(-1, 0, 0);
@@ -160,10 +153,8 @@ void CManager<T>::initSimulation(int my_rank)
     }
     if (BC[1][0] == FLAG_GHOST_LAYER) {
         int comm_destination = id - _subdomain_nums[0];
-        CVector<3, int> send_size(_subdomain_size[0], 1,
-                _subdomain_size[2]);
-        CVector<3, int> recv_size(_subdomain_size[0], 1,
-                _subdomain_size[2]);
+        CVector<3, int> send_size(_subdomain_size[0], 1, _subdomain_size[2]);
+        CVector<3, int> recv_size(_subdomain_size[0], 1, _subdomain_size[2]);
         CVector<3, int> send_origin(0, 1, 0);
         CVector<3, int> recv_origin(0, 0, 0);
         CVector<3, int> comm_direction(0, 1, 0);
@@ -173,10 +164,8 @@ void CManager<T>::initSimulation(int my_rank)
     }
     if (BC[1][1] == FLAG_GHOST_LAYER) {
         int comm_destination = id + _subdomain_nums[0];
-        CVector<3, int> send_size(_subdomain_size[0], 1,
-                _subdomain_size[2]);
-        CVector<3, int> recv_size(_subdomain_size[0], 1,
-                _subdomain_size[2]);
+        CVector<3, int> send_size(_subdomain_size[0], 1, _subdomain_size[2]);
+        CVector<3, int> recv_size(_subdomain_size[0], 1,  _subdomain_size[2]);
         CVector<3, int> send_origin(0, _subdomain_size[1] - 2, 0);
         CVector<3, int> recv_origin(0, _subdomain_size[1] - 1, 0);
         CVector<3, int> comm_direction(0, -1, 0);
@@ -186,10 +175,8 @@ void CManager<T>::initSimulation(int my_rank)
     }
     if (BC[2][0] == FLAG_GHOST_LAYER) {
         int comm_destination = id - _subdomain_nums[0] * _subdomain_nums[1];
-        CVector<3, int> send_size(_subdomain_size[0], _subdomain_size[1],
-                1);
-        CVector<3, int> recv_size(_subdomain_size[0], _subdomain_size[1],
-                1);
+        CVector<3, int> send_size(_subdomain_size[0], _subdomain_size[1], 1);
+        CVector<3, int> recv_size(_subdomain_size[0], _subdomain_size[1], 1);
         CVector<3, int> send_origin(0, 0, 1);
         CVector<3, int> recv_origin(0, 0, 0);
         CVector<3, int> comm_direction(0, 0, 1);
@@ -199,10 +186,8 @@ void CManager<T>::initSimulation(int my_rank)
     }
     if (BC[2][1] == FLAG_GHOST_LAYER) {
         int comm_destination = id + _subdomain_nums[0] * _subdomain_nums[1];
-        CVector<3, int> send_size(_subdomain_size[0], _subdomain_size[1],
-                1);
-        CVector<3, int> recv_size(_subdomain_size[0], _subdomain_size[1],
-                1);
+        CVector<3, int> send_size(_subdomain_size[0], _subdomain_size[1], 1);
+        CVector<3, int> recv_size(_subdomain_size[0], _subdomain_size[1], 1);
         CVector<3, int> send_origin(0, 0, _subdomain_size[2] - 2);
         CVector<3, int> recv_origin(0, 0, _subdomain_size[2] - 1);
         CVector<3, int> comm_direction(0, 0, -1);

@@ -22,9 +22,9 @@
 
 #include "CLbmSolver.hpp"
 
-#include <list>
 #include <vector>
 
+// #include "gpukernels/copy_buffer_rect.cuh"
 #include "CComm.hpp"
 #include "CLbmSolverGPU.cuh"
 
@@ -35,30 +35,45 @@ private:
 	CLbmSolverGPU<T> solverGPU;
 
 	std::vector<T*> densityDistributions;
-	std::vector<int*> flags;
+	std::vector<Flag*> flags;
 	std::vector<T*> velocities;
 	std::vector<T*> densities;
 	
+	T** getDensityDistributionsIntraHalo, setDensityDistributionsIntraHalo;
+	T** getDensityDistributionsInterHalo, setDensityDistributionsInterHalo;
 	std::vector<CComm<T>*> commContainer;
 
 public:
 	CLbmSolverCPU();
+	CLbmSolverCPU(
+			int id,
+			CDomain<T> &domain,
+			std::array<Flag,6> boundaryConditions,
+			T timestepSize,
+			CVector<3,T> &gravitation,
+			CVector<4,T> &drivenCavityVelocity,
+			T viscocity,
+			T massExchangeFactor = MASS_EXCHANGE_FACTOR,
+			T maxSimGravitationLength = MAX_SIM_GRAVITATION_LENGTH,
+			T tau = TAU,
+			bool storeDensities = false,
+			bool storeVelocities = false);
 	~CLbmSolverCPU();
 
 	void simulationStepAlpha();
-	void simulationStepAlphaRect();
+	void simulationStepAlphaRect(CVector<3,int> origin, CVector<3,int> size);
 	void simulationStepBeta();
-	void simulationStepBetaRect();
+	void simulationStepBetaRect(CVector<3,int> origin, CVector<3,int> size);
 	void reset();
 	void reload();
-	void getDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* dst);
-	void setDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* src);
-	void getFlags(CVector<3,int> &origin, CVector<3,int> &size, int* dst);
-	void setFlags(CVector<3,int> &origin, CVector<3,int> &size, int* src);
-	void getVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* dst);
-	void setVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* src);
-	void getDensities(CVector<3,int> &origin, CVector<3,int> &size, T* dst);
-	void setDensities(CVector<3,int> &origin, CVector<3,int> &size, T* src);
+	void getDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* hDensityDistributions);
+	void setDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* hDensityDistributions);
+	void getFlags(CVector<3,int> &origin, CVector<3,int> &size, int* hFlags);
+	void setFlags(CVector<3,int> &origin, CVector<3,int> &size, int* hFlags);
+	void getVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* hVelocities);
+	void setVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* hVelocities);
+	void getDensities(CVector<3,int> &origin, CVector<3,int> &size, T* hDensities);
+	void setDensities(CVector<3,int> &origin, CVector<3,int> &size, T* hDensities);
 };
 
 #endif

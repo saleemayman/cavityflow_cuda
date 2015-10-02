@@ -20,7 +20,24 @@
 #include "CLbmSolverCPU.hpp"
 
 template <class T>
-CLbmSolverCPU<T>::CLbmSolverCPU()
+CLbmSolverCPU<T>::CLbmSolverCPU(
+		int id,
+		CDomain<T> &domain,
+		std::array<Flag,6> boundaryConditions,
+		T timestepSize,
+		CVector<3,T> &gravitation,
+		CVector<4,T> &drivenCavityVelocity,
+		T viscocity,
+		T massExchangeFactor,
+		T maxSimGravitationLength,
+		T tau,
+		bool storeDensities,
+		bool storeVelocities) :
+		CLbmSolver<T>(id, domain,
+				boundaryConditions, timestepSize,
+				gravitation, drivenCavityVelocity, viscocity,
+				massExchangeFactor, maxSimGravitationLength, tau,
+				storeDensities, storeVelocities)
 {
 }
 
@@ -35,7 +52,7 @@ void CLbmSolverCPU<T>::simulationStepAlpha()
 }
 
 template <class T>
-void CLbmSolverCPU<T>::simulationStepAlphaRect()
+void CLbmSolverCPU<T>::simulationStepAlphaRect(CVector<3,int> origin, CVector<3,int> size)
 {
 }
 
@@ -45,7 +62,7 @@ void CLbmSolverCPU<T>::simulationStepBeta()
 }
 
 template <class T>
-void CLbmSolverCPU<T>::simulationStepBetaRect()
+void CLbmSolverCPU<T>::simulationStepBetaRect(CVector<3,int> origin, CVector<3,int> size)
 {
 }
 

@@ -22,11 +22,13 @@
 #include <iomanip>
 #include <typeinfo>
 
-#include "mpi.h"
+#include <mpi.h>
 
 #include "libtools/CStopwatch.hpp"
 #include "libvis/CLbmVisualizationVTK.hpp"
 #include "CConfiguration.hpp"
+#include "CLbmSolverCPU.hpp"
+#include "CLbmSolverGPU.cuh"
 #include "CSingleton.hpp"
 
 template <class T>

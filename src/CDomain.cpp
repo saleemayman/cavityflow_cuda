@@ -20,17 +20,17 @@
 #include "CDomain.hpp"
 
 template <class T>
-CDomain<T>::CDomain(int UID, CVector<3,int> size, CVector<3,int> origin_cell, CVector<3,T> length) :
-		_UID(UID), _size(size), _origin_cell(origin_cell), _length(length)
+CDomain<T>::CDomain(int id, CVector<3,int> size, CVector<3,int> originCell, CVector<3,T> length) :
+        id(id), size(size), origin(origin), length(length)
 {
 }
 
 template <class T>
-CDomain<T>::CDomain(int UID, CVector<3, int> size) :
-		_UID(UID), _size(size)
+CDomain<T>::CDomain(int UID, CVector<3,int> size) :
+        id(UID), size(size)
 {
-	_origin_cell = CVector<3,int>(0, 0, 0);
-	_length = CVector<3,T>(0.05, 0.05, 0.05);
+    origin = CVector<3,int>(0, 0, 0);
+    length = CVector<3,T>(0.05, 0.05, 0.05);
 }
 
 template <class T>
@@ -39,27 +39,93 @@ CDomain<T>::~CDomain()
 }
 
 template <class T>
-CVector<3,int> CDomain<T>::getOrigin() const
+int CDomain<T>::getId() const
 {
-	return _origin_cell;
-}
-
-template <class T>
-CVector<3,int> CDomain<T>::getSize() const
-{
-	return _size;
-}
-
-template <class T>
-int CDomain<T>::getUid() const
-{
-	return _UID;
+    return id;
 }
 
 template <class T>
 CVector<3,T> CDomain<T>::getLength() const
 {
-	return _length;
+    return length;
+}
+
+template <class T>
+CVector<3,T> CDomain<T>::getLengthWithHalo() const
+{
+	CVector<3,T> result(length);
+
+	result.data[0] *= (T)(size.data[0] + 2) / (T)size.data[0];
+	result.data[1] *= (T)(size.data[1] + 2) / (T)size.data[1];
+	result.data[2] *= (T)(size.data[2] + 2) / (T)size.data[2];
+
+	return result;
+}
+
+template <class T>
+int CDomain<T>::getNumOfCells() const
+{
+    return (size.data[0] * size.data[1] * size.data[2]);
+}
+
+template <class T>
+int CDomain<T>::getNumOfCellsWithHalo() const
+{
+    return ((size.data[0] + 2) * (size.data[1] + 2) * (size.data[2] + 2));
+}
+
+template <class T>
+int CDomain<T>::getNumOfXFaceCells() const
+{
+    return (size.data[1] * size.data[2]);
+}
+
+template <class T>
+int CDomain<T>::getNumOfXFaceCellsWithHalo() const
+{
+    return ((size.data[1] + 2) * (size.data[2] + 2));
+}
+
+template <class T>
+int CDomain<T>::getNumOfYFaceCells() const
+{
+    return (size.data[0] * size.data[2]);
+}
+
+template <class T>
+int CDomain<T>::getNumOfYFaceCellsWithHalo() const
+{
+    return ((size.data[0] + 2) * (size.data[2] + 2));
+}
+
+template <class T>
+int CDomain<T>::getNumOfZFaceCells() const
+{
+    return (size.data[0] * size.data[1]);
+}
+
+template <class T>
+int CDomain<T>::getNumOfZFaceCellsWithHalo() const
+{
+    return ((size.data[0] + 2) * (size.data[1] + 2));
+}
+
+template <class T>
+CVector<3,int> CDomain<T>::getOrigin() const
+{
+    return origin;
+}
+
+template <class T>
+CVector<3,int> CDomain<T>::getSize() const
+{
+    return size;
+}
+
+template <class T>
+CVector<3,int> CDomain<T>::getSizeWithHalo() const
+{
+    return CVector<3,int>(size.data[0] + 2, size.data[1] + 2, size.data[2] + 2);
 }
 
 template class CDomain<double>;

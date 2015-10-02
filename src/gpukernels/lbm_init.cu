@@ -17,9 +17,7 @@
  * limitations under the License.
  */
 
-#include "vector_types.h"
-
-#include "../common.h"
+#include "lbm_init.cuh"
 
 __device__ int3 getCubePosition(int linear_position, const int domainCells_x, const int domainCells_y)
 {
@@ -41,12 +39,17 @@ __device__ int3 getCubePosition(int linear_position, const int domainCells_x, co
 }
 
 template<typename T>
-__global__ void init_kernel(
+__global__ void lbm_init(
         T *global_dd,           // density distributions
-        int *flags,             // flags
+        Flag *flags,            // flags
         T *velocity_array,      // velocity array (first all x components, then all y components, then z...)
         T *density,             // densities
-        int *bc,                // boundary conditions
+        Flag boundaryConditionRight,
+        Flag boundaryConditionLeft,
+        Flag boundaryConditionTop,
+        Flag boundaryConditionBottom,
+        Flag boundaryConditionFront,
+        Flag boundaryConditionBack,
         T drivenCavityVelocity, // velocity parameters for modification of density distributions
         const int domainCells_x,
         const int domainCells_y,
@@ -72,22 +75,20 @@ __global__ void init_kernel(
     T velocity_y = 0;
     T velocity_z = 0;
 
-    int flag = FLAG_FLUID;
+    Flag flag = Flag::FLUID;
 
     if(pos.x == 0)
-        flag = bc[0];
+        flag = boundaryConditionRight;
     else if(pos.x == domainCells_x-1)
-        flag = bc[1];
-
+        flag = boundaryConditionLeft;
     else if(pos.y == 0)
-        flag = bc[2];
+        flag = boundaryConditionTop;
     else if(pos.y == domainCells_y-1)
-        flag = bc[3];
-
+        flag = boundaryConditionBottom;
     else if(pos.z == 0)
-        flag = bc[4];
+        flag = boundaryConditionFront;
     else if(pos.z == domainCells_z-1)
-        flag = bc[5];
+        flag = boundaryConditionBack;
 
 //  else if (pos.y == domainCells_y-2)
 //      flag = FLAG_VELOCITY_INJECTION;
@@ -97,17 +98,17 @@ __global__ void init_kernel(
         pos.x == domainCells_x-1 || pos.y == domainCells_y-1 || pos.z == domainCells_z-1
     )
     {
-        flag = FLAG_OBSTACLE;
+        flag = Flag::OBSTACLE;
     }
     else
     {
 #if 1
         if (pos.y == domainCells_y-2)
-            flag = FLAG_VELOCITY_INJECTION;
+            flag = Flag::VELOCITY_INJECTION;
 #endif
 #if 0
         if (pos.y == 10)
-            flag = FLAG_OBSTACLE;
+            flag = Flag::OBSTACLE;
 
         if (pos.y == 2)
             velocity_x = 10;
@@ -123,19 +124,19 @@ __global__ void init_kernel(
 #if 0
         if ((pos.x == domainCells_x/2 || pos.x == domainCells_x-2) && pos.y <= domainCells_y/2)
         {
-            flag = FLAG_INTERFACE;
+            flag = Flag::INTERFACE;
         }
         else if ((pos.y == domainCells_y/2 || pos.y == 1) && pos.x >= domainCells_x/2)
         {
-            flag = FLAG_INTERFACE;
+            flag = Flag::INTERFACE;
         }
         else if ((pos.z == domainCells_z-1 || pos.z == 1) && pos.x >= domainCells_x/2 && pos.y <= domainCells_y/2)
         {
-            flag = FLAG_INTERFACE;
+            flag = Flag::INTERFACE;
         }
         else if (pos.x < domainCells_x/2 || pos.y > domainCells_y/2)
         {
-            flag = FLAG_GAS;
+            flag = Flag::GAS;
         }
 #endif
     }
@@ -259,23 +260,33 @@ __global__ void init_kernel(
 #endif
 }
 
-template __global__ void init_kernel<float>(
-        float *global_dd,
-        int *flags,
-        float *velocity_array,
-        float *density,
-        int *bc,
-        float drivenCavityVelocity,
+template __global__ void lbm_init<double>(
+        double *global_dd,
+        Flag *flags,
+        double *velocity_array,
+        double *density,
+        Flag boundaryConditionRight,
+        Flag boundaryConditionLeft,
+        Flag boundaryConditionTop,
+        Flag boundaryConditionBottom,
+        Flag boundaryConditionFront,
+        Flag boundaryConditionBack,
+        double drivenCavityVelocity,
         const int domainCells_x,
         const int domainCells_y,
         const int domainCells_z);
-template __global__ void init_kernel<double>(
-        double *global_dd,
-        int *flags,
-        double *velocity_array,
-        double *density,
-        int *bc,
-        double drivenCavityVelocity,
+template __global__ void lbm_init<float>(
+        float *global_dd,
+        Flag *flags,
+        float *velocity_array,
+        float *density,
+        Flag boundaryConditionRight,
+        Flag boundaryConditionLeft,
+        Flag boundaryConditionTop,
+        Flag boundaryConditionBottom,
+        Flag boundaryConditionFront,
+        Flag boundaryConditionBack,
+        float drivenCavityVelocity,
         const int domainCells_x,
         const int domainCells_y,
         const int domainCells_z);

@@ -17,15 +17,26 @@
  * limitations under the License.
  */
 
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+#ifndef LBM_ALPHA_CUH
+#define LBM_ALPHA_CUH
 
-#define TYPE double
+#include "../common.h"
 
-#define BENCHMARK_OUTPUT_DIR    "output/benchmark"
-#define PROFILE_OUTPUT_DIR      "output/profile"
-#define VTK_OUTPUT_DIR          "output/vtk"
-#define LOG_OUTPUT_DIR          "output/log"
-#define LOG_OUTPUT_FILE_PREFIX  "log"
+#define GRAVITATION 0
+
+template<typename T>
+__global__ void lbm_kernel_alpha(
+        T *global_dd,                 // density distributions
+        const int *flag_array,        // flags
+        T *velocity,                  // velocities
+        T *density,                   // densities
+        const T inv_tau,
+        const T gravitation_x,
+        const T gravitation_y,
+        const T gravitation_z,
+        const T drivenCavityVelocity, // velocity parameters for modification of density distributions
+        const int domainCellsX,
+        const int domainCellsY,
+        const int domainCellsZ);
 
 #endif
