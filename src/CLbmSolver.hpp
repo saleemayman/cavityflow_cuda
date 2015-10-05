@@ -87,8 +87,8 @@ public:
 	virtual void simulationStepBetaRect(CVector<3, int> origin, CVector<3, int> size) {}
 	virtual void reset() {}
 	CDomain<T>* getDomain();
-	virtual void getDesityDistribution(CVector<3, int> &origin, CVector<3, int> &size, int i, T* dst) {}
-	virtual void setDesityDistribution(CVector<3, int> &origin, CVector<3, int> &size, int i, T* src) {}
+	virtual void getDesityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* dst) {}
+	virtual void setDesityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* src) {}
 	virtual void getFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* dst) {}
 	virtual void setFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* src) {}
 	virtual void getVelocities(CVector<3, int> &origin, CVector<3, int> &size, T* dst) {}

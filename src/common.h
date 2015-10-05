@@ -33,26 +33,26 @@
 #include "libmath/CVector.hpp"
 #include "constants.h"
 
-extern CVector<3,int> E0;
-extern CVector<3,int> E1;
-extern CVector<3,int> E2;
-extern CVector<3,int> E3;
-extern CVector<3,int> E4;
-extern CVector<3,int> E5;
-extern CVector<3,int> E6;
-extern CVector<3,int> E7;
-extern CVector<3,int> E8;
-extern CVector<3,int> E9;
-extern CVector<3,int> E10;
-extern CVector<3,int> E11;
-extern CVector<3,int> E12;
-extern CVector<3,int> E13;
-extern CVector<3,int> E14;
-extern CVector<3,int> E15;
-extern CVector<3,int> E16;
-extern CVector<3,int> E17;
-extern CVector<3,int> E18;
-extern CVector<3,int> lbm_units[];
+extern CVector<3, int> E0;
+extern CVector<3, int> E1;
+extern CVector<3, int> E2;
+extern CVector<3, int> E3;
+extern CVector<3, int> E4;
+extern CVector<3, int> E5;
+extern CVector<3, int> E6;
+extern CVector<3, int> E7;
+extern CVector<3, int> E8;
+extern CVector<3, int> E9;
+extern CVector<3, int> E10;
+extern CVector<3, int> E11;
+extern CVector<3, int> E12;
+extern CVector<3, int> E13;
+extern CVector<3, int> E14;
+extern CVector<3, int> E15;
+extern CVector<3, int> E16;
+extern CVector<3, int> E17;
+extern CVector<3, int> E18;
+extern CVector<3, int> lbm_units[];
 
 enum Flag
 {

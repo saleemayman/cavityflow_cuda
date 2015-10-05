@@ -30,7 +30,7 @@
  * \brief    3D Vector handler
  */
 template <typename T>
-class CVector<3,T>
+class CVector<3, T>
 {
 public:
     T data[3];    ///< vector data
@@ -38,15 +38,15 @@ public:
     CVector();
     CVector(const T x0, const T x1, const T x2);
     CVector(const T x);
-    CVector(const CVector<3,T> &v);
+    CVector(const CVector<3, T> &v);
     CVector(const T v[3]);
 
     void setZero();
-    CVector<3,T> normal();
-    T dotProd(const CVector<3,T> &v);
-    CVector<3,T> crossProd(CVector<3,T> &a);
-    T dist2(const CVector<3,T> &v);
-    T dist(const CVector<3,T> &v);
+    CVector<3, T> normal();
+    T dotProd(const CVector<3, T> &v);
+    CVector<3, T> crossProd(CVector<3, T> &a);
+    T dist2(const CVector<3, T> &v);
+    T dist(const CVector<3, T> &v);
     T elements();
     T length();
     T length2();
@@ -55,28 +55,28 @@ public:
     void normalize();
     void clamp1_1();
 
-    CVector<3,T>& operator=(const T a[3]);
-    CVector<3,T>& operator=(CVector<3,T> const & a);
-    CVector<3,T> operator+(const T a);
-    CVector<3,T> operator-(const T a);
-    CVector<3,T> operator*(const T a);
-    CVector<3,T> operator/(const T a);
-    CVector<3,T>& operator+=(const T a);
-    CVector<3,T>& operator-=(const T a);
-    CVector<3,T>& operator*=(const T a);
-    CVector<3,T>& operator/=(const T a);
-    CVector<3,T> operator+(const CVector<3,T> &v);
-    CVector<3,T> operator-(const CVector<3,T> &v);
-    CVector<3,T> operator*(const CVector<3,T> &v);
-    CVector<3,T> operator/(const CVector<3,T> &v);
-    CVector<3,T>& operator+=(const CVector<3,T> &v);
-    CVector<3,T>& operator-=(const CVector<3,T> &v);
-    bool operator==(const CVector<3,T> &v);
-    bool operator!=(const CVector<3,T> &v);
+    CVector<3, T>& operator=(const T a[3]);
+    CVector<3, T>& operator=(CVector<3, T> const & a);
+    CVector<3, T> operator+(const T a);
+    CVector<3, T> operator-(const T a);
+    CVector<3, T> operator*(const T a);
+    CVector<3, T> operator/(const T a);
+    CVector<3, T>& operator+=(const T a);
+    CVector<3, T>& operator-=(const T a);
+    CVector<3, T>& operator*=(const T a);
+    CVector<3, T>& operator/=(const T a);
+    CVector<3, T> operator+(const CVector<3, T> &v);
+    CVector<3, T> operator-(const CVector<3, T> &v);
+    CVector<3, T> operator*(const CVector<3, T> &v);
+    CVector<3, T> operator/(const CVector<3, T> &v);
+    CVector<3, T>& operator+=(const CVector<3, T> &v);
+    CVector<3, T>& operator-=(const CVector<3, T> &v);
+    bool operator==(const CVector<3, T> &v);
+    bool operator!=(const CVector<3, T> &v);
     T& operator[](const int i);
 };
 
 template <class T>
-std::ostream& operator<<(std::ostream &co, CVector<3,T> &v);
+std::ostream& operator<<(std::ostream &co, CVector<3, T> &v);
 
 #endif

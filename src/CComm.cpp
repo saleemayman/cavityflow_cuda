@@ -41,55 +41,55 @@ CVector<3,int> CComm<T>::getCommDirection() const
 }
 
 template <class T>
-void CComm<T>::setCommDirection(CVector<3,int> normal)
+void CComm<T>::setCommDirection(CVector<3, int> normal)
 {
     _comm_direction = normal;
 }
 
 template <class T>
-CVector<3,int> CComm<T>::getRecvOrigin() const
+CVector<3, int> CComm<T>::getRecvOrigin() const
 {
     return _recv_origin;
 }
 
 template <class T>
-void CComm<T>::setRecvOrigin(CVector<3,int> recvOrigin)
+void CComm<T>::setRecvOrigin(CVector<3, int> recvOrigin)
 {
     _recv_origin = recvOrigin;
 }
 
 template <class T>
-CVector<3,int> CComm<T>::getRecvSize() const
+CVector<3, int> CComm<T>::getRecvSize() const
 {
     return _recv_size;
 }
 
 template <class T>
-void CComm<T>::setRecvSize(CVector<3,int> recvSize)
+void CComm<T>::setRecvSize(CVector<3, int> recvSize)
 {
     _recv_size = recvSize;
 }
 
 template <class T>
-CVector<3,int> CComm<T>::getSendOrigin() const
+CVector<3, int> CComm<T>::getSendOrigin() const
 {
     return _send_origin;
 }
 
 template <class T>
-void CComm<T>::setSendOrigin(CVector<3,int> sendOrigin)
+void CComm<T>::setSendOrigin(CVector<3, int> sendOrigin)
 {
     _send_origin = sendOrigin;
 }
 
 template <class T>
-CVector<3,int> CComm<T>::getSendSize() const
+CVector<3, int> CComm<T>::getSendSize() const
 {
     return _send_size;
 }
 
 template <class T>
-void CComm<T>::setSendSize(CVector<3,int> sendSize)
+void CComm<T>::setSendSize(CVector<3, int> sendSize)
 {
     _send_size = sendSize;
 }

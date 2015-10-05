@@ -22,13 +22,13 @@
 #include "CMath.hpp"
 
 template <class T>
-CVector<4,T>::CVector()
+CVector<4, T>::CVector()
 {
     setZero();
 }
 
 template <class T>
-CVector<4,T>::CVector(const T x0, const T x1, const T x2, const T x3)
+CVector<4, T>::CVector(const T x0, const T x1, const T x2, const T x3)
 {
     data[0] = x0;
     data[1] = x1;
@@ -37,7 +37,7 @@ CVector<4,T>::CVector(const T x0, const T x1, const T x2, const T x3)
 }
 
 template <class T>
-CVector<4,T>::CVector(const T x)
+CVector<4, T>::CVector(const T x)
 {
     data[0] = x;
     data[1] = x;
@@ -46,7 +46,7 @@ CVector<4,T>::CVector(const T x)
 }
 
 template <class T>
-CVector<4,T>::CVector(const T v[4])
+CVector<4, T>::CVector(const T v[4])
 {
     data[0] = v[0];
     data[1] = v[1];
@@ -56,7 +56,7 @@ CVector<4,T>::CVector(const T v[4])
 
 
 template <class T>
-void CVector<4,T>::setZero()
+void CVector<4, T>::setZero()
 {
     data[0] = T(0);
     data[1] = T(0);
@@ -65,19 +65,19 @@ void CVector<4,T>::setZero()
 }
 
 template <class T>
-T CVector<4,T>::length()
+T CVector<4, T>::length()
 {
     return CMath<T>::sqrt(data[0]*data[0] + data[1]*data[1] + data[2]*data[2] + data[3]*data[3]);
 }
 
 template <class T>
-T CVector<4,T>::length2()
+T CVector<4, T>::length2()
 {
     return data[0]*data[0] + data[1]*data[1] + data[2]*data[2] + data[3]*data[3];
 }
 
 template <class T>
-CVector<4,T>& CVector<4,T>::operator=(const T a[4])
+CVector<4, T>& CVector<4, T>::operator=(const T a[4])
 {
     data[0] = a[0];
     data[1] = a[1];
@@ -87,7 +87,7 @@ CVector<4,T>& CVector<4,T>::operator=(const T a[4])
 }
 
 template <class T>
-CVector<4,T>& CVector<4,T>::operator=(CVector<4,T> const & a)
+CVector<4, T>& CVector<4, T>::operator=(CVector<4, T> const & a)
 {
     data[0] = a.data[0];
     data[1] = a.data[1];
@@ -97,7 +97,7 @@ CVector<4,T>& CVector<4,T>::operator=(CVector<4,T> const & a)
 }
 
 template <class T>
-CVector<4,T>& CVector<4,T>::operator=(CVector<3,T> const & a)
+CVector<4, T>& CVector<4, T>::operator=(CVector<3, T> const & a)
 {
     data[0] = a.data[0];
     data[1] = a.data[1];
@@ -107,31 +107,31 @@ CVector<4,T>& CVector<4,T>::operator=(CVector<3,T> const & a)
 };
 
 template <class T>
-CVector<4,T> CVector<4,T>::operator+(const T a)
+CVector<4, T> CVector<4, T>::operator+(const T a)
 {
-    return CVector<4,T>(data[0]+a, data[1]+a, data[2]+a, data[3]+a);
+    return CVector<4, T>(data[0]+a, data[1]+a, data[2]+a, data[3]+a);
 }
 
 template <class T>
-CVector<4,T> CVector<4,T>::operator-(const T a)
+CVector<4, T> CVector<4, T>::operator-(const T a)
 {
-    return CVector<4,T>(data[0]-a, data[1]-a, data[2]-a, data[3]-a);
+    return CVector<4, T>(data[0]-a, data[1]-a, data[2]-a, data[3]-a);
 }
 
 template <class T>
-CVector<4,T> CVector<4,T>::operator*(const T a)
+CVector<4, T> CVector<4, T>::operator*(const T a)
 {
-    return CVector<4,T>(data[0]*a, data[1]*a, data[2]*a, data[3]*a);
+    return CVector<4, T>(data[0]*a, data[1]*a, data[2]*a, data[3]*a);
 }
 
 template <class T>
-CVector<4,T> CVector<4,T>::operator/(const T a)
+CVector<4, T> CVector<4, T>::operator/(const T a)
 {
-    return CVector<4,T>(data[0]/a, data[1]/a, data[2]/a, data[3]/a);
+    return CVector<4, T>(data[0]/a, data[1]/a, data[2]/a, data[3]/a);
 }
 
 template <class T>
-CVector<4,T>&  CVector<4,T>::operator+=(const T a)
+CVector<4, T>&  CVector<4, T>::operator+=(const T a)
 {
     data[0] += a;
     data[1] += a;
@@ -141,7 +141,7 @@ CVector<4,T>&  CVector<4,T>::operator+=(const T a)
 }
 
 template <class T>
-CVector<4,T>& CVector<4,T>::operator-=(const T a)
+CVector<4, T>& CVector<4, T>::operator-=(const T a)
 {
     data[0] -= a;
     data[1] -= a;
@@ -151,7 +151,7 @@ CVector<4,T>& CVector<4,T>::operator-=(const T a)
 }
 
 template <class T>
-CVector<4,T>& CVector<4,T>::operator*=(const T a)
+CVector<4, T>& CVector<4, T>::operator*=(const T a)
 {
     data[0] *= a;
     data[1] *= a;
@@ -161,7 +161,7 @@ CVector<4,T>& CVector<4,T>::operator*=(const T a)
 }
 
 template <class T>
-CVector<4,T>& CVector<4,T>::operator/=(const T a)
+CVector<4, T>& CVector<4, T>::operator/=(const T a)
 {
     data[0] /= a;
     data[1] /= a;
@@ -171,31 +171,31 @@ CVector<4,T>& CVector<4,T>::operator/=(const T a)
 }
 
 template <class T>
-CVector<4,T> CVector<4,T>::operator+(const CVector<4,T> &v)
+CVector<4, T> CVector<4, T>::operator+(const CVector<4, T> &v)
 {
-    return CVector<4,T>(data[0]+v.data[0], data[1]+v.data[1], data[2]+v.data[2], data[3]+v.data[3]);
+    return CVector<4, T>(data[0]+v.data[0], data[1]+v.data[1], data[2]+v.data[2], data[3]+v.data[3]);
 }
 
 template <class T>
-CVector<4,T> CVector<4,T>::operator-(const CVector<4,T> &v)
+CVector<4, T> CVector<4, T>::operator-(const CVector<4, T> &v)
 {
-    return CVector<4,T>(data[0]-v.data[0], data[1]-v.data[1], data[2]-v.data[2], data[3]-v.data[3]);
+    return CVector<4, T>(data[0]-v.data[0], data[1]-v.data[1], data[2]-v.data[2], data[3]-v.data[3]);
 }
 
 template <class T>
-CVector<4,T> CVector<4,T>::operator*(const CVector<4,T> &v)
+CVector<4, T> CVector<4, T>::operator*(const CVector<4, T> &v)
 {
-    return CVector<4,T>(data[0]*v.data[0], data[1]*v.data[1], data[2]*v.data[2], data[3]*v.data[3]);
+    return CVector<4, T>(data[0]*v.data[0], data[1]*v.data[1], data[2]*v.data[2], data[3]*v.data[3]);
 }
 
 template <class T>
-CVector<4,T> CVector<4,T>::operator/(const CVector<4,T> &v)
+CVector<4, T> CVector<4, T>::operator/(const CVector<4, T> &v)
 {
-    return CVector<4,T>(data[0]/v.data[0], data[1]/v.data[1], data[2]/v.data[2], data[3]/v.data[3]);
+    return CVector<4, T>(data[0]/v.data[0], data[1]/v.data[1], data[2]/v.data[2], data[3]/v.data[3]);
 }
 
 template <class T>
-CVector<4,T>& CVector<4,T>::operator+=(const CVector<4,T> &v)
+CVector<4, T>& CVector<4, T>::operator+=(const CVector<4, T> &v)
 {
     data[0] += v.data[0];
     data[1] += v.data[1];
@@ -205,7 +205,7 @@ CVector<4,T>& CVector<4,T>::operator+=(const CVector<4,T> &v)
 }
 
 template <class T>
-CVector<4,T>& CVector<4,T>::operator-=(const CVector<4,T> &v)
+CVector<4, T>& CVector<4, T>::operator-=(const CVector<4, T> &v)
 {
     data[0] -= v.data[0];
     data[1] -= v.data[1];
@@ -215,25 +215,25 @@ CVector<4,T>& CVector<4,T>::operator-=(const CVector<4,T> &v)
 }
 
 template <class T>
-bool CVector<4,T>::operator==(const CVector<4,T> &v)
+bool CVector<4, T>::operator==(const CVector<4, T> &v)
 {
     return bool(data[0] == v.data[0] && data[1] == v.data[1] && data[2] == v.data[2] && data[3] == v.data[3]);
 }
 
 template <class T>
-bool CVector<4,T>::operator!=(const CVector<4,T> &v)
+bool CVector<4, T>::operator!=(const CVector<4, T> &v)
 {
     return bool(data[0] != v.data[0] || data[1] != v.data[1] || data[2] != v.data[2] || data[3] != v.data[3]);
 }
 
 template <class T>
-T& CVector<4,T>::operator[](const int i)
+T& CVector<4, T>::operator[](const int i)
 {
     return data[i];
 }
 
 template <class T>
-std::ostream& operator<<(std::ostream &co, CVector<4,T> &v)
+std::ostream& operator<<(std::ostream &co, CVector<4, T> &v)
 {
     return co << "[" << v[0] << ", " << v[1] << ", " << v[2] << ", " << v[3] << "]";
 }
@@ -242,6 +242,6 @@ template class CVector<4, double>;
 template class CVector<4, float>;
 template class CVector<4, int>;
 
-template std::ostream& operator<<(std::ostream &co, CVector<4,double> &v);
-template std::ostream& operator<<(std::ostream &co, CVector<4,float> &v);
-template std::ostream& operator<<(std::ostream &co, CVector<4,int> &v);
+template std::ostream& operator<<(std::ostream &co, CVector<4, double> &v);
+template std::ostream& operator<<(std::ostream &co, CVector<4, float> &v);
+template std::ostream& operator<<(std::ostream &co, CVector<4, int> &v);

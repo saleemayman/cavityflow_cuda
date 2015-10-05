@@ -30,7 +30,7 @@
  * \brief    4D Vector handler
  */
 template <typename T>
-class CVector<4,T>
+class CVector<4, T>
 {
 public:
     T data[4];        ///< vector data
@@ -44,29 +44,29 @@ public:
     T length();
     T length2();
 
-    CVector<4,T>& operator=(const T a[4]);
-    CVector<4,T>& operator=(CVector<4,T> const & a);
-    CVector<4,T>& operator=(CVector<3,T> const & a);
-    CVector<4,T> operator+(const T a);
-    CVector<4,T> operator-(const T a);
-    CVector<4,T> operator*(const T a);
-    CVector<4,T> operator/(const T a);
-    CVector<4,T>& operator+=(const T a);
-    CVector<4,T>& operator-=(const T a);
-    CVector<4,T>& operator*=(const T a);
-    CVector<4,T>& operator/=(const T a);
-    CVector<4,T> operator+(const CVector<4,T> &v);
-    CVector<4,T> operator-(const CVector<4,T> &v);
-    CVector<4,T> operator*(const CVector<4,T> &v);
-    CVector<4,T> operator/(const CVector<4,T> &v);
-    CVector<4,T>& operator+=(const CVector<4,T> &v);
-    CVector<4,T>& operator-=(const CVector<4,T> &v);
-    bool operator==(const CVector<4,T> &v);
-    bool operator!=(const CVector<4,T> &v);
+    CVector<4, T>& operator=(const T a[4]);
+    CVector<4, T>& operator=(CVector<4, T> const & a);
+    CVector<4, T>& operator=(CVector<3, T> const & a);
+    CVector<4, T> operator+(const T a);
+    CVector<4, T> operator-(const T a);
+    CVector<4, T> operator*(const T a);
+    CVector<4, T> operator/(const T a);
+    CVector<4, T>& operator+=(const T a);
+    CVector<4, T>& operator-=(const T a);
+    CVector<4, T>& operator*=(const T a);
+    CVector<4, T>& operator/=(const T a);
+    CVector<4, T> operator+(const CVector<4, T> &v);
+    CVector<4, T> operator-(const CVector<4, T> &v);
+    CVector<4, T> operator*(const CVector<4, T> &v);
+    CVector<4, T> operator/(const CVector<4, T> &v);
+    CVector<4, T>& operator+=(const CVector<4, T> &v);
+    CVector<4, T>& operator-=(const CVector<4, T> &v);
+    bool operator==(const CVector<4, T> &v);
+    bool operator!=(const CVector<4, T> &v);
     T& operator[](const int i);
 };
 
 template <class T>
-std::ostream& operator<<(std::ostream &co, CVector<4,T> &v);
+std::ostream& operator<<(std::ostream &co, CVector<4, T> &v);
 
 #endif

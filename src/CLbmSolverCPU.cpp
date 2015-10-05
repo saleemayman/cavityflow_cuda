@@ -72,12 +72,12 @@ void CLbmSolverCPU<T>::reset()
 }
 
 template <class T>
-void CLbmSolverCPU<T>::getDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* src)
+void CLbmSolverCPU<T>::getDesityDistributions(CVector<3,int> &origin, CVector<3,int> &size, T* src)
 {
 }
 
 template <class T>
-void CLbmSolverCPU<T>::setDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* dst)
+void CLbmSolverCPU<T>::setDesityDistributions(CVector<3,int> &origin, CVector<3,int> &size, T* dst)
 {
 }
 

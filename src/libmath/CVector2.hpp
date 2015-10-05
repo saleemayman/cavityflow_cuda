@@ -30,7 +30,7 @@
  * \brief	2D Vector handler
  */
 template <typename T>
-class CVector<2,T>
+class CVector<2, T>
 {
 public:
 	T data[2];
@@ -41,40 +41,40 @@ public:
 	CVector(const T v[2]);
 
 	void setZero();
-	CVector<2,T> getNormal();
-	T dotProd(const CVector<2,T> &v);
-	T crossProd(CVector<2,T> &a);
+	CVector<2, T> getNormal();
+	T dotProd(const CVector<2, T> &v);
+	T crossProd(CVector<2, T> &a);
 	T elements();
 	T length();
 	T length2();
-	T dist2(const CVector<2,T> &v);
-	T dist(const CVector<2,T> &v);
+	T dist2(const CVector<2, T> &v);
+	T dist(const CVector<2, T> &v);
 	void normalize();
 	void clamp1_1();
 
-	CVector<2,T>& operator=(const T a[2]);
-	CVector<2,T>& operator=(CVector<2,T> const& a);
-    CVector<2,T> operator-();
-    CVector<2,T> operator+(const T a);
-	CVector<2,T> operator-(const T a);
-	CVector<2,T> operator*(const T a);
-	CVector<2,T> operator/(const T a);
-	CVector<2,T>& operator+=(const T a);
-	CVector<2,T>& operator-=(const T a);
-	CVector<2,T>& operator*=(const T a);
-	CVector<2,T>& operator/=(const T a);
-	CVector<2,T> operator+(const CVector<2,T> &v);
-	CVector<2,T> operator-(const CVector<2,T> &v);
-	CVector<2,T> operator*(const CVector<2,T> &v);
-	CVector<2,T> operator/(const CVector<2,T> &v);
-	CVector<2,T>& operator+=(const CVector<2,T> &v);
-	CVector<2,T>& operator-=(const CVector<2,T> &v);
-	bool operator==(const CVector<2,T> &v);
-	bool operator!=(const CVector<2,T> &v);
+	CVector<2, T>& operator=(const T a[2]);
+	CVector<2, T>& operator=(CVector<2, T> const& a);
+    CVector<2, T> operator-();
+    CVector<2, T> operator+(const T a);
+	CVector<2, T> operator-(const T a);
+	CVector<2, T> operator*(const T a);
+	CVector<2, T> operator/(const T a);
+	CVector<2, T>& operator+=(const T a);
+	CVector<2, T>& operator-=(const T a);
+	CVector<2, T>& operator*=(const T a);
+	CVector<2, T>& operator/=(const T a);
+	CVector<2, T> operator+(const CVector<2, T> &v);
+	CVector<2, T> operator-(const CVector<2, T> &v);
+	CVector<2, T> operator*(const CVector<2, T> &v);
+	CVector<2, T> operator/(const CVector<2, T> &v);
+	CVector<2, T>& operator+=(const CVector<2, T> &v);
+	CVector<2, T>& operator-=(const CVector<2, T> &v);
+	bool operator==(const CVector<2, T> &v);
+	bool operator!=(const CVector<2, T> &v);
 	T& operator[](const int i);
 };
 
 template <class T>
-std::ostream& operator<<(std::ostream &co, CVector<2,T> &v);
+std::ostream& operator<<(std::ostream &co, CVector<2, T> &v);
 
 #endif

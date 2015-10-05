@@ -30,11 +30,11 @@ class CComm
 {
 private:
     int _dstID;
-    CVector<3,int> _send_size;
-    CVector<3,int> _recv_size;
-    CVector<3,int> _send_origin;
-    CVector<3,int> _recv_origin;
-    CVector<3,int> _comm_direction;
+    CVector<3, int> _send_size;
+    CVector<3, int> _recv_size;
+    CVector<3, int> _send_origin;
+    CVector<3, int> _recv_origin;
+    CVector<3, int> _comm_direction;
 
 public:
     CComm(int dstID, CVector<3, int> send_size, CVector<3, int> recv_size,
@@ -42,16 +42,16 @@ public:
             CVector<3, int> comm_direction);
     ~CComm();
 
-    CVector<3,int> getCommDirection() const;
+    CVector<3, int> getCommDirection() const;
     void setCommDirection(CVector<3, int> normal);
-    CVector<3,int> getRecvOrigin() const;
+    CVector<3, int> getRecvOrigin() const;
     void setRecvOrigin(CVector<3, int> recvOrigin);
-    CVector<3,int> getRecvSize() const;
+    CVector<3, int> getRecvSize() const;
     void setRecvSize(CVector<3, int> recvSize);
-    CVector<3,int> getSendOrigin() const;
+    CVector<3, int> getSendOrigin() const;
     void setSendOrigin(CVector<3, int> sendOrigin);
-    CVector<3,int> getSendSize() const;
-    void setSendSize(CVector<3,int> sendSize);
+    CVector<3, int> getSendSize() const;
+    void setSendSize(CVector<3, int> sendSize);
     int getDstId() const;
     void setDstId(int dstId);
 };

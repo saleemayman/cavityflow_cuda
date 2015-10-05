@@ -32,10 +32,10 @@ template <class T>
 CLbmSolverGPU<T>::CLbmSolverGPU(
 		int id,
 		CDomain<T> &domain,
-		std::array<Flag,6> boundaryConditions,
+		std::array<Flag, 6> boundaryConditions,
 		T timestepSize,
-		CVector<3,T> &gravitation,
-		CVector<4,T> &drivenCavityVelocity,
+		CVector<3, T> &gravitation,
+		CVector<4, T> &drivenCavityVelocity,
 		T viscocity,
 		T massExchangeFactor,
 		T maxSimGravitationLength,
@@ -116,7 +116,7 @@ void CLbmSolverGPU<T>::simulationStepAlpha()
 }
 
 template <class T>
-void CLbmSolverGPU<T>::simulationStepAlphaRect(CVector<3,int> origin, CVector<3,int> size)
+void CLbmSolverGPU<T>::simulationStepAlphaRect(CVector<3, int> origin, CVector<3, int> size)
 {
 }
 
@@ -126,7 +126,7 @@ void CLbmSolverGPU<T>::simulationStepBeta()
 }
 
 template <class T>
-void CLbmSolverGPU<T>::simulationStepBetaRect(CVector<3,int> origin, CVector<3,int> size)
+void CLbmSolverGPU<T>::simulationStepBetaRect(CVector<3, int> origin, CVector<3, int> size)
 {
 }
 
@@ -136,7 +136,12 @@ void CLbmSolverGPU<T>::reset()
 }
 
 template <class T>
-void CLbmSolverGPU<T>::getDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* hDensityDistributions)
+void CLbmSolverGPU<T>::getDesityDistributions(int i, T* hDensityDistributions)
+{
+}
+
+template <class T>
+void CLbmSolverGPU<T>::getDesityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* hDensityDistributions)
 {
 	assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
 	assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
@@ -181,7 +186,12 @@ void CLbmSolverGPU<T>::getDesityDistribution(CVector<3,int> &origin, CVector<3,i
 }
 
 template <class T>
-void CLbmSolverGPU<T>::setDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* hDensityDistributions)
+void CLbmSolverGPU<T>::setDesityDistributions(int i, T* hDensityDistributions)
+{
+}
+
+template <class T>
+void CLbmSolverGPU<T>::setDesityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* hDensityDistributions)
 {
 	assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
 	assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
@@ -226,7 +236,7 @@ void CLbmSolverGPU<T>::setDesityDistribution(CVector<3,int> &origin, CVector<3,i
 }
 
 template <class T>
-void CLbmSolverGPU<T>::getFlags(CVector<3,int> &origin, CVector<3,int> &size, Flag* hFlags)
+void CLbmSolverGPU<T>::getFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* hFlags)
 {
 	assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
 	assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
@@ -268,7 +278,7 @@ void CLbmSolverGPU<T>::getFlags(CVector<3,int> &origin, CVector<3,int> &size, Fl
 }
 
 template <class T>
-void CLbmSolverGPU<T>::setFlags(CVector<3,int> &origin, CVector<3,int> &size, Flag* hFlags)
+void CLbmSolverGPU<T>::setFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* hFlags)
 {
 	assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
 	assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
@@ -310,7 +320,7 @@ void CLbmSolverGPU<T>::setFlags(CVector<3,int> &origin, CVector<3,int> &size, Fl
 }
 
 template <class T>
-void CLbmSolverGPU<T>::getVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* hVelocities)
+void CLbmSolverGPU<T>::getVelocities(CVector<3, int> &origin, CVector<3, int> &size, T* hVelocities)
 {
 	assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
 	assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
@@ -355,7 +365,7 @@ void CLbmSolverGPU<T>::getVelocities(CVector<3,int> &origin, CVector<3,int> &siz
 }
 
 template <class T>
-void CLbmSolverGPU<T>::setVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* hVelocities)
+void CLbmSolverGPU<T>::setVelocities(CVector<3, int> &origin, CVector<3, int> &size, T* hVelocities)
 {
 	assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
 	assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
@@ -400,7 +410,7 @@ void CLbmSolverGPU<T>::setVelocities(CVector<3,int> &origin, CVector<3,int> &siz
 }
 
 template <class T>
-void CLbmSolverGPU<T>::getDensities(CVector<3,int> &origin, CVector<3,int> &size, T* hDensities)
+void CLbmSolverGPU<T>::getDensities(CVector<3, int> &origin, CVector<3, int> &size, T* hDensities)
 {
 	assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
 	assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
@@ -442,7 +452,7 @@ void CLbmSolverGPU<T>::getDensities(CVector<3,int> &origin, CVector<3,int> &size
 }
 
 template <class T>
-void CLbmSolverGPU<T>::setDensities(CVector<3,int> &origin, CVector<3,int> &size, T* hDensities)
+void CLbmSolverGPU<T>::setDensities(CVector<3, int> &origin, CVector<3, int> &size, T* hDensities)
 {
 	assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
 	assert(size[0] > 0 && size[1] > 0 && size[2] > 0);

@@ -54,15 +54,15 @@ private:
 
 public:
     // grid data
-    CVector<3,int> domain_size;
-    CVector<3,int> subdomain_num;
-    CVector<3,T> domain_length;
+    CVector<3, int> domain_size;
+    CVector<3, int> subdomain_num;
+    CVector<3, T> domain_length;
 
     // physics configuration data
-    CVector<3,T> gravitation;       ///< Specify the gravitation vector
+    CVector<3, T> gravitation;       ///< Specify the gravitation vector
     T viscosity;
 
-    CVector<4,T> drivenCavityVelocity;
+    CVector<4, T> drivenCavityVelocity;
     // device configuration data
     size_t computation_kernel_count;
     size_t threads_per_dimension;

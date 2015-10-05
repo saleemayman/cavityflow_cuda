@@ -65,8 +65,8 @@ public:
 	void simulationStepBeta();
 	void simulationStepBetaRect(CVector<3,int> origin, CVector<3,int> size);
 	void reset();
-	void getDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* dst);
-	void setDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* src);
+	void getDesityDistributions(CVector<3,int> &origin, CVector<3,int> &size, T* dst);
+	void setDesityDistributions(CVector<3,int> &origin, CVector<3,int> &size, T* src);
 	void getFlags(CVector<3,int> &origin, CVector<3,int> &size, Flag* src);
 	void setFlags(CVector<3,int> &origin, CVector<3,int> &size, Flag* dst);
 	void getVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* src);
