@@ -26,10 +26,10 @@
 #include "CDomain.hpp"
 #include "common.h"
 
-#define MASS_EXCHANGE_FACTOR        (1.0)
-#define MAX_SIM_GRAVITATION_LENGTH  (0.0001)
-#define NUM_LATTICE_VECTORS         19
-#define TAU                         (0.953575)
+#define MASS_EXCHANGE_FACTOR       (1.0)
+#define MAX_SIM_GRAVITATION_LENGTH (0.0001)
+#define NUM_LATTICE_VECTORS        19
+#define TAU                        (0.953575)
 
 #define STORE_VELOCITIES           (true)
 #define STORE_DENSITIES            (true)
@@ -50,11 +50,11 @@ protected:
 	 * boundaryConditions[4]: boundary condition for front face (smallest z-coordinate)
 	 * boundaryConditions[5]: boundary condition for back face (largest z-coordinate)
 	 */
-	std::array<Flag,6> boundaryConditions;
+	std::array<Flag, 6> boundaryConditions;
 	T timestepSize;
 	
-	CVector<3,T> gravitation;
-	CVector<4,T> drivenCavityVelocity;
+	CVector<3, T> gravitation;
+	CVector<4, T> drivenCavityVelocity;
 	T viscocity;
 	T massExchangeFactor;
 	T reynolds;
@@ -69,33 +69,32 @@ public:
 	CLbmSolver(
 			int id,
 			CDomain<T> &domain,
-			std::array<Flag,6> boundaryConditions,
+			std::array<Flag, 6> boundaryConditions,
 			T timestepSize,
-			CVector<3,T> &gravitation,
-			CVector<4,T> &drivenCavityVelocity,
+			CVector<3, T> &gravitation,
+			CVector<4, T> &drivenCavityVelocity,
 			T viscocity,
 			T massExchangeFactor = MASS_EXCHANGE_FACTOR,
 			T maxSimGravitationLength = MAX_SIM_GRAVITATION_LENGTH,
 			T tau = TAU,
 			bool storeDensities = false,
 			bool storeVelocities = false);
-	virtual ~CLbmSolver();
+	virtual ~CLbmSolver() {}
 	
-	virtual void simulationStepAlpha();
-	virtual void simulationStepAlphaRect(CVector<3,int> origin, CVector<3,int> size);
-	virtual void simulationStepBeta();
-	virtual void simulationStepBetaRect(CVector<3,int> origin, CVector<3,int> size);
-	virtual void reset();
-	virtual void reload();
+	virtual void simulationStepAlpha() {}
+	virtual void simulationStepAlphaRect(CVector<3, int> origin, CVector<3, int> size) {}
+	virtual void simulationStepBeta() {}
+	virtual void simulationStepBetaRect(CVector<3, int> origin, CVector<3, int> size) {}
+	virtual void reset() {}
 	CDomain<T>* getDomain();
-	virtual void getDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* hDensityDistributions);
-	virtual void setDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* hDensityDistributions);
-	virtual void getFlags(CVector<3,int> &origin, CVector<3,int> &size, int* hFlags);
-	virtual void setFlags(CVector<3,int> &origin, CVector<3,int> &size, int* hFlags);
-	virtual void getVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* hVelocities);
-	virtual void setVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* hVelocities);
-	virtual void getDensities(CVector<3,int> &origin, CVector<3,int> &size, T* hDensities);
-	virtual void setDensities(CVector<3,int> &origin, CVector<3,int> &size, T* hDensities);
+	virtual void getDesityDistribution(CVector<3, int> &origin, CVector<3, int> &size, int i, T* dst) {}
+	virtual void setDesityDistribution(CVector<3, int> &origin, CVector<3, int> &size, int i, T* src) {}
+	virtual void getFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* dst) {}
+	virtual void setFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* src) {}
+	virtual void getVelocities(CVector<3, int> &origin, CVector<3, int> &size, T* dst) {}
+	virtual void setVelocities(CVector<3, int> &origin, CVector<3, int> &size, T* src) {}
+	virtual void getDensities(CVector<3, int> &origin, CVector<3, int> &size, T* dst) {}
+	virtual void setDensities(CVector<3, int> &origin, CVector<3, int> &size, T* src) {}
 };
 
 #endif

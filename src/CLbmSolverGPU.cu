@@ -68,7 +68,7 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
 	GPU_ERROR_CHECK(cudaMalloc<T>(&(getDensityDistributionsHalo[5]), this->domain.getNumOfZFaceCellsWithHalo() * NUM_LATTICE_VECTORS * sizeof(T)))
 	GPU_ERROR_CHECK(cudaMalloc<T>(&(setDensityDistributionsHalo[5]), this->domain.getNumOfZFaceCellsWithHalo() * NUM_LATTICE_VECTORS * sizeof(T)))
 
-	lbm_init<<<getBlocksPerGrid(3, this->domain.getSize(), this->threadsPerBlock[0]), this->threadsPerBlock[0]>>>(
+	lbm_init<T><<<getBlocksPerGrid(3, this->domain.getSize(), this->threadsPerBlock[0]), this->threadsPerBlock[0]>>>(
 		densityDistributions,
 		flags,
 		velocities,
@@ -102,9 +102,9 @@ CLbmSolverGPU<T>::~CLbmSolverGPU()
 	GPU_ERROR_CHECK(cudaFree(setDensityDistributionsHalo[0]))
 	GPU_ERROR_CHECK(cudaFree(getDensityDistributionsHalo[0]))
 
-	if(this->storeVelocities)
+	if(storeVelocities)
 		GPU_ERROR_CHECK(cudaFree(velocities))
-	if(this->storeDensities)
+	if(storeDensities)
 		GPU_ERROR_CHECK(cudaFree(densities))
 	GPU_ERROR_CHECK(cudaFree(flags))
 	GPU_ERROR_CHECK(cudaFree(densityDistributions))
@@ -136,38 +136,267 @@ void CLbmSolverGPU<T>::reset()
 }
 
 template <class T>
-void CLbmSolverGPU<T>::reload()
+void CLbmSolverGPU<T>::getDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* hDensityDistributions)
 {
+	assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
+	assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
+	assert(origin[0] + size[0] <= domain.getSize()[0] - 1);
+	assert(origin[1] + size[1] <= domain.getSize()[1] - 1);
+	assert(origin[2] + size[2] <= domain.getSize()[2] - 1);
+
+	T* dDensityDistributions;
+
+	dim3 threadsPerBlock(size[1], size[2], 1);
+
+	GPU_ERROR_CHECK(cudaMalloc(&dDensityDistributions, NUM_LATTICE_VECTORS * size.elements() * sizeof(T)))
+
+	for (int dim = 0; dim < NUM_LATTICE_VECTORS; dim++)
+	{
+		copy_buffer_rect<T><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
+				densityDistributions,
+				dim * domain.getNumOfCells(),
+				origin[0],
+				origin[1],
+				origin[2],
+				domain.getSize()[0],
+				domain.getSize()[1],
+				domain.getSize()[2],
+				dDensityDistributions,
+				dim * size.elements(),
+				0,
+				0,
+				0,
+				size[0],
+				size[1],
+				size[2],
+				size[0],
+				size[1],
+				size[2]);
+		GPU_ERROR_CHECK(cudaPeekAtLastError())
+	}
+
+	GPU_ERROR_CHECK(cudaMemcpy(hDensityDistributions, dDensityDistributions, NUM_LATTICE_VECTORS * size.elements() * sizeof(T), cudaMemcpyDeviceToHost))
+
+	GPU_ERROR_CHECK(cudaFree(dDensityDistributions))
 }
 
 template <class T>
-void CLbmSolverGPU<T>::getDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* dst)
+void CLbmSolverGPU<T>::setDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* hDensityDistributions)
 {
+	assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
+	assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
+	assert(origin[0] + size[0] <= domain.getSize()[0] - 1);
+	assert(origin[1] + size[1] <= domain.getSize()[1] - 1);
+	assert(origin[2] + size[2] <= domain.getSize()[2] - 1);
+
+	T* dDensityDistributions;
+
+	dim3 threadsPerBlock(size[1], size[2], 1);
+
+	GPU_ERROR_CHECK(cudaMalloc(&dDensityDistributions, NUM_LATTICE_VECTORS * size.elements() * sizeof(T)))
+
+	GPU_ERROR_CHECK(cudaMemcpy(dDensityDistributions, hDensityDistributions, NUM_LATTICE_VECTORS * size.elements() * sizeof(T), cudaMemcpyHostToDevice))
+
+	for (int i = 0; i < NUM_LATTICE_VECTORS; i++)
+	{
+		copy_buffer_rect<T><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
+				dDensityDistributions,
+				i * size.elements(),
+				0,
+				0,
+				0,
+				size[0],
+				size[1],
+				size[2],
+				densityDistributions,
+				i * domain.getNumOfCells(),
+				origin[0],
+				origin[1],
+				origin[2],
+				domain.getSize()[0],
+				domain.getSize()[1],
+				domain.getSize()[2],
+				size[0],
+				size[1],
+				size[2]);
+		GPU_ERROR_CHECK(cudaPeekAtLastError())
+	}
+
+	GPU_ERROR_CHECK(cudaFree(dDensityDistributions))
 }
 
 template <class T>
-void CLbmSolverGPU<T>::setDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* src)
+void CLbmSolverGPU<T>::getFlags(CVector<3,int> &origin, CVector<3,int> &size, Flag* hFlags)
 {
+	assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
+	assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
+	assert(origin[0] + size[0] <= domain.getSize()[0] - 1);
+	assert(origin[1] + size[1] <= domain.getSize()[1] - 1);
+	assert(origin[2] + size[2] <= domain.getSize()[2] - 1);
+
+	Flag* dFlags;
+
+	dim3 threadsPerBlock(size[1], size[2], 1);
+
+	GPU_ERROR_CHECK(cudaMalloc(&dFlags, size.elements() * sizeof(Flag)))
+
+	copy_buffer_rect<Flag><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
+	        flags,
+	        0,
+	        origin[0],
+	        origin[1],
+	        origin[2],
+	        domain.getSize()[0],
+	        domain.getSize()[1],
+	        domain.getSize()[2],
+	        dFlags,
+	        0,
+	        0,
+	        0,
+	        0,
+	        size[0],
+	        size[1],
+	        size[2],
+	        size[0],
+	        size[1],
+	        size[2]);
+	GPU_ERROR_CHECK(cudaPeekAtLastError())
+
+	GPU_ERROR_CHECK(cudaMemcpy(hFlags, dFlags, size.elements() * sizeof(Flag), cudaMemcpyDeviceToHost))
+
+	GPU_ERROR_CHECK(cudaFree(dFlags))
 }
 
 template <class T>
-void CLbmSolverGPU<T>::getFlags(CVector<3,int> &origin, CVector<3,int> &size, int* dst)
+void CLbmSolverGPU<T>::setFlags(CVector<3,int> &origin, CVector<3,int> &size, Flag* hFlags)
 {
+	assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
+	assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
+	assert(origin[0] + size[0] <= domain.getSize()[0] - 1);
+	assert(origin[1] + size[1] <= domain.getSize()[1] - 1);
+	assert(origin[2] + size[2] <= domain.getSize()[2] - 1);
+
+	Flag* dFlags;
+
+	dim3 threadsPerBlock(size[1], size[2], 1);
+
+	GPU_ERROR_CHECK(cudaMalloc(&dFlags, size.elements() * sizeof(Flag)))
+
+	GPU_ERROR_CHECK(cudaMemcpy(dFlags, hFlags, size.elements() * sizeof(Flag), cudaMemcpyHostToDevice))
+
+	copy_buffer_rect<Flag><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
+			dFlags,
+	        0,
+	        0,
+	        0,
+	        0,
+	        size[0],
+	        size[1],
+	        size[2],
+	        flags,
+	        0,
+	        origin[0],
+	        origin[1],
+	        origin[2],
+	        domain.getSize()[0],
+	        domain.getSize()[1],
+	        domain.getSize()[2],
+	        size[0],
+	        size[1],
+	        size[2]);
+	GPU_ERROR_CHECK(cudaPeekAtLastError())
+
+	GPU_ERROR_CHECK(cudaFree(dFlags))
 }
 
 template <class T>
-void CLbmSolverGPU<T>::setFlags(CVector<3,int> &origin, CVector<3,int> &size, int* src)
+void CLbmSolverGPU<T>::getVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* hVelocities)
 {
+	assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
+	assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
+	assert(origin[0] + size[0] <= domain.getSize()[0] - 1);
+	assert(origin[1] + size[1] <= domain.getSize()[1] - 1);
+	assert(origin[2] + size[2] <= domain.getSize()[2] - 1);
+
+	T* dVelocities;
+
+	dim3 threadsPerBlock(size[1], size[2], 1);
+
+	GPU_ERROR_CHECK(cudaMalloc(&dVelocities, 3 * size.elements() * sizeof(T)))
+
+	for (int dim = 0; dim < 3; dim++)
+	{
+		copy_buffer_rect<T><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
+				velocities,
+				dim * domain.getNumOfCells(),
+				origin[0],
+				origin[1],
+				origin[2],
+				domain.getSize()[0],
+				domain.getSize()[1],
+				domain.getSize()[2],
+				dVelocities,
+				dim * size.elements(),
+				0,
+				0,
+				0,
+				size[0],
+				size[1],
+				size[2],
+				size[0],
+				size[1],
+				size[2]);
+		GPU_ERROR_CHECK(cudaPeekAtLastError())
+	}
+
+	GPU_ERROR_CHECK(cudaMemcpy(hVelocities, dVelocities, 3 * size.elements() * sizeof(T), cudaMemcpyDeviceToHost))
+
+	GPU_ERROR_CHECK(cudaFree(dVelocities))
 }
 
 template <class T>
-void CLbmSolverGPU<T>::getVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* dst)
+void CLbmSolverGPU<T>::setVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* hVelocities)
 {
-}
+	assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
+	assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
+	assert(origin[0] + size[0] <= domain.getSize()[0] - 1);
+	assert(origin[1] + size[1] <= domain.getSize()[1] - 1);
+	assert(origin[2] + size[2] <= domain.getSize()[2] - 1);
 
-template <class T>
-void CLbmSolverGPU<T>::setVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* src)
-{
+	T* dVelocities;
+
+	dim3 threadsPerBlock(size[1], size[2], 1);
+
+	GPU_ERROR_CHECK(cudaMalloc(&dVelocities, 3 * size.elements() * sizeof(T)))
+
+	GPU_ERROR_CHECK(cudaMemcpy(dVelocities, hVelocities, 3 * size.elements() * sizeof(T), cudaMemcpyHostToDevice))
+
+	for (int dim = 0; dim < 3; dim++)
+	{
+		copy_buffer_rect<T><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
+				dVelocities,
+				dim * size.elements(),
+				0,
+				0,
+				0,
+				size[0],
+				size[1],
+				size[2],
+				velocities,
+				dim * domain.getNumOfCells(),
+				origin[0],
+				origin[1],
+				origin[2],
+				domain.getSize()[0],
+				domain.getSize()[1],
+				domain.getSize()[2],
+				size[0],
+				size[1],
+				size[2]);
+		GPU_ERROR_CHECK(cudaPeekAtLastError())
+	}
+
+	GPU_ERROR_CHECK(cudaFree(dVelocities))
 }
 
 template <class T>
@@ -175,9 +404,9 @@ void CLbmSolverGPU<T>::getDensities(CVector<3,int> &origin, CVector<3,int> &size
 {
 	assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
 	assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
-	assert(origin[0] + size[0] <= this->domain.getSize()[0] - 1);
-	assert(origin[1] + size[1] <= this->domain.getSize()[1] - 1);
-	assert(origin[2] + size[2] <= this->domain.getSize()[2] - 1);
+	assert(origin[0] + size[0] <= domain.getSize()[0] - 1);
+	assert(origin[1] + size[1] <= domain.getSize()[1] - 1);
+	assert(origin[2] + size[2] <= domain.getSize()[2] - 1);
 
 	T* dDensities;
 
@@ -185,15 +414,15 @@ void CLbmSolverGPU<T>::getDensities(CVector<3,int> &origin, CVector<3,int> &size
 
 	GPU_ERROR_CHECK(cudaMalloc(&dDensities, size.elements() * sizeof(T)))
 
-	copy_buffer_rect<<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
+	copy_buffer_rect<T><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
 	        densities,
 	        0,
 	        origin[0],
 	        origin[1],
 	        origin[2],
-	        this->domain.getSize()[0],
-	        this->domain.getSize()[1],
-	        this->domain.getSize()[2],
+	        domain.getSize()[0],
+	        domain.getSize()[1],
+	        domain.getSize()[2],
 	        dDensities,
 	        0,
 	        0,
@@ -217,9 +446,9 @@ void CLbmSolverGPU<T>::setDensities(CVector<3,int> &origin, CVector<3,int> &size
 {
 	assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
 	assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
-	assert(origin[0] + size[0] <= this->domain.getSize()[0] - 1);
-	assert(origin[1] + size[1] <= this->domain.getSize()[1] - 1);
-	assert(origin[2] + size[2] <= this->domain.getSize()[2] - 1);
+	assert(origin[0] + size[0] <= domain.getSize()[0] - 1);
+	assert(origin[1] + size[1] <= domain.getSize()[1] - 1);
+	assert(origin[2] + size[2] <= domain.getSize()[2] - 1);
 
 	T* dDensities;
 
@@ -229,7 +458,7 @@ void CLbmSolverGPU<T>::setDensities(CVector<3,int> &origin, CVector<3,int> &size
 
 	GPU_ERROR_CHECK(cudaMemcpy(dDensities, hDensities, size.elements() * sizeof(T), cudaMemcpyHostToDevice))
 
-	copy_buffer_rect<<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
+	copy_buffer_rect<T><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
 			dDensities,
 	        0,
 	        0,
@@ -243,9 +472,9 @@ void CLbmSolverGPU<T>::setDensities(CVector<3,int> &origin, CVector<3,int> &size
 	        origin[0],
 	        origin[1],
 	        origin[2],
-	        this->domain.getSize()[0],
-	        this->domain.getSize()[1],
-	        this->domain.getSize()[2],
+	        domain.getSize()[0],
+	        domain.getSize()[1],
+	        domain.getSize()[2],
 	        size[0],
 	        size[1],
 	        size[2]);

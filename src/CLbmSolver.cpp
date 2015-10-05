@@ -23,10 +23,10 @@ template <class T>
 CLbmSolver<T>::CLbmSolver(
 		int id,
 		CDomain<T> &domain,
-		std::array<Flag,6> boundaryConditions,
+		std::array<Flag, 6> boundaryConditions,
 		T timestepSize,
-		CVector<3,T> &gravitation,
-		CVector<4,T> &drivenCavityVelocity,
+		CVector<3, T> &gravitation,
+		CVector<4, T> &drivenCavityVelocity,
 		T viscocity,
 		T massExchangeFactor,
 		T maxSimGravitationLength,
@@ -71,12 +71,10 @@ CLbmSolver<T>::CLbmSolver(
 }
 
 template <class T>
-CLbmSolver<T>::~CLbmSolver()
-{
-}
-
-template <class T>
 CDomain<T>* CLbmSolver<T>::getDomain()
 {
 	return &domain;
 }
+
+template class CLbmSolver<float>;
+template class CLbmSolver<double>;

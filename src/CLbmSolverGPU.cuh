@@ -30,6 +30,10 @@ template<typename T>
 class CLbmSolverGPU : public CLbmSolver<T>
 {
 private:
+	using CLbmSolver<T>::domain;
+	using CLbmSolver<T>::storeDensities;
+	using CLbmSolver<T>::storeVelocities;
+
 	T* densityDistributions;
 	Flag* flags;
 	T* velocities;
@@ -77,11 +81,10 @@ public:
 	void simulationStepBeta();
 	void simulationStepBetaRect(CVector<3,int> origin, CVector<3,int> size);
 	void reset();
-	void reload();
 	void getDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* hDensityDistributions);
 	void setDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* hDensityDistributions);
-	void getFlags(CVector<3,int> &origin, CVector<3,int> &size, int* hFlags);
-	void setFlags(CVector<3,int> &origin, CVector<3,int> &size, int* hFlags);
+	void getFlags(CVector<3,int> &origin, CVector<3,int> &size, Flag* hFlags);
+	void setFlags(CVector<3,int> &origin, CVector<3,int> &size, Flag* hFlags);
 	void getVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* hVelocities);
 	void setVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* hVelocities);
 	void getDensities(CVector<3,int> &origin, CVector<3,int> &size, T* hDensities);

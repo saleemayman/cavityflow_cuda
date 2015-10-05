@@ -84,6 +84,26 @@ __global__ void copy_buffer_rect(
     }
 }
 
+template __global__ void copy_buffer_rect<double>(
+        double* src,
+        const int src_offset,
+        const int src_origin_x,
+        const int src_origin_y,
+        const int src_origin_z,
+        const int src_size_x,
+        const int src_size_y,
+        const int src_size_z,
+        double* dst,
+        const int dst_offset,
+        const int dst_origin_x,
+        const int dst_origin_y,
+        const int dst_origin_z,
+        const int dst_size_x,
+        const int dst_size_y,
+        const int dst_size_z,
+        const int block_size_x,
+        const int block_size_y,
+        const int block_size_z);
 template __global__ void copy_buffer_rect<float>(
         float* src,
         const int src_offset,
@@ -104,8 +124,8 @@ template __global__ void copy_buffer_rect<float>(
         const int block_size_x,
         const int block_size_y,
         const int block_size_z);
-template __global__ void copy_buffer_rect<double>(
-        double* src,
+template __global__ void copy_buffer_rect<Flag>(
+		Flag* src,
         const int src_offset,
         const int src_origin_x,
         const int src_origin_y,
@@ -113,7 +133,7 @@ template __global__ void copy_buffer_rect<double>(
         const int src_size_x,
         const int src_size_y,
         const int src_size_z,
-        double* dst,
+        Flag* dst,
         const int dst_offset,
         const int dst_origin_x,
         const int dst_origin_y,

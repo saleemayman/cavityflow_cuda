@@ -32,7 +32,7 @@ template<typename T>
 class CLbmSolverCPU : public CLbmSolver<T>
 {
 private:
-	CLbmSolverGPU<T> solverGPU;
+	CLbmSolverGPU<T>* solverGPU;
 
 	std::vector<T*> densityDistributions;
 	std::vector<Flag*> flags;
@@ -65,15 +65,14 @@ public:
 	void simulationStepBeta();
 	void simulationStepBetaRect(CVector<3,int> origin, CVector<3,int> size);
 	void reset();
-	void reload();
-	void getDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* hDensityDistributions);
-	void setDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* hDensityDistributions);
-	void getFlags(CVector<3,int> &origin, CVector<3,int> &size, int* hFlags);
-	void setFlags(CVector<3,int> &origin, CVector<3,int> &size, int* hFlags);
-	void getVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* hVelocities);
-	void setVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* hVelocities);
-	void getDensities(CVector<3,int> &origin, CVector<3,int> &size, T* hDensities);
-	void setDensities(CVector<3,int> &origin, CVector<3,int> &size, T* hDensities);
+	void getDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* dst);
+	void setDesityDistribution(CVector<3,int> &origin, CVector<3,int> &size, int i, T* src);
+	void getFlags(CVector<3,int> &origin, CVector<3,int> &size, Flag* src);
+	void setFlags(CVector<3,int> &origin, CVector<3,int> &size, Flag* dst);
+	void getVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* src);
+	void setVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* dst);
+	void getDensities(CVector<3,int> &origin, CVector<3,int> &size, T* src);
+	void setDensities(CVector<3,int> &origin, CVector<3,int> &size, T* dst);
 };
 
 #endif
