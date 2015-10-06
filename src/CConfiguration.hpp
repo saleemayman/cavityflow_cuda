@@ -33,8 +33,6 @@ public:
 
     CVector<4, T> drivenCavityVelocity;
     // device configuration data
-    size_t computation_kernel_count;
-    size_t threads_per_dimension;
     int device_nr;
 
     // simulation configuration data
@@ -43,12 +41,8 @@ public:
     int loops;
     bool do_validate;
 
-    // TODO: lbm_opencl_number_of_registers_list, lbm_opencl_number_of_threads_list
-    std::list<int> lbm_opencl_number_of_registers_list;
-    std::list<int> lbm_opencl_number_of_threads_list;
-
-    // domain configuration data
-
+	// CUDA block configuration
+    CVector<3, int> threads_per_dimension;
     bool debug_mode;
 
     CConfiguration()
@@ -95,7 +89,6 @@ public:
         std::cout <<  "           VTK: " <<  do_visualization << std::endl;
         std::cout <<  "      VALIDATE: " <<  do_validate << std::endl;
         std::cout <<  "DEVICE: " << std::endl;
-        std::cout <<  "  KERNEL_COUNT: " <<  computation_kernel_count << std::endl;
         std::cout <<  "  THREADS_PER_DIM: " <<  threads_per_dimension << std::endl;
         std::cout <<  "     DEVICE_NR: " <<  device_nr << std::endl;
     }
@@ -147,8 +140,9 @@ private:
     }
     void interpret_device_data(const txml::XMLNode* root) {
         const txml::XMLNode* child_four = root->FirstChildElement(TAG_NAME_CHILD_FOUR);
-        computation_kernel_count = atoi(child_four->FirstChildElement( "kernel-count" )->GetText());
-        threads_per_dimension = atoi(child_four->FirstChildElement( "threads-per-dim" )->GetText());
+        threads_per_dimension[0] = atoi(child_four->FirstChildElement( "threads-per-dim" )->FirstChildElement( "x" )->GetText());
+        threads_per_dimension[1] = atoi(child_four->FirstChildElement( "threads-per-dim" )->FirstChildElement( "y" )->GetText());
+        threads_per_dimension[2] = atoi(child_four->FirstChildElement( "threads-per-dim" )->FirstChildElement( "z" )->GetText());
         device_nr = atoi(child_four->FirstChildElement( "device-number" )->GetText());
     }
 

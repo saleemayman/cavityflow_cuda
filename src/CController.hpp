@@ -149,7 +149,6 @@ class CController
                 _BC, _domain, 
                 ConfigSingleton::Instance()->gravitation, // gravitation vector
                 ConfigSingleton::Instance()->viscosity,
-                ConfigSingleton::Instance()->computation_kernel_count,
                 ConfigSingleton::Instance()->threads_per_dimension,
                 //ConfigSingleton::Instance()->debug_mode,
                 ConfigSingleton::Instance()->do_visualization
@@ -157,9 +156,7 @@ class CController
                 ConfigSingleton::Instance()->do_visualization
                         || ConfigSingleton::Instance()->debug_mode,
                 ConfigSingleton::Instance()->timestep,
-                 ConfigSingleton::Instance()->drivenCavityVelocity,
-                ConfigSingleton::Instance()->lbm_opencl_number_of_threads_list, // p_lbm_opencl_number_of_work_items_list,
-                ConfigSingleton::Instance()->lbm_opencl_number_of_threads_list);
+                 ConfigSingleton::Instance()->drivenCavityVelocity);
 
         if (cLbmPtr->error()) {
             std::cout << cLbmPtr->error.getString();

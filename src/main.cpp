@@ -112,11 +112,10 @@ int main(int argc, char** argv)
     bool do_visualisation = false;
     bool take_frame_screenshots = false;
     bool unit_test = false;
-    size_t computation_kernel_count = 128;
-    size_t threads_per_dimension = 32;
+    CVector<3,int> threads_per_dimension(16, 16, 1);
 
-    std::string number_of_registers_string; ///< string storing the number of registers for opencl threads separated with comma
-    std::string number_of_threads_string;       ///< string storing the number of threads for opencl separated with comma
+//    std::string number_of_registers_string; ///< string storing the number of registers for opencl threads separated with comma
+//    std::string number_of_threads_string;       ///< string storing the number of threads for opencl separated with comma
     std::string test_suite;
     bool use_config_file = false;
     std::string conf_file;
@@ -124,7 +123,8 @@ int main(int argc, char** argv)
     int device_nr = 0;
 
     char optchar;
-    while ((optchar = getopt(argc, argv, "x:y:z:d:vr:k:f:gG:t:sl:R:T:X:Y:Z:S:u:c:n:m:p:")) > 0)
+    while ((optchar = getopt(argc, argv, "x:y:z:d:vr:F:gG:t:sl:X:Y:Z:S:u:c:n:m:p:")) > 0)
+//  while ((optchar = getopt(argc, argv, "x:y:z:d:vr:k:F:gG:t:sl:R:T:X:Y:Z:S:u:c:n:m:p:")) > 0)
     {
         switch(optchar)
         {
@@ -136,13 +136,13 @@ int main(int argc, char** argv)
             debug = true;
             break;
 
-        case 'R':
-            number_of_registers_string = optarg;
-            break;
-
-        case 'T':
-            number_of_threads_string = optarg;
-            break;
+//        case 'R':
+//            number_of_registers_string = optarg;
+//            break;
+//
+//        case 'T':
+//            number_of_threads_string = optarg;
+//            break;
 
         case 'x':
             domain_size[0] = atoi(optarg);
@@ -170,12 +170,14 @@ int main(int argc, char** argv)
             domain_size[1] = atoi(optarg);
             break;
 
-        case 'k':
-            computation_kernel_count = atoi(optarg);
-            break;
+//        case 'k':
+//            computation_kernel_count = atoi(optarg);
+//            break;
         
-        case 'f':
-            threads_per_dimension = atoi(optarg);
+        case 'F':
+            threads_per_dimension[0] = atoi(optarg);
+            threads_per_dimension[1] = atoi(optarg);
+            threads_per_dimension[2] = atoi(optarg);
             break;
 
         case 'z':
@@ -254,14 +256,14 @@ int main(int argc, char** argv)
     parameter_error_ok:
 
 
-    std::list<int> lbm_opencl_number_of_registers_list;
-    std::list<int> lbm_opencl_number_of_threads_list;
+//    std::list<int> lbm_opencl_number_of_registers_list;
+//    std::list<int> lbm_opencl_number_of_threads_list;
 
-    if (!number_of_threads_string.empty())
-        extract_comma_separated_integers(lbm_opencl_number_of_threads_list, number_of_threads_string);
-
-    if (!number_of_registers_string.empty())
-        extract_comma_separated_integers(lbm_opencl_number_of_registers_list, number_of_registers_string);
+//    if (!number_of_threads_string.empty())
+//        extract_comma_separated_integers(lbm_opencl_number_of_threads_list, number_of_threads_string);
+//
+//    if (!number_of_registers_string.empty())
+//        extract_comma_separated_integers(lbm_opencl_number_of_registers_list, number_of_registers_string);
 
     if( use_config_file) {
         ConfigSingleton::Instance()->loadFile(conf_file);
@@ -271,14 +273,13 @@ int main(int argc, char** argv)
         ConfigSingleton::Instance()->domain_length = domain_length;
         ConfigSingleton::Instance()->gravitation = gravitation;
         ConfigSingleton::Instance()->viscosity = viscosity;
-        ConfigSingleton::Instance()->computation_kernel_count = computation_kernel_count;
         ConfigSingleton::Instance()->threads_per_dimension = threads_per_dimension;
         ConfigSingleton::Instance()->device_nr = device_nr;
         ConfigSingleton::Instance()->do_visualization = do_visualisation;
         ConfigSingleton::Instance()->timestep = timestep;
         ConfigSingleton::Instance()->loops = loops;
-        ConfigSingleton::Instance()->lbm_opencl_number_of_registers_list = lbm_opencl_number_of_registers_list;
-        ConfigSingleton::Instance()->lbm_opencl_number_of_threads_list = lbm_opencl_number_of_threads_list;
+//        ConfigSingleton::Instance()->lbm_opencl_number_of_registers_list = lbm_opencl_number_of_registers_list;
+//        ConfigSingleton::Instance()->lbm_opencl_number_of_threads_list = lbm_opencl_number_of_threads_list;
         ConfigSingleton::Instance()->do_validate = do_validate;
         ConfigSingleton::Instance()->drivenCavityVelocity = drivenCavityVelocity;
     }

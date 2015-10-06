@@ -776,38 +776,48 @@ public:
         /**
          * set the number of grid size and threads per block for GPU
          */
-        void setGridAndBlockSize(   unsigned int work_dim,
-                                    size_t &threads_per_dim, const size_t total_elements
-        )
+        void setGridAndBlockSize(	int work_dim_def,
+									CVector<3, int> &threads_per_dim, const size_t total_elements
+		)
         {
-            unsigned int totalThreadsPerBlock;
+            unsigned int threadsPerBlock;
             unsigned int grids_x, grids_y, grids_z;
+
+			blockSize = dim3(threads_per_dim[0], threads_per_dim[1], threads_per_dim[2]);
+			threadsPerBlock = blockSize.x * blockSize.y * blockSize.z;
+
+			// get the block/grid dimension implicitly from threads_per_dim
+			int work_dim = 3;
+			for (int i = 0; i < 3; i++)
+			{
+				if (threads_per_dim[i] == 1)
+					work_dim--;
+			}
+
+			// use default work dimensions if specified
+			if (work_dim_def != NULL)		
+				work_dim = work_dim_def;
 
             if (work_dim == 1)
             {
-                blockSize = dim3(threads_per_dim, 1, 1);
-                totalThreadsPerBlock = blockSize.x * blockSize.y * blockSize.z;
-
-                grids_x = (total_elements + blockSize.x - 1)/totalThreadsPerBlock;
+                grids_x = (total_elements + threadsPerBlock - 1)/threadsPerBlock;
 
                 gridSize = dim3(grids_x + 1, 1, 1);
             }
             else if(work_dim == 2)
             {
-                blockSize = dim3(threads_per_dim, threads_per_dim, 1);
-                totalThreadsPerBlock = blockSize.x * blockSize.y * blockSize.z;
-
-                grids_x = sqrt((total_elements + blockSize.x * blockSize.y - 1) / totalThreadsPerBlock);
+                grids_x = sqrt((total_elements + threadsPerBlock - 1) / threadsPerBlock);
                 grids_y = grids_x;
 
                 gridSize = dim3(grids_x + 1, grids_y + 1, 1);
             }
             else
             {
-                blockSize = dim3(threads_per_dim, threads_per_dim, 1);
-                totalThreadsPerBlock = blockSize.x * blockSize.y * blockSize.z;
+//				blockSize = dim3(threads_per_dim[0], threads_per_dim[1], threads_per_dim[2]);
+                blockSize = dim3(threads_per_dim[0], threads_per_dim[1], 1);
+                threadsPerBlock = blockSize.x * blockSize.y * blockSize.z;
 
-                grids_x = pow((total_elements + totalThreadsPerBlock - 1)/totalThreadsPerBlock, 1./3.);
+				grids_x = pow((total_elements + threadsPerBlock - 1)/threadsPerBlock, 1./3.);
                 grids_y = grids_x;
                 grids_z = grids_x;
 

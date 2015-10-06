@@ -33,7 +33,8 @@
 
 /**
  * the density distributions are packed cell wise to optimize the collision operation and stored
- * linearly (first x, then y, then z) in the buffer cMemDensityDistributions
+ 			work_dim = work_dim_def;
+* linearly (first x, then y, then z) in the buffer cMemDensityDistributions
  *
  * this implementation is using the D3Q19 implementation
  *
@@ -84,24 +85,25 @@ private:
 
     // INITIALIZATION KERNEL
     CCL::CKernel cKernelInit;
-    size_t cKernelInit_ThreadsPerDim;
+    CVector<3, int> cKernelInit_ThreadsPerDim;
     size_t cKernelInit_GlobalWorkGroupSize;
     size_t cKernelInit_MaxRegisters;
 
     // COLLISION KERNELS
     CCL::CKernel cLbmKernelAlpha;
-    size_t cLbmKernelAlpha_ThreadsPerDim;
+    CVector<3, int> cLbmKernelAlpha_ThreadsPerDim;
     size_t cLbmKernelAlpha_GlobalWorkGroupSize;
     size_t cLbmKernelAlpha_MaxRegisters;
 
     CCL::CKernel cLbmKernelBeta;
-    size_t cLbmKernelBeta_ThreadsPerDim;
+    CVector<3, int> cLbmKernelBeta_ThreadsPerDim;
     size_t cLbmKernelBeta_GlobalWorkGroupSize;
     size_t cLbmKernelBeta_MaxRegisters;
+    size_t cLbmKernelBeta_BlockSize;
 
     // INITIALIZATION KERNEL
     CCL::CKernel cKernelCopyRect;
-    size_t cKernelCopyRect_ThreadsPerDim;
+    CVector<3, int> cKernelCopyRect_ThreadsPerDim;
     size_t cKernelCopyRect_GlobalWorkGroupSize;
     size_t cKernelCopyRect_MaxRegisters;
 
@@ -116,8 +118,7 @@ private:
     CCL::CMem cMemVelocity;
     CCL::CMem cMemDensity;
 
-    size_t computation_kernel_count;
-    size_t threads_per_dimension;
+    CVector<3, int> threads_per_dimension;
     size_t domain_cells_count;
     size_t domain_x, domain_y, domain_z;
 
@@ -187,12 +188,17 @@ private:
         cKernelCopyRect.setArg(17, block_size[1]);
         cKernelCopyRect.setArg(18, block_size[2]);
 
-        size_t lGlobalSize[2];
-        lGlobalSize[0] = block_size[1]; 
-        lGlobalSize[1] = block_size[2]; 
+		// copy rect kernel needs a 2D grid/block configuration
+		int blockSizeCopyRectKernel = 	cKernelCopyRect_ThreadsPerDim[0] * cKernelCopyRect_ThreadsPerDim[1] * cKernelCopyRect_ThreadsPerDim[2];
+		cKernelCopyRect_ThreadsPerDim[0] = sqrt(blockSizeCopyRectKernel);
+		cKernelCopyRect_ThreadsPerDim[1] = sqrt(blockSizeCopyRectKernel);
+		cKernelCopyRect_ThreadsPerDim[2] = 1; 
 
 		cKernelCopyRect.setGridAndBlockSize(2, cKernelCopyRect_ThreadsPerDim, domain_cells_count);
-
+#if DEBUG
+		printf("CopyKernel --> blockSize: [%u, %u, %u] \n", cKernelCopyRect.blockSize.x, cKernelCopyRect.blockSize.y, cKernelCopyRect.blockSize.z);
+		printf("CopyKernel --> gridSize: [%u, %u, %u] \n", cKernelCopyRect.gridSize.x, cKernelCopyRect.gridSize.y, cKernelCopyRect.gridSize.z);
+#endif
         // enqueue the CopyRect kernel
         cCommandQueue.enqueueNDRangeKernel(cKernelCopyRect, // kernel
 				CU_FALSE,							// shared memory use flag
@@ -205,7 +211,6 @@ public:
     size_t simulation_step_counter;
     CError error;
 
-    std::list<int> lbm_opencl_number_of_work_items_list; ///< list with number of threads for each successively created kernel
     std::list<int> lbm_opencl_number_of_registers_list; ///< list with number of registers for each thread threads for each successively created kernel
 
     // viscosity parameters:
@@ -214,21 +219,16 @@ public:
     CLbmSolver(int UID, CCL::CCommandQueue &p_cCommandQueue,
             CCL::CContext &p_cContext, CCL::CDevice &p_cDevice, int BC[3][2],
             CDomain<T> &domain, CVector<3, T> &p_d_gravitation, T p_d_viscosity,
-            size_t p_computation_kernel_count,
-            size_t p_threads_per_dimension,
+            CVector<3, int> p_threads_per_dimension,
             //bool p_debug,
             bool p_store_velocity, bool p_store_density, T p_d_timestep,
-            CVector<4, T>& _drivenCavityVelocity,
-            std::list<int> &p_lbm_opencl_number_of_work_items_list, ///< list with number of threads for each successively created kernel
-            std::list<int> &p_lbm_opencl_number_of_registers_list ///< list with number of registers for each thread threads for each successively created kernel
+            CVector<4, T>& _drivenCavityVelocity
             ) :
             CLbmSkeleton<T>(CDomain<T>(domain), _drivenCavityVelocity), //drivenCavityVelocity(100.0, 0,0, 1),
             drivenCavityVelocity(_drivenCavityVelocity), _UID(UID), cCommandQueue(
                     p_cCommandQueue), cContext(p_cContext), cDevice(p_cDevice), cDeviceInfo(
-                    p_cDevice), computation_kernel_count(p_computation_kernel_count),
-                    threads_per_dimension(p_threads_per_dimension), lbm_opencl_number_of_work_items_list(
-                    p_lbm_opencl_number_of_work_items_list), lbm_opencl_number_of_registers_list(
-                    p_lbm_opencl_number_of_registers_list)
+                    p_cDevice), 
+                    threads_per_dimension(p_threads_per_dimension) 
     {
         CLbmSkeleton<T>::init(p_d_gravitation, p_d_viscosity, 1.0);
 
@@ -276,38 +276,17 @@ public:
          * initialize the variable (postfixed appropriately with _ThreadsPerDim and _MaxRegisters)
          * with either the standard value (max_local_work_group_size) or with the value from the list
          */
-#define INIT_WORK_GROUP_SIZE(variable)                                      \
-        if (it != this->lbm_opencl_number_of_work_items_list.end())     \
-        {                                                               \
-            /*variable##_ThreadsPerDim = (*it != 0 ? *it : computation_kernel_count);*/ \
-            variable##_ThreadsPerDim = (*it != 0 ? *it : threads_per_dimension); \
-            it++;                                                       \
-        }                                                               \
-        else                                                            \
-        {                                                               \
-            /*variable##_ThreadsPerDim = computation_kernel_count;*/    \
-            variable##_ThreadsPerDim = threads_per_dimension;           \
-        }                                                               \
-                                                                        \
+#define INIT_WORK_GROUP_SIZE(variable)                                      				\
+		variable##_ThreadsPerDim[0] = threads_per_dimension[0];								\
+		variable##_ThreadsPerDim[1] = threads_per_dimension[1];								\
+		variable##_ThreadsPerDim[2] = threads_per_dimension[2];								\
+                                                                        					\
         /* enlarge global work group size to be a multiple of collprop_work_group_size */   \
-        if (domain_cells_count % variable##_ThreadsPerDim != 0)         \
-            variable##_GlobalWorkGroupSize = (domain_cells_count / variable##_ThreadsPerDim + 1) * variable##_ThreadsPerDim;    \
-                                                                        \
-        if (ir != this->lbm_opencl_number_of_registers_list.end())      \
-        {                                                               \
-            variable##_MaxRegisters = (*ir != 0 ? *ir : 0);             \
-            ir++;                                                       \
-        }                                                               \
-        else                                                            \
-        {                                                               \
-            variable##_MaxRegisters  = 0;                               \
-        }
+        if (domain_cells_count % (variable##_ThreadsPerDim[0]*variable##_ThreadsPerDim[1]*variable##_ThreadsPerDim[2]) != 0)         \
+            variable##_GlobalWorkGroupSize = (domain_cells_count / (variable##_ThreadsPerDim[0]*variable##_ThreadsPerDim[1]*variable##_ThreadsPerDim[2]) + 1) * (variable##_ThreadsPerDim[0]*variable##_ThreadsPerDim[1]*variable##_ThreadsPerDim[2]);    \
+                                                                        					\
 
-        std::list<int>::iterator it =
-                this->lbm_opencl_number_of_work_items_list.begin();
-        std::list<int>::iterator ir =
-                this->lbm_opencl_number_of_registers_list.begin();
-
+		// set the block size for each kernel
         INIT_WORK_GROUP_SIZE(cKernelInit);
         INIT_WORK_GROUP_SIZE(cLbmKernelAlpha);
         INIT_WORK_GROUP_SIZE(cLbmKernelBeta);
@@ -316,7 +295,7 @@ public:
         
         domain_cells_count = this->domain_cells.elements();
         _isDomainSizePowOfTwo = isDomainPowerOfTwo(domain_cells_count);
-        _isLocalSizePowOfTwo = isDomainPowerOfTwo(cLbmKernelBeta_ThreadsPerDim);
+        _isLocalSizePowOfTwo = isDomainPowerOfTwo(cLbmKernelBeta_BlockSize);
 
 
         /**
@@ -366,10 +345,10 @@ public:
          * INIT kernel
          */
         cKernelInit_GlobalWorkGroupSize = domain_cells_count;
-        if (cKernelInit_GlobalWorkGroupSize % cKernelInit_ThreadsPerDim != 0)
-            cKernelInit_GlobalWorkGroupSize = (cKernelInit_GlobalWorkGroupSize
-                    / cKernelInit_ThreadsPerDim + 1)
-                    * cKernelInit_ThreadsPerDim;
+//        if (cKernelInit_GlobalWorkGroupSize % cKernelInit_ThreadsPerDim != 0)
+//            cKernelInit_GlobalWorkGroupSize = (cKernelInit_GlobalWorkGroupSize
+//                    / cKernelInit_ThreadsPerDim + 1)
+//                    * cKernelInit_ThreadsPerDim;
 
         // Load init_lbm.ptx file with a CUDA module(program)
         CCL::CProgram cProgramInit;
@@ -432,18 +411,26 @@ public:
         }
 #endif
 
-		// set the grid and block size for all kernels
-		cKernelInit.setGridAndBlockSize(3, cKernelInit_ThreadsPerDim, domain_cells_count);
-		cLbmKernelAlpha.setGridAndBlockSize(3, cLbmKernelAlpha_ThreadsPerDim, domain_cells_count);
-		cLbmKernelBeta.setGridAndBlockSize(3, cLbmKernelBeta_ThreadsPerDim, domain_cells_count);
-		cLbmKernelBeta_ThreadsPerDim = cLbmKernelBeta.blockSize.x * cLbmKernelBeta.blockSize.y * cLbmKernelBeta.blockSize.z;
+		/* Set the grid and block size for all kernels
+		 * 
+		 * Except the copy-rect-kernel all other kernels have
+		 * the same block dimension and size.
+		 */
+		cKernelInit.setGridAndBlockSize(NULL, cKernelInit_ThreadsPerDim, domain_cells_count);
+		cLbmKernelAlpha.setGridAndBlockSize(NULL, cLbmKernelAlpha_ThreadsPerDim, domain_cells_count);
+		cLbmKernelBeta.setGridAndBlockSize(NULL, cLbmKernelBeta_ThreadsPerDim, domain_cells_count);
+		cLbmKernelBeta_BlockSize = cLbmKernelBeta.blockSize.x * cLbmKernelBeta.blockSize.y * cLbmKernelBeta.blockSize.z;
+
+#if DEBUG
+		printf("InitKernel --> blockSize: [%u, %u, %u] \n", cKernelInit.blockSize.x, cKernelInit.blockSize.y, cKernelInit.blockSize.z);
+		printf("InitKernel --> gridSize: [%u, %u, %u] \n", cKernelInit.gridSize.x, cKernelInit.gridSize.y, cKernelInit.gridSize.z);
 
 		printf("BetaKernel --> blockSize: [%u, %u, %u] \n", cLbmKernelBeta.blockSize.x, cLbmKernelBeta.blockSize.y, cLbmKernelBeta.blockSize.z);
 		printf("BetaKernel --> gridSize: [%u, %u, %u] \n", cLbmKernelBeta.gridSize.x, cLbmKernelBeta.gridSize.y, cLbmKernelBeta.gridSize.z);
  
 		printf("AlphaKernel --> blockSize: [%u, %u, %u] \n", cLbmKernelAlpha.blockSize.x, cLbmKernelAlpha.blockSize.y, cLbmKernelAlpha.blockSize.z);
 		printf("AlphaKernel --> gridSize: [%u, %u, %u] \n", cLbmKernelAlpha.gridSize.x, cLbmKernelAlpha.gridSize.y, cLbmKernelAlpha.gridSize.z);
-
+#endif
 
         /**
          * SETUP ARGUMENTS
@@ -491,7 +478,7 @@ public:
         cLbmKernelBeta.setArg(9, this->domain_cells.data[0]);
         cLbmKernelBeta.setArg(10, this->domain_cells.data[1]);
         cLbmKernelBeta.setArg(11, this->domain_cells.data[2]);
-        cLbmKernelBeta.setArg(12, cLbmKernelBeta_ThreadsPerDim);
+        cLbmKernelBeta.setArg(12, cLbmKernelBeta_BlockSize);
 
 //		printf("cLbmKernelBeta_ThreadsPerDim: %u\n", cLbmKernelBeta_ThreadsPerDim);
 //		printf("(cLbmKernelBeta.blockSize.x * cLbmKernelBeta.blockSize.y * cLbmKernelBeta.blockSize.z): %u \n", (cLbmKernelBeta.blockSize.x * cLbmKernelBeta.blockSize.y * cLbmKernelBeta.blockSize.z));
