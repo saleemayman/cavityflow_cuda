@@ -87,25 +87,21 @@ private:
     CCL::CKernel cKernelInit;
     CVector<3, int> cKernelInit_ThreadsPerDim;
     size_t cKernelInit_GlobalWorkGroupSize;
-    size_t cKernelInit_MaxRegisters;
 
     // COLLISION KERNELS
     CCL::CKernel cLbmKernelAlpha;
     CVector<3, int> cLbmKernelAlpha_ThreadsPerDim;
     size_t cLbmKernelAlpha_GlobalWorkGroupSize;
-    size_t cLbmKernelAlpha_MaxRegisters;
 
     CCL::CKernel cLbmKernelBeta;
     CVector<3, int> cLbmKernelBeta_ThreadsPerDim;
     size_t cLbmKernelBeta_GlobalWorkGroupSize;
-    size_t cLbmKernelBeta_MaxRegisters;
     size_t cLbmKernelBeta_BlockSize;
 
     // INITIALIZATION KERNEL
     CCL::CKernel cKernelCopyRect;
     CVector<3, int> cKernelCopyRect_ThreadsPerDim;
     size_t cKernelCopyRect_GlobalWorkGroupSize;
-    size_t cKernelCopyRect_MaxRegisters;
 
     // density distributions (D3Q19 model)
     CCL::CMem cMemDensityDistributions;
@@ -273,7 +269,7 @@ public:
         /**
          * WORK GROUP SIZE
          *
-         * initialize the variable (postfixed appropriately with _ThreadsPerDim and _MaxRegisters)
+         * initialize the variable (postfixed appropriately with _ThreadsPerDim)
          * with either the standard value (max_local_work_group_size) or with the value from the list
          */
 #define INIT_WORK_GROUP_SIZE(variable)                                      				\
@@ -357,7 +353,7 @@ public:
         cProgramInit.load(cContext, initKernelModuleFileName.c_str());
 
 #if DEBUG
-        std::cout << "KernelInit:   local_work_group_size: " << cKernelInit_ThreadsPerDim << "      max_registers: " << cKernelInit_MaxRegisters << std::endl;
+        std::cout << "KernelInit:   local_work_group_size: " << cKernelInit_ThreadsPerDim <<  std::endl;
 #endif
 
         /*
@@ -369,7 +365,7 @@ public:
         cProgramAlpha.load(cContext, alphaKernelModuleFileName.c_str());
 
 #if DEBUG
-        std::cout << "KernelAlpha:  local_work_group_size: " << cLbmKernelAlpha_ThreadsPerDim << "      max_registers: " << cLbmKernelAlpha_MaxRegisters << std::endl;
+        std::cout << "KernelAlpha:  local_work_group_size: " << cLbmKernelAlpha_ThreadsPerDim <<  std::endl;
 #endif
         /*
          * BETA
@@ -380,7 +376,7 @@ public:
         cProgramBeta.load(cContext, betaKernelModuleFileName.c_str());
 
 #if DEBUG
-        std::cout << "KernelBeta:   local_work_group_size: " << cLbmKernelBeta_ThreadsPerDim << "       max_registers: " << cLbmKernelBeta_MaxRegisters << std::endl;
+        std::cout << "KernelBeta:   local_work_group_size: " << cLbmKernelBeta_ThreadsPerDim <<  std::endl;
 #endif
 
         /*
@@ -392,7 +388,7 @@ public:
         cProgramCopyRect.load(cContext, copyRectKernelModuleFileName.c_str());
 
 #if DEBUG
-        std::cout << "KernelCopyRect:   local_work_group_size: " << cKernelCopyRect_ThreadsPerDim << "      max_registers: " << cKernelCopyRect_MaxRegisters << std::endl;
+        std::cout << "KernelCopyRect:   local_work_group_size: " << cKernelCopyRect_ThreadsPerDim <<  std::endl;
 #endif
 
         /**
