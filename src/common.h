@@ -33,25 +33,26 @@
 #include "libmath/CVector.hpp"
 #include "constants.h"
 
-extern CVector<3, int> E0;
-extern CVector<3, int> E1;
-extern CVector<3, int> E2;
-extern CVector<3, int> E3;
-extern CVector<3, int> E4;
-extern CVector<3, int> E5;
-extern CVector<3, int> E6;
-extern CVector<3, int> E7;
-extern CVector<3, int> E8;
-extern CVector<3, int> E9;
-extern CVector<3, int> E10;
-extern CVector<3, int> E11;
-extern CVector<3, int> E12;
-extern CVector<3, int> E13;
-extern CVector<3, int> E14;
-extern CVector<3, int> E15;
-extern CVector<3, int> E16;
-extern CVector<3, int> E17;
-extern CVector<3, int> E18;
+#define E0  CVector<3, int>( 1,  0,  0)
+#define E1  CVector<3, int>(-1,  0,  0)
+#define E2  CVector<3, int>( 0,  1,  0)
+#define E3  CVector<3, int>( 0, -1,  0)
+#define E4  CVector<3, int>( 1,  1,  0)
+#define E5  CVector<3, int>(-1, -1,  0)
+#define E6  CVector<3, int>( 1, -1,  0)
+#define E7  CVector<3, int>(-1,  1,  0)
+#define E8  CVector<3, int>( 1,  0,  1)
+#define E9  CVector<3, int>(-1,  0, -1)
+#define E10 CVector<3, int>( 1,  0, -1)
+#define E11 CVector<3, int>(-1,  0,  1)
+#define E12 CVector<3, int>( 0,  1,  1)
+#define E13 CVector<3, int>( 0, -1, -1)
+#define E14 CVector<3, int>( 0,  1, -1)
+#define E15 CVector<3, int>( 0, -1,  1)
+#define E16 CVector<3, int>( 0,  0,  1)
+#define E17 CVector<3, int>( 0,  0, -1)
+#define E18 CVector<3, int>( 0,  0,  0)
+
 extern CVector<3, int> lbm_units[];
 
 enum Flag
@@ -63,7 +64,20 @@ enum Flag
 	GHOST_LAYER_BETA   = (GHOST_LAYER | (1<<4))
 };
 
-#define GPU_ERROR_CHECK(code) { gpuErrorCheck((code), __FILE__, __LINE__); }
+enum Direction
+{
+	RIGHT  = 0,
+	LEFT   = 1,
+	TOP    = 2,
+	BOTTOM = 3,
+	FRONT  = 4,
+	BACK   = 5
+};
+
+#define GPU_ERROR_CHECK(code) \
+{ \
+	gpuErrorCheck((code), __FILE__, __LINE__); \
+}
 
 inline void gpuErrorCheck(cudaError_t code, std::string file, int line, bool abort = true) {
 	// cudaDeviceSynchronize();

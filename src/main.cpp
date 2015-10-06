@@ -35,31 +35,12 @@
 #include "CManager.hpp"
 #include "CSingleton.hpp"
 
-CVector<3,int> E0(1,0,0);
-CVector<3,int> E1(-1,0,0);
-CVector<3,int> E2(0,1,0);
-CVector<3,int> E3(0,-1,0);
-CVector<3,int> E4(1,1,0);
-CVector<3,int> E5(-1,-1,0);
-CVector<3,int> E6(1,-1,0);
-CVector<3,int> E7(-1,1,0);
-CVector<3,int> E8(1,0,1);
-CVector<3,int> E9(-1,0,-1);
-CVector<3,int> E10(1,0,-1);
-CVector<3,int> E11(-1,0,1);
-CVector<3,int> E12(0,1,1);
-CVector<3,int> E13(0,-1,-1);
-CVector<3,int> E14(0,1,-1);
-CVector<3,int> E15(0,-1,1);
-CVector<3,int> E16(0,0,1);
-CVector<3,int> E17(0,0,-1);
-CVector<3,int> E18(0,0,0);
 CVector<3,int> lbm_units[] = {
-        E0,E1,E2,E3,
-        E4,E5,E6,E7,
-        E8,E9,E10,E11,
-        E12,E13,E14,E15,
-        E16,E17,E18
+		E0, E1, E2, E3,
+        E4, E5, E6, E7,
+        E8, E9, E10, E11,
+        E12, E13, E14, E15,
+        E16, E17, E18
 };
 
 #define VALIDATION_RANK 0
@@ -341,7 +322,7 @@ int main(int argc, char** argv)
                 int local_size[] = {local_size_without_halo[0], local_size_without_halo[1], local_size_without_halo[2]};
                 TYPE* local_data = new TYPE[local_size_without_halo.elements()*3];
                 CVector<3,int> local_origin(1,1,1);
-                controller->getSolver()->storeVelocity(local_data, local_origin, local_size_without_halo);
+                controller->getSolver()->getVelocities(local_origin, local_size_without_halo, local_data);
                 MPI_Send(local_size, 3, MPI_INT, num_procs - 1, 0, MPI_COMM_WORLD);
                 MPI_Send(local_data, local_size_without_halo.elements()*3, MPI_FLOAT, num_procs - 1, 1, MPI_COMM_WORLD );
 
@@ -393,7 +374,7 @@ int main(int argc, char** argv)
                     1+ny*(local_size_without_halo[1]),
                     1+nz*(local_size_without_halo[2])
             );
-            validataion_manager.getController()->getSolver()->storeVelocity(sub_global_data, sub_origin, local_size_without_halo);
+            validataion_manager.getController()->getSolver()->getVelocities(sub_origin, local_size_without_halo, sub_global_data);
 
             std::cout << "PROC. RANK: " << my_rank << " VALIDATION SIZE: " << validation_domain_size << std::endl;
             // comparing local and global data

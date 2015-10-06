@@ -136,8 +136,69 @@ void CLbmSolverGPU<T>::reset()
 }
 
 template <class T>
-void CLbmSolverGPU<T>::getDesityDistributions(int i, T* hDensityDistributions)
+void CLbmSolverGPU<T>::getDesityDistributions(Direction direction, CVector<3, int>& norm, T* hDensityDistributions)
 {
+	assert(0 <= direction < 6);
+
+	CVector<3, int> origin(0, 0, 0);
+	CVector<3, int> size(1, 1, 1);
+
+	switch(direction)
+	{
+	case RIGHT:
+		size[1] = domain.getSize()[1];
+		size[2] = domain.getSize()[2];
+	case LEFT:
+		size[1] = domain.getSize()[1];
+		size[2] = domain.getSize()[2];
+		origin[0] = domain.getSize()[0] - 1;
+	case TOP:
+		size[0] = domain.getSize()[0];
+		size[2] = domain.getSize()[2];
+	case BOTTOM:
+		size[0] = domain.getSize()[0];
+		size[2] = domain.getSize()[2];
+		origin[0] = domain.getSize()[1] - 1;
+	case FRONT:
+		size[0] = domain.getSize()[0];
+		size[1] = domain.getSize()[1];
+	case BACK:
+		size[0] = domain.getSize()[0];
+		size[1] = domain.getSize()[1];
+		origin[0] = domain.getSize()[2] - 1;
+	}
+
+	dim3 threadsPerBlock(size[1], size[2], 1);
+
+	for (int latticeVector = 0; latticeVector < NUM_LATTICE_VECTORS; latticeVector++)
+	{
+		if(norm.dotProd(lbm_units[latticeVector]) > 0)
+		{
+			copy_buffer_rect<T><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
+					densityDistributions,
+					latticeVector * domain.getNumOfCells(),
+					origin[0],
+					origin[1],
+					origin[2],
+					domain.getSize()[0],
+					domain.getSize()[1],
+					domain.getSize()[2],
+					getDensityDistributionsHalo[direction],
+					latticeVector * size.elements(),
+					0,
+					0,
+					0,
+					size[0],
+					size[1],
+					size[2],
+					size[0],
+					size[1],
+					size[2]);
+		}
+		GPU_ERROR_CHECK(cudaPeekAtLastError())
+	}
+
+	GPU_ERROR_CHECK(cudaMemcpy(hDensityDistributions, getDensityDistributionsHalo[direction], NUM_LATTICE_VECTORS * size.elements() * sizeof(T), cudaMemcpyDeviceToHost))
 }
 
 template <class T>
@@ -155,7 +216,7 @@ void CLbmSolverGPU<T>::getDesityDistributions(CVector<3, int> &origin, CVector<3
 
 	GPU_ERROR_CHECK(cudaMalloc(&dDensityDistributions, NUM_LATTICE_VECTORS * size.elements() * sizeof(T)))
 
-	for (int dim = 0; dim < NUM_LATTICE_VECTORS; dim++)
+	for(int dim = 0; dim < NUM_LATTICE_VECTORS; dim++)
 	{
 		copy_buffer_rect<T><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
 				densityDistributions,
@@ -186,7 +247,7 @@ void CLbmSolverGPU<T>::getDesityDistributions(CVector<3, int> &origin, CVector<3
 }
 
 template <class T>
-void CLbmSolverGPU<T>::setDesityDistributions(int i, T* hDensityDistributions)
+void CLbmSolverGPU<T>::setDesityDistributions(Direction direction, CVector<3, int>& norm, T* hDensityDistributions)
 {
 }
 

@@ -53,9 +53,9 @@ CXXFILES		:=	src/libmath/CMath.cpp \
 					src/CLbmSolver.cpp \
 					src/CLbmSolverCPU.cpp \
 					src/CSingleton.cpp \
+					src/main.cpp
 #					src/CController.cpp \
 #					src/CManager.cpp \
-#					src/main.cpp
 
 # cuda source files (compiled with $(NVCC))
 CUDAFILES		:=	src/gpukernels/copy_buffer_rect.cu \
