@@ -39,12 +39,16 @@ CLbmSolver<T>::CLbmSolver(
 		massExchangeFactor(massExchangeFactor), maxSimGravitationLength(maxSimGravitationLength), tau(tau),
 		storeDensities(storeDensities), storeVelocities(storeVelocities)
 {
+	/*
+	 * TODO
+	 * Check if class members are initiated properly
+	 */
 	this->drivenCavityVelocity *= timestepSize;
 	reynolds = domain.getLength()[0] * drivenCavityVelocity[0] / viscocity;
 	tauInv = (T)1 / tau;
 	tauInvTrt = (T)1 / ((T)0.5 + (T)3 / ((T)16 * tau - (T)8));
 
-#if DEBUG
+#if 1
 	std::cout << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
 	std::cout << "id:                         " << this->id << std::endl;
 	std::cout << "---------------------------------------" << std::endl;

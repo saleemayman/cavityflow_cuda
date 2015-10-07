@@ -87,14 +87,22 @@ public:
 	virtual void simulationStepBetaRect(CVector<3, int> origin, CVector<3, int> size) {}
 	virtual void reset() {}
 	CDomain<T>* getDomain();
-	virtual void getDesityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* dst) {}
-	virtual void setDesityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* src) {}
+	virtual void getDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* dst) {}
+	virtual void getDensityDistributions(T* dst) {}
+	virtual void setDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* src) {}
+	virtual void setDensityDistributions(T* src) {}
 	virtual void getFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* dst) {}
+	virtual void getFlags(Flag* dst) {}
 	virtual void setFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* src) {}
+	virtual void setFlags(Flag* src) {}
 	virtual void getVelocities(CVector<3, int> &origin, CVector<3, int> &size, T* dst) {}
+	virtual void getVelocities(T* dst) {}
 	virtual void setVelocities(CVector<3, int> &origin, CVector<3, int> &size, T* src) {}
+	virtual void setVelocities(T* src) {}
 	virtual void getDensities(CVector<3, int> &origin, CVector<3, int> &size, T* dst) {}
+	virtual void getDensities(T* dst) {}
 	virtual void setDensities(CVector<3, int> &origin, CVector<3, int> &size, T* src) {}
+	virtual void setDensities(T* src) {}
 };
 
 #endif

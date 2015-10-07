@@ -26,7 +26,8 @@
 #include "libvis/ILbmVisualization.hpp"
 #include "CComm.hpp"
 #include "CDomain.hpp"
-#include "CLbmSolver.hpp"
+#include "CLbmSolverCPU.hpp"
+#include "CLbmSolverGPU.cuh"
 
 #define MPI_TAG_ALPHA_SYNC  0
 #define MPI_TAG_BETA_SYNC   1
@@ -42,8 +43,8 @@ private:
     int _UID; ///< Unique ID of each controller
     CDomain<T> _domain; ///< Domain data
     ILbmVisualization<T>* cLbmVisualization; ///< Visualization class
-    CLbmSolver<T> *cLbmPtr;
-    int _BC[3][2]; ///< Boundary conditions. First index specifies the dimension and second the upper or the lower boundary.
+    CLbmSolverGPU<T> *cLbmPtr;
+    std::array<Flag, 6> boundaryConditions; ///< Boundary conditions. First index specifies the dimension and second the upper or the lower boundary.
     std::vector<CComm<T>*> _comm_container; ///< A std::Vector containing all the communcation objects for the subdomain
     T vector_checksum;
     CCL::CPlatforms* cPlatforms;
@@ -53,11 +54,13 @@ private:
     CCL::CDevice* cDevice;
     CCL::CCommandQueue* cCommandQueue;
 
+    int simulationStepCounter;
+
     void outputDD(int dd_i);
     int initLBMSolver();
 
 public:
-    CController(int UID, CDomain<T> domain, int BC[3][2]);
+    CController(int UID, CDomain<T> domain, std::array<Flag, 6> boundaryConditions);
     ~CController();
 
     void syncAlpha();
@@ -65,10 +68,15 @@ public:
     void computeNextStep();
     int run();
     void addCommunication(CComm<T>* comm);
-    void addCommToSolver();
+    /*
+     * TODO
+     * This piece of code should be obsolete since the ghost layer sizes are now
+     * set implicitly by CLbmSolver depending on the domain size.
+     */
+    // void addCommToSolver();
     void setGeometry();
     CLbmSolver<T>* getSolver() const;
-    void setSolver(CLbmSolver<T>* lbmPtr);
+    void setSolver(CLbmSolverGPU<T>* lbmPtr);
     CDomain<T> getDomain() const;
     int getUid() const;
 };

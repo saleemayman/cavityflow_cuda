@@ -34,13 +34,20 @@ class CLbmSolverCPU : public CLbmSolver<T>
 private:
 	CLbmSolverGPU<T>* solverGPU;
 
-	std::vector<T*> densityDistributions;
-	std::vector<Flag*> flags;
-	std::vector<T*> velocities;
-	std::vector<T*> densities;
+	std::array<T*, 6> densityDistributions;
+	std::array<Flag*, 6> flags;
+	std::array<T*, 6> velocities;
+	std::array<T*, 6> densities;
 	
+	/*
+	 * Maybe these members are not required if data copy operations during sync
+	 * operations and "inner cells operations"/"boundary cells operations" can
+	 * be achieved "in place", e.g. via memcpy().
+	 */
+	/*
 	T** getDensityDistributionsIntraHalo, setDensityDistributionsIntraHalo;
 	T** getDensityDistributionsInterHalo, setDensityDistributionsInterHalo;
+	*/
 	std::vector<CComm<T>*> commContainer;
 
 public:
@@ -65,14 +72,22 @@ public:
 	void simulationStepBeta();
 	void simulationStepBetaRect(CVector<3,int> origin, CVector<3,int> size);
 	void reset();
-	void getDesityDistributions(CVector<3,int> &origin, CVector<3,int> &size, T* dst);
-	void setDesityDistributions(CVector<3,int> &origin, CVector<3,int> &size, T* src);
+	void getDensityDistributions(CVector<3,int> &origin, CVector<3,int> &size, T* dst);
+	void getDensityDistributions(T* dst);
+	void setDensityDistributions(CVector<3,int> &origin, CVector<3,int> &size, T* src);
+	void setDensityDistributions(T* src);
 	void getFlags(CVector<3,int> &origin, CVector<3,int> &size, Flag* src);
+	void getFlags(Flag* src);
 	void setFlags(CVector<3,int> &origin, CVector<3,int> &size, Flag* dst);
+	void setFlags(Flag* dst);
 	void getVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* src);
+	void getVelocities(T* src);
 	void setVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* dst);
+	void setVelocities(T* dst);
 	void getDensities(CVector<3,int> &origin, CVector<3,int> &size, T* src);
+	void getDensities(T* src);
 	void setDensities(CVector<3,int> &origin, CVector<3,int> &size, T* dst);
+	void setDensities(T* dst);
 };
 
 #endif

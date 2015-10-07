@@ -231,14 +231,20 @@ int main(int argc, char** argv)
     return -1;
 
     parameter_error_ok:
-    std::list<int> lbm_opencl_number_of_registers_list;
-    std::list<int> lbm_opencl_number_of_threads_list;
+    // std::list<int> lbm_opencl_number_of_registers_list;
+    std::array<dim3, 3> lbm_opencl_number_of_threads_list;
 
+    /*
+     * TODO
+     * Implement new way to manage grid configurations
+     */
+    /*
     if (!number_of_threads_string.empty())
         extract_comma_separated_integers(lbm_opencl_number_of_threads_list, number_of_threads_string);
 
     if (!number_of_registers_string.empty())
         extract_comma_separated_integers(lbm_opencl_number_of_registers_list, number_of_registers_string);
+    */
 
     if(use_config_file)
     {
@@ -255,7 +261,7 @@ int main(int argc, char** argv)
         CSingleton<CConfiguration<TYPE> >::getInstance()->do_visualization = do_visualisation;
         CSingleton<CConfiguration<TYPE> >::getInstance()->timestep = timestep;
         CSingleton<CConfiguration<TYPE> >::getInstance()->loops = loops;
-        CSingleton<CConfiguration<TYPE> >::getInstance()->lbm_opencl_number_of_registers_list = lbm_opencl_number_of_registers_list;
+        // CSingleton<CConfiguration<TYPE> >::getInstance()->lbm_opencl_number_of_registers_list = lbm_opencl_number_of_registers_list;
         CSingleton<CConfiguration<TYPE> >::getInstance()->lbm_opencl_number_of_threads_list = lbm_opencl_number_of_threads_list;
         CSingleton<CConfiguration<TYPE> >::getInstance()->do_validate = do_validate;
         CSingleton<CConfiguration<TYPE> >::getInstance()->drivenCavityVelocity = drivenCavityVelocity;

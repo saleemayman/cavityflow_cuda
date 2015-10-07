@@ -55,18 +55,18 @@ public:
     CVector<4, T>& operator-=(const T a);
     CVector<4, T>& operator*=(const T a);
     CVector<4, T>& operator/=(const T a);
-    CVector<4, T> operator+(const CVector<4, T> &v);
-    CVector<4, T> operator-(const CVector<4, T> &v);
-    CVector<4, T> operator*(const CVector<4, T> &v);
-    CVector<4, T> operator/(const CVector<4, T> &v);
-    CVector<4, T>& operator+=(const CVector<4, T> &v);
-    CVector<4, T>& operator-=(const CVector<4, T> &v);
-    bool operator==(const CVector<4, T> &v);
-    bool operator!=(const CVector<4, T> &v);
+    CVector<4, T> operator+(const CVector<4, T>& v);
+    CVector<4, T> operator-(const CVector<4, T>& v);
+    CVector<4, T> operator*(const CVector<4, T>& v);
+    CVector<4, T> operator/(const CVector<4, T>& v);
+    CVector<4, T>& operator+=(const CVector<4, T>& v);
+    CVector<4, T>& operator-=(const CVector<4, T>& v);
+    bool operator==(const CVector<4, T>& v);
+    bool operator!=(const CVector<4, T>& v);
     T& operator[](const int i);
 };
 
 template <class T>
-std::ostream& operator<<(std::ostream &co, CVector<4, T> &v);
+std::ostream& operator<<(std::ostream& co, const CVector<4, T>& v);
 
 #endif

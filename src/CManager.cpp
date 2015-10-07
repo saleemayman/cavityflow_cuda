@@ -86,9 +86,9 @@ template <class T>
 void CManager<T>::initSimulation(int my_rank)
 {
     // initialize the boundary condition
-    int BC[3][2] = {/* x BC */{ FLAG_GHOST_LAYER, FLAG_GHOST_LAYER },
-                    /* y BC */{ FLAG_GHOST_LAYER, FLAG_GHOST_LAYER },
-                    /* z BC */{ FLAG_GHOST_LAYER, FLAG_GHOST_LAYER } };
+	std::array<Flag, 6> boundaryConditions = {/* x BC */ GHOST_LAYER, GHOST_LAYER,
+                                              /* y BC */ GHOST_LAYER, GHOST_LAYER,
+                                              /* z BC */ GHOST_LAYER, GHOST_LAYER};
     int id = my_rank;
     if (id < 0)
         id = 0;
@@ -112,24 +112,22 @@ void CManager<T>::initSimulation(int my_rank)
 
     // Setting the boundary conditions for the current Controller
     if (nx == 0)
-        BC[0][0] = FLAG_OBSTACLE;
+    	boundaryConditions[0] = OBSTACLE;
     if (nx == (_subdomain_nums[0] - 1))
-        BC[0][1] = FLAG_OBSTACLE;
-
+    	boundaryConditions[1] = OBSTACLE;
     if (ny == 0)
-        BC[1][0] = FLAG_OBSTACLE;
+    	boundaryConditions[2] = OBSTACLE;
     if (ny == (_subdomain_nums[1] - 1))
-        BC[1][1] = FLAG_OBSTACLE;
-
+    	boundaryConditions[3] = OBSTACLE;
     if (nz == 0)
-        BC[2][0] = FLAG_OBSTACLE;
+    	boundaryConditions[4] = OBSTACLE;
     if (nz == (_subdomain_nums[2] - 1))
-        BC[2][1] = FLAG_OBSTACLE;
+    	boundaryConditions[5] = OBSTACLE;
 
-    _lbm_controller = new CController<T>(id, *subdomain, BC);
+    _lbm_controller = new CController<T>(id, *subdomain, boundaryConditions);
 
     // Initializing the Controller's communication classes based on the already computed boundary conditions
-    if (BC[0][0] == FLAG_GHOST_LAYER) {
+    if (boundaryConditions[0] == GHOST_LAYER) {
         int comm_destination = id - 1;
         CVector<3, int> send_size(1, _subdomain_size[1], _subdomain_size[2]);
         CVector<3, int> recv_size(1, _subdomain_size[1], _subdomain_size[2]);
@@ -140,7 +138,7 @@ void CManager<T>::initSimulation(int my_rank)
                 new CComm<T>(comm_destination, send_size, recv_size,
                         send_origin, recv_origin, comm_direction));
     }
-    if (BC[0][1] == FLAG_GHOST_LAYER) {
+    if (boundaryConditions[1] == GHOST_LAYER) {
         int comm_destination = id + 1;
         CVector<3, int> send_size(1, _subdomain_size[1], _subdomain_size[2]);
         CVector<3, int> recv_size(1, _subdomain_size[1], _subdomain_size[2]);
@@ -151,7 +149,7 @@ void CManager<T>::initSimulation(int my_rank)
                 new CComm<T>(comm_destination, send_size, recv_size,
                         send_origin, recv_origin, comm_direction));
     }
-    if (BC[1][0] == FLAG_GHOST_LAYER) {
+    if (boundaryConditions[2] == GHOST_LAYER) {
         int comm_destination = id - _subdomain_nums[0];
         CVector<3, int> send_size(_subdomain_size[0], 1, _subdomain_size[2]);
         CVector<3, int> recv_size(_subdomain_size[0], 1, _subdomain_size[2]);
@@ -162,7 +160,7 @@ void CManager<T>::initSimulation(int my_rank)
                 new CComm<T>(comm_destination, send_size, recv_size,
                         send_origin, recv_origin, comm_direction));
     }
-    if (BC[1][1] == FLAG_GHOST_LAYER) {
+    if (boundaryConditions[3] == GHOST_LAYER) {
         int comm_destination = id + _subdomain_nums[0];
         CVector<3, int> send_size(_subdomain_size[0], 1, _subdomain_size[2]);
         CVector<3, int> recv_size(_subdomain_size[0], 1,  _subdomain_size[2]);
@@ -173,7 +171,7 @@ void CManager<T>::initSimulation(int my_rank)
                 new CComm<T>(comm_destination, send_size, recv_size,
                         send_origin, recv_origin, comm_direction));
     }
-    if (BC[2][0] == FLAG_GHOST_LAYER) {
+    if (boundaryConditions[4] == GHOST_LAYER) {
         int comm_destination = id - _subdomain_nums[0] * _subdomain_nums[1];
         CVector<3, int> send_size(_subdomain_size[0], _subdomain_size[1], 1);
         CVector<3, int> recv_size(_subdomain_size[0], _subdomain_size[1], 1);
@@ -184,7 +182,7 @@ void CManager<T>::initSimulation(int my_rank)
                 new CComm<T>(comm_destination, send_size, recv_size,
                         send_origin, recv_origin, comm_direction));
     }
-    if (BC[2][1] == FLAG_GHOST_LAYER) {
+    if (boundaryConditions[5] == GHOST_LAYER) {
         int comm_destination = id + _subdomain_nums[0] * _subdomain_nums[1];
         CVector<3, int> send_size(_subdomain_size[0], _subdomain_size[1], 1);
         CVector<3, int> recv_size(_subdomain_size[0], _subdomain_size[1], 1);
@@ -199,8 +197,12 @@ void CManager<T>::initSimulation(int my_rank)
         _lbm_controller->setGeometry();
     }
 
-    // add the communication containers to the Solver
-    _lbm_controller->addCommToSolver();
+    /*
+     * TODO
+     * This piece of code should be obsolete since the ghost layer sizes are now
+     * set implicitly by CLbmSolver depending on the domain size.
+     */
+    //_lbm_controller->addCommToSolver();
 
 }
 

@@ -30,6 +30,7 @@ template<typename T>
 class CLbmSolverGPU : public CLbmSolver<T>
 {
 private:
+	using CLbmSolver<T>::id;
 	using CLbmSolver<T>::domain;
 	using CLbmSolver<T>::storeDensities;
 	using CLbmSolver<T>::storeVelocities;
@@ -63,6 +64,7 @@ public:
 	CLbmSolverGPU();
 	CLbmSolverGPU(
 			int id,
+			std::array<dim3,3> threadsPerBlock,
 			CDomain<T>& domain,
 			std::array<Flag,6> boundaryConditions,
 			T timestepSize,
@@ -81,16 +83,24 @@ public:
 	void simulationStepBeta();
 	void simulationStepBetaRect(CVector<3, int> origin, CVector<3, int> size);
 	void reset();
-	void getDesityDistributions(Direction direction, CVector<3, int>& norm, T* hDensityDistributions);
-	void getDesityDistributions(CVector<3, int>& origin, CVector<3, int>& size, T* hDensityDistributions);
-	void setDesityDistributions(Direction direction, CVector<3, int>& norm, T* hDensityDistributions);
-	void setDesityDistributions(CVector<3, int>& origin, CVector<3, int>& size, T* hDensityDistributions);
+	void getDensityDistributions(Direction direction, T* hDensityDistributions);
+	void getDensityDistributions(CVector<3, int>& origin, CVector<3, int>& size, T* hDensityDistributions);
+	void getDensityDistributions(T* hDensityDistributions);
+	void setDensityDistributions(Direction direction, T* hDensityDistributions);
+	void setDensityDistributions(CVector<3, int>& origin, CVector<3, int>& size, T* hDensityDistributions);
+	void setDensityDistributions(T* hDensityDistributions);
 	void getFlags(CVector<3, int>& origin, CVector<3, int>& size, Flag* hFlags);
+	void getFlags(Flag* hFlags);
 	void setFlags(CVector<3, int>& origin, CVector<3, int>& size, Flag* hFlags);
+	void setFlags(Flag* hFlags);
 	void getVelocities(CVector<3, int>& origin, CVector<3, int>& size, T* hVelocities);
+	void getVelocities(T* hVelocities);
 	void setVelocities(CVector<3, int>& origin, CVector<3, int>& size, T* hVelocities);
+	void setVelocities(T* hVelocities);
 	void getDensities(CVector<3, int>& origin, CVector<3, int>& size, T* hDensities);
+	void getDensities(T* hDensities);
 	void setDensities(CVector<3, int>& origin, CVector<3, int>& size, T* hDensities);
+	void setDensities(T* hDensities);
 };
 
 #endif

@@ -49,13 +49,13 @@ CXXFILES		:=	src/libmath/CMath.cpp \
 					src/libvis/VTK_Common.cpp \
 					src/CConfiguration.cpp \
 					src/CComm.cpp \
+					src/CController.cpp \
 					src/CDomain.cpp \
+					src/CManager.cpp \
 					src/CLbmSolver.cpp \
 					src/CLbmSolverCPU.cpp \
 					src/CSingleton.cpp \
 					src/main.cpp
-#					src/CController.cpp \
-#					src/CManager.cpp \
 
 # cuda source files (compiled with $(NVCC))
 CUDAFILES		:=	src/gpukernels/copy_buffer_rect.cu \
@@ -69,9 +69,9 @@ CUDAFILES		:=	src/gpukernels/copy_buffer_rect.cu \
 ################################################################################
 
 CCFLAGS			+=	-std=c11 \
-					-Wall
+#					-Wall
 CXXFLAGS		+=	-std=c++11 \
-					-Wall
+#					-Wall
 
 # arch: specifies the compatibility from source code to PTX stage. Can be a
 #       virtual (compute_*) or real (sm_*) compatibility.

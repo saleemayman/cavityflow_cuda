@@ -1,7 +1,7 @@
 #ifndef ILBMVISUALIZATION_HPP
 #define ILBMVISUALIZATION_HPP
 
-#include "../CLbmSolver.hpp"
+#include "../CLbmSolverGPU.cuh"
 #include "../libmath/CVector.hpp"
 
 /**
@@ -13,8 +13,8 @@ class ILbmVisualization
 protected:
 	T *velocity;
 	T *density;
-	int *flags;
-	CLbmSolver<T> *cLbmOpencl;
+	Flag *flags;
+	CLbmSolverGPU<T> *cLbmOpencl;
 
 public:
 	ILbmVisualization()
@@ -35,10 +35,10 @@ public:
 			delete[] flags;
     };
 
-	virtual void setup(CLbmSolver<T> *p_cLbmOpencl) {
+	virtual void setup(CLbmSolverGPU<T> *p_cLbmOpencl) {
 		cLbmOpencl = p_cLbmOpencl;
 
-		CVector<3,int> domain_cells = cLbmOpencl->domain_cells;
+		CVector<3,int> domain_cells = cLbmOpencl->getDomain()->getNumOfCells();
 
 		delete [] velocity;
 		// printf(" ->ILbmVisualization::setup()");
@@ -48,7 +48,7 @@ public:
 		density = new T[domain_cells.elements()];
 
 		delete [] flags;
-		flags = new int[domain_cells.elements()];
+		flags = new Flag[domain_cells.elements()];
 
 	}
 

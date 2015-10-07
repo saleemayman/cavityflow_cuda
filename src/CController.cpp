@@ -27,17 +27,17 @@
 #include "libtools/CStopwatch.hpp"
 #include "libvis/CLbmVisualizationVTK.hpp"
 #include "CConfiguration.hpp"
-#include "CLbmSolverCPU.hpp"
-#include "CLbmSolverGPU.cuh"
 #include "CSingleton.hpp"
 
 template <class T>
-CController<T>::CController(int UID, CDomain<T> domain, int BC[3][2]) :
-        _UID(UID), _domain(domain), cLbmVisualization(NULL)
+CController<T>::CController(int UID, CDomain<T> domain, std::array<Flag, 6> boundaryConditions) :
+        _UID(UID), _domain(domain), boundaryConditions(boundaryConditions), cLbmVisualization(NULL)
 {
+	/*
     for (int i = 0; i < 3; i++)
         for (int j = 0; j < 2; j++)
             _BC[i][j] = BC[i][j];
+    */
 
     // initialize the LBMSolver
     if (-1 == initLBMSolver())
@@ -80,8 +80,11 @@ void  CController<T>::outputDD(int dd_i)
     //                      gcd = wrap_max_line;
     int wrap_max_line = 16;
     int gcd = wrap_max_line;
+    // TODO reactivate
+    /*
     cLbmPtr->debugDD(dd_i, gcd,
             cLbmPtr->domain_cells[0] * cLbmPtr->domain_cells[1]);
+    */
 }
 
 template <class T>
@@ -147,28 +150,26 @@ int CController<T>::initLBMSolver()
     cCommandQueue = new CCL::CCommandQueue();
 
     // INIT LATTICE BOLTZMANN!
-    cLbmPtr = new CLbmSolver<T>(_UID, *cCommandQueue, *cContext, *cDevice,
-            _BC, _domain,
-            CSingleton<CConfiguration<T> >::getInstance()->gravitation, // gravitation vector
-            CSingleton<CConfiguration<T> >::getInstance()->viscosity,
-            CSingleton<CConfiguration<T> >::getInstance()->computation_kernel_count,
-            CSingleton<CConfiguration<T> >::getInstance()->threads_per_dimension,
-            //CSingleton<CConfiguration<T> >::getInstance()->debug_mode,
-            CSingleton<CConfiguration<T> >::getInstance()->do_visualization
-                    || CSingleton<CConfiguration<T> >::getInstance()->debug_mode,
-            CSingleton<CConfiguration<T> >::getInstance()->do_visualization
-                    || CSingleton<CConfiguration<T> >::getInstance()->debug_mode,
-            CSingleton<CConfiguration<T> >::getInstance()->timestep,
-             CSingleton<CConfiguration<T> >::getInstance()->drivenCavityVelocity,
-            CSingleton<CConfiguration<T> >::getInstance()->lbm_opencl_number_of_threads_list, // p_lbm_opencl_number_of_work_items_list,
-            CSingleton<CConfiguration<T> >::getInstance()->lbm_opencl_number_of_threads_list);
+    simulationStepCounter = 0;
+    cLbmPtr = new CLbmSolverGPU<T>(
+    		_UID,
+    		CSingleton<CConfiguration<T> >::getInstance()->lbm_opencl_number_of_threads_list,
+    		_domain,
+    		boundaryConditions,
+    		CSingleton<CConfiguration<T> >::getInstance()->timestep,
+    		CSingleton<CConfiguration<T> >::getInstance()->gravitation,
+    		CSingleton<CConfiguration<T> >::getInstance()->drivenCavityVelocity,
+    		CSingleton<CConfiguration<T> >::getInstance()->viscosity);
 
+    // TODO reactivate
+    /*
     if (cLbmPtr->error()) {
         std::cout << cLbmPtr->error.getString();
         return -1;
     }
 
     cLbmPtr->wait();
+    */
     CStopwatch cStopwatch;
 
 
@@ -196,8 +197,8 @@ void CController<T>::syncAlpha()
 #endif
 
         // send buffer
-        int send_buffer_size = send_size.elements() * cLbmPtr->SIZE_DD_HOST;
-        int recv_buffer_size = recv_size.elements() * cLbmPtr->SIZE_DD_HOST;
+        int send_buffer_size = send_size.elements() * NUM_LATTICE_VECTORS;
+        int recv_buffer_size = recv_size.elements() * NUM_LATTICE_VECTORS;
         T* send_buffer = new T[send_buffer_size];
         T* recv_buffer = new T[recv_buffer_size];
 
@@ -207,8 +208,7 @@ void CController<T>::syncAlpha()
         MPI_Status status[2];
 
         // Download data from device to host
-        cLbmPtr->storeDensityDistribution(send_buffer, send_origin,
-                send_size, i);
+        cLbmPtr->getDensityDistributions(Direction(i), send_buffer);
         //cLbmPtr->wait();
         int my_rank, num_procs;
         MPI_Comm_rank(MPI_COMM_WORLD, &my_rank); /// Get current process id
@@ -229,8 +229,7 @@ void CController<T>::syncAlpha()
         }
         MPI_Waitall(2, req, status);
 
-        cLbmPtr->setDensityDistribution(recv_buffer, recv_origin,
-                recv_size, i);
+        cLbmPtr->setDensityDistributions(Direction(i), recv_buffer);
         //cLbmPtr->wait();
 
         delete[] send_buffer;
@@ -262,8 +261,8 @@ void CController<T>::syncBeta()
         // std::cout << "BETA RANK: " << dst_rank << std::endl;
 #endif
         // send buffer
-        int send_buffer_size = send_size.elements() * cLbmPtr->SIZE_DD_HOST;
-        int recv_buffer_size = recv_size.elements() * cLbmPtr->SIZE_DD_HOST;
+        int send_buffer_size = send_size.elements() * NUM_LATTICE_VECTORS;
+        int recv_buffer_size = recv_size.elements() * NUM_LATTICE_VECTORS;
         T* send_buffer = new T[send_buffer_size];
         T* recv_buffer = new T[recv_buffer_size];
 
@@ -273,8 +272,7 @@ void CController<T>::syncBeta()
         MPI_Status status[2];
 
         // Download data from device to host
-        cLbmPtr->storeDensityDistribution(send_buffer, send_origin,
-                send_size, i);
+        cLbmPtr->getDensityDistributions(Direction(i), send_buffer);
         //cLbmPtr->wait();
         int my_rank, num_procs;
         MPI_Comm_rank(MPI_COMM_WORLD, &my_rank); /// Get current process id
@@ -296,8 +294,7 @@ void CController<T>::syncBeta()
         MPI_Waitall(2, req, status);
 
         // TODO: OPTIMIZATION: you need to wait only for receiving to execute following command
-        cLbmPtr->setDensityDistribution(recv_buffer, recv_origin, recv_size,
-                normal, i);
+        cLbmPtr->setDensityDistributions(Direction(i), recv_buffer);
         //cLbmPtr->wait();
 
         delete[] send_buffer;
@@ -308,11 +305,14 @@ void CController<T>::syncBeta()
 template <class T>
 void CController<T>::computeNextStep()
 {
-    cLbmPtr->simulationStep();
-    if (cLbmPtr->simulation_step_counter & 1)
+    if (simulationStepCounter & 1) {
+    	cLbmPtr->simulationStepAlpha();
         syncBeta();
-    else
+    } else {
+    	cLbmPtr->simulationStepAlpha();
         syncAlpha();
+    }
+    simulationStepCounter++;
 }
 
 /*
@@ -362,7 +362,11 @@ int CController<T>::run()
             )
             cLbmVisualization->render(i);
     }
-    cLbmPtr->wait();
+    /*
+     * TODO
+     * Check if this comment out affects the correctness of the code
+     */
+    // cLbmPtr->wait();
     cStopwatch.stop();
 #if DEBUG
     if (domain_size.elements() <= 512) {
@@ -409,7 +413,7 @@ int CController<T>::run()
     double fps = (((double) loops) / cStopwatch.time);
     std::cout << "FPS: " << fps << std::endl;
     double mlups =
-            ((double) fps * (double) cLbmPtr->domain_cells.elements())
+            ((double) fps * (double) _domain.getNumOfCells())
                     * (double) 0.000001;
     std::cout << "MLUPS: " << mlups << std::endl;
     std::cout << "Bandwidth: "
@@ -420,7 +424,11 @@ int CController<T>::run()
     std::cout.setf(std::ios::fixed, std::ios::floatfield);
 #if 1
     // The velocity checksum is only stored in debug mode!
-    vector_checksum = cLbmPtr->getVelocityChecksum();
+    /*
+     * TODO
+     * Alternative to getVelocityChecksum() with equivalent behavior has to be coded in CLbmSolver
+     */
+    // vector_checksum = cLbmPtr->getVelocityChecksum();
     std::cout << "Checksum: " << (vector_checksum*1000.0f) << std::endl;
 #endif // end of DEBUG
     std::cout.precision(ss);
@@ -436,11 +444,18 @@ void CController<T>::addCommunication(CComm<T>* comm)
     _comm_container.push_back(comm);
 }
 
+/*
+ * TODO
+ * This piece of code should be obsolete since the ghost layer sizes are now
+ * set implicitly by CLbmSolver depending on the domain size.
+ */
+/*
 template <class T>
 void CController<T>::addCommToSolver()
 {
     cLbmPtr->setGhostLayerBuffers(_comm_container);
 }
+*/
 
 /*
  * This Function is used the set the geometry (e.g obstacles, velocity injections, ...) of corresponding domain
@@ -458,14 +473,14 @@ void CController<T>::setGeometry()
     std::cout << "\nCController.setGeometry() GEOMETRY: " << size << std::endl;
     std::cout << "\nCController.setGeometry() origin: " << origin << std::endl;
 #endif
-    int * src = new int[size.elements()];
+    Flag* src = new Flag[size.elements()];
 
     for (int i = 0; i < size.elements(); i++)
     {
-        src[i] = FLAG_VELOCITY_INJECTION;
+        src[i] = VELOCITY_INJECTION;
     }
     printf("\n");
-    cLbmPtr->setFlags(src, origin, size);
+    cLbmPtr->setFlags(origin, size, src);
 
     delete[] src;
 }
@@ -476,7 +491,7 @@ CLbmSolver<T>* CController<T>::getSolver() const {
 }
 
 template <class T>
-void CController<T>::setSolver(CLbmSolver<T>* lbmPtr)
+void CController<T>::setSolver(CLbmSolverGPU<T>* lbmPtr)
 {
     cLbmPtr = lbmPtr;
 }
