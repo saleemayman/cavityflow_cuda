@@ -1,60 +1,55 @@
-#ifndef __CDOMAIN_HPP__
-#define __CDOMAIN_HPP__
-
-#include <stdlib.h>
-#include <iostream>
-#include "libmath/CVector.hpp"
-#include "common_cpu_gpu.h"
-
-// simulation type
-// typedef float T;
-//typedef double T;
-
 /*
- * Class CDomain contains data related to a subdomain of simulation grid
+ * Copyright
+ * 2010 Martin Schreiber
+ * 2013 Arash Bakhtiari
+ * 2016 Christoph Riesinger, Ayman Saleem
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
+#ifndef CDOMAIN_HPP
+#define CDOMAIN_HPP
+
+#include "libmath/CVector.hpp"
+
+/*
+ * Class CDomain contains meta data related to a subdomain of simulation grid.
+ * It does not contain the domain data itself like physical values (densities,
+ * velocities, etc.) or values which are specific for a certain cell of the
+ * domain.
+ */
 template<typename T>
-class CDomain {
-    int _UID; ///< Unique id of the sub/domain
-    CVector<3, int> _size; ///< Size of the domain
-    CVector<3, int> _origin_cell; ///< Origin of the domain points if it is part of a bigger domain
-    CVector<3, T> _length; ///< Length of the domain in each direction
+class CDomain
+{
+private:
+    int id;                 // Unique id of the sub/domain
+    CVector<3, int> size;   // Size of the domain in each direction
+    CVector<3, int> origin; // Origin of the domain points if it is part of a bigger domain
+    CVector<3, T> length;   // Length of the domain in each direction
 
 public:
-    CDomain(int UID, CVector<3, int> size, CVector<3, int> origin_cell,
-            CVector<3, T> length) :
-            _UID(UID), _size(size), _origin_cell(origin_cell), _length(length) {
+    CDomain(int id, CVector<3, int> size);
+    CDomain(int id, CVector<3, int> size, CVector<3, int> originCell, CVector<3, T> length);
+    ~CDomain();
 
-    }
-    CDomain(int UID, CVector<3, int> size) :
-            _UID(UID), _size(size) {
-        _origin_cell = CVector<3, int>(0, 0, 0);
-        _length = CVector<3, T>(0.05, 0.05, 0.05);
-    }
-
-    ~CDomain() {
-
-    }
-
-public:
-    CVector<3, int> getOrigin() const {
-        return _origin_cell;
-    }
-
-    CVector<3, int> getSize() const {
-        return _size;
-    }
-
-    int getUid() const {
-        return _UID;
-    }
-
-    CVector<3, T> getLength() const {
-        return _length;
-    }
-
+    int getId() const;
+    CVector<3, T> getLength() const;
+    int getNumOfCells() const;
+    int getNumOfXFaceCells() const;
+    int getNumOfYFaceCells() const;
+    int getNumOfZFaceCells() const;
+    CVector<3, int> getOrigin() const;
+    CVector<3, int> getSize() const;
 };
 
 #endif

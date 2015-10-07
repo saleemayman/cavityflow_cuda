@@ -15,8 +15,8 @@
  */
 
 
-#ifndef FILE_H
-#define FILE_H
+#ifndef CFILE_HPP
+#define CFILE_HPP
 
 #include <stdlib.h>
 #include <stdio.h>

@@ -35,7 +35,6 @@
 
 // load defaults kernel execution paramters
 #define DEFAULTS (1)
-#include "../cu_programs/lbm_defaults.h"
 
 #ifdef C_GL_TEXTURE_HPP
     #if GL3_PROTOTYPES
@@ -497,10 +496,10 @@ private:
         // for debugging
         inline void printVelMemObj(size_t elems)
         {
-            T *vel_memobj_h = new T[elems];
+            TYPE *vel_memobj_h = new TYPE[elems];
 
             // copy data to host buffer
-            CudaCallCheckError( cuMemcpyDtoH(vel_memobj_h, memobj, elems * sizeof(T)) );
+            CudaCallCheckError( cuMemcpyDtoH(vel_memobj_h, memobj, elems * sizeof(TYPE)) );
 
             printf("Velocity memObj size: %lu \n", elems);
             for (int i = 0; i < elems; i+=10)
@@ -515,10 +514,10 @@ private:
         // for debugging
         inline void printDensityMemObj(size_t elems)
         {
-            T *rho_memobj_h = new T[elems];
+            TYPE *rho_memobj_h = new TYPE[elems];
 
             // copy device densities to host
-            CudaCallCheckError( cuMemcpyDtoH(rho_memobj_h, memobj, elems * sizeof(T)) );
+            CudaCallCheckError( cuMemcpyDtoH(rho_memobj_h, memobj, elems * sizeof(TYPE)) );
 
             printf("Density memObj size: %lu \n", elems);
             for (int i = 0; i < elems; i+=10)
@@ -992,7 +991,7 @@ public:
 			if (use_shared_mem)
 			{
 				// Total amount of shared memory per block:       49152 bytes
-            	sharedMemBytes = sizeof(T) * (size_t)(12 * cKernel.blockSize.x * cKernel.blockSize.y * cKernel.blockSize.z);
+            	sharedMemBytes = sizeof(TYPE) * (size_t)(12 * cKernel.blockSize.x * cKernel.blockSize.y * cKernel.blockSize.z);
 			}
 			else
 			{
