@@ -149,7 +149,9 @@ class CController
                 _BC, _domain, 
                 ConfigSingleton::Instance()->gravitation, // gravitation vector
                 ConfigSingleton::Instance()->viscosity,
-                ConfigSingleton::Instance()->threads_per_dimension,
+                ConfigSingleton::Instance()->init_kernel_block_dim,
+                ConfigSingleton::Instance()->alpha_kernel_block_dim,
+                ConfigSingleton::Instance()->beta_kernel_block_dim,
                 //ConfigSingleton::Instance()->debug_mode,
                 ConfigSingleton::Instance()->do_visualization
                         || ConfigSingleton::Instance()->debug_mode,

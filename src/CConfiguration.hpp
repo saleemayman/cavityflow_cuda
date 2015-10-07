@@ -22,27 +22,28 @@ template <typename T>
 class CConfiguration
 {
 public:
-    // grid data
-    CVector<3,int> domain_size;
-    CVector<3,int> subdomain_num;
-    CVector<3,T> domain_length;
-
-    // physics configuration data
-    CVector<3,T> gravitation;       ///< Specify the gravitation vector
+	// physics parameters
     T viscosity;
-
+    CVector<3, T> gravitation;
     CVector<4, T> drivenCavityVelocity;
-    // device configuration data
-    int device_nr;
+
+    // grid data
+    CVector<3, int> domain_size;
+    CVector<3, int> subdomain_num;
+    CVector<3, T> domain_length;
 
     // simulation configuration data
-    bool do_visualization;
-    T timestep;
     int loops;
+    T timestep;
+    bool do_visualization;
     bool do_validate;
 
-	// CUDA block configuration
-    CVector<3, int> threads_per_dimension;
+    // device configuration data
+    CVector<3, int> init_kernel_block_dim;
+    CVector<3, int> alpha_kernel_block_dim;
+    CVector<3, int> beta_kernel_block_dim;
+    int device_nr;
+	
     bool debug_mode;
 
     CConfiguration()
@@ -55,6 +56,7 @@ public:
         if (loading_file_res != txml::XML_SUCCESS)
             throw "Loading XML file failed";
         interpret_xml_doc();
+		check_parameters();
     }
 
     ~CConfiguration() {
@@ -70,6 +72,7 @@ public:
         if (loading_file_res != txml::XML_SUCCESS)
             throw "Loading XML file failed";
         interpret_xml_doc();
+		check_parameters();
     }
 
     void printMe() {
@@ -77,20 +80,22 @@ public:
         std::cout << "# CONFIGURATION " << std::endl;
         std::cout << "################" << std::endl;
         std::cout <<  "PHYSICS: " << std::endl;
-        std::cout <<  "     VISCOSITY: " <<  viscosity << std::endl;
-        std::cout <<  "   GRAVITATION: " <<  gravitation<< std::endl;
+        std::cout <<  "      VISCOSITY: " <<  viscosity << std::endl;
+        std::cout <<  "    GRAVITATION: " <<  gravitation<< std::endl;
         std::cout <<  "     CAVITY VEL: " <<  drivenCavityVelocity << std::endl;
         std::cout <<  "GRID: " << std::endl;
-        std::cout <<  "   DOMAIN_SIZE: " <<  domain_size << std::endl;
-        std::cout <<  " SUBDOMIAN_NUM: " <<  subdomain_num<< std::endl;
+        std::cout <<  "    DOMAIN_SIZE: " <<  domain_size << std::endl;
+        std::cout <<  "  SUBDOMIAN_NUM: " <<  subdomain_num<< std::endl;
         std::cout <<  "SIMULATION: " << std::endl;
-        std::cout <<  "         LOOPS: " <<  loops << std::endl;
-        std::cout <<  "      TIMESTEP: " <<  timestep << std::endl;
-        std::cout <<  "           VTK: " <<  do_visualization << std::endl;
-        std::cout <<  "      VALIDATE: " <<  do_validate << std::endl;
+        std::cout <<  "          LOOPS: " <<  loops << std::endl;
+        std::cout <<  "       TIMESTEP: " <<  timestep << std::endl;
+        std::cout <<  "            VTK: " <<  do_visualization << std::endl;
+        std::cout <<  "       VALIDATE: " <<  do_validate << std::endl;
         std::cout <<  "DEVICE: " << std::endl;
-        std::cout <<  "  THREADS_PER_DIM: " <<  threads_per_dimension << std::endl;
-        std::cout <<  "     DEVICE_NR: " <<  device_nr << std::endl;
+        std::cout <<  " INIT BLOCK DIM: " <<  init_kernel_block_dim << std::endl;
+        std::cout <<  "ALPHA BLOCK DIM: " <<  alpha_kernel_block_dim << std::endl;
+        std::cout <<  " BETA BLOCK DIM: " <<  beta_kernel_block_dim << std::endl;
+        std::cout <<  "      DEVICE_NR: " <<  device_nr << std::endl;
     }
 private:
     txml::XMLDocument doc;
@@ -140,11 +145,35 @@ private:
     }
     void interpret_device_data(const txml::XMLNode* root) {
         const txml::XMLNode* child_four = root->FirstChildElement(TAG_NAME_CHILD_FOUR);
-        threads_per_dimension[0] = atoi(child_four->FirstChildElement( "threads-per-dim" )->FirstChildElement( "x" )->GetText());
-        threads_per_dimension[1] = atoi(child_four->FirstChildElement( "threads-per-dim" )->FirstChildElement( "y" )->GetText());
-        threads_per_dimension[2] = atoi(child_four->FirstChildElement( "threads-per-dim" )->FirstChildElement( "z" )->GetText());
+        init_kernel_block_dim[0] = atoi(child_four->FirstChildElement( "init-kernel-block-dim" )->FirstChildElement( "x" )->GetText());
+        init_kernel_block_dim[1] = atoi(child_four->FirstChildElement( "init-kernel-block-dim" )->FirstChildElement( "y" )->GetText());
+        init_kernel_block_dim[2] = atoi(child_four->FirstChildElement( "init-kernel-block-dim" )->FirstChildElement( "z" )->GetText());
+        alpha_kernel_block_dim[0] = atoi(child_four->FirstChildElement( "alpha-kernel-block-dim" )->FirstChildElement( "x" )->GetText());
+        alpha_kernel_block_dim[1] = atoi(child_four->FirstChildElement( "alpha-kernel-block-dim" )->FirstChildElement( "y" )->GetText());
+        alpha_kernel_block_dim[2] = atoi(child_four->FirstChildElement( "alpha-kernel-block-dim" )->FirstChildElement( "z" )->GetText());
+        beta_kernel_block_dim[0] = atoi(child_four->FirstChildElement( "beta-kernel-block-dim" )->FirstChildElement( "x" )->GetText());
+        beta_kernel_block_dim[1] = atoi(child_four->FirstChildElement( "beta-kernel-block-dim" )->FirstChildElement( "y" )->GetText());
+        beta_kernel_block_dim[2] = atoi(child_four->FirstChildElement( "beta-kernel-block-dim" )->FirstChildElement( "z" )->GetText());
         device_nr = atoi(child_four->FirstChildElement( "device-number" )->GetText());
     }
+
+	void check_parameters()
+	{
+		// check parameter correctness
+		if (viscosity < 0)
+            throw "Loading XML file failed. Invalid value: viscosity must be positive.";
+
+		if (domain_size[0] <= 0 || domain_size[1] <= 0 || domain_size[2] <= 0)
+			throw "Loading XML file failed. Invalid value: domain size must be greater than zero.";
+		
+		if (subdomain_num[0] <= 0 || subdomain_num[1] <= 0 || subdomain_num[2] <= 0)
+			throw "Loading XML file failed. Invalid value: number of sub-domains must be greater than zero.";
+
+		if (domain_length[0] <= 0 || domain_length[1] <= 0 || domain_length[2] <= 0)
+			throw "Loading XML file failed. Invalid value: domain-length must be greater than positive.";
+
+		// TODO: parameter check for the kernels' block size to be done in the solver class.
+	}
 
     void interpret_xml_doc() {
         const txml::XMLNode* root = doc.FirstChildElement(TAG_NAME_ROOT);
@@ -152,7 +181,6 @@ private:
         interpret_grid_data(root);
         interpret_physiscs_data(root);
         interpret_simulation_data(root);
-
     }
 
 };

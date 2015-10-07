@@ -97,192 +97,33 @@ void extract_comma_separated_integers(std::list<int> &int_list, std::string &int
 int main(int argc, char** argv)
 {
     bool debug = false;
-
-    CVector<3,int> domain_size(32,32,32);
-    CVector<3,int> subdomain_nums(1,1,1);
-    CVector<3,T> domain_length(0.1,0.1,0.1);
-
-    CVector<3,T> gravitation(0,-9.81,0);
-    CVector<4, T> drivenCavityVelocity(100,0,0,1);
-    T viscosity = 0.001308;
-    T timestep = -1.0;
-    int loops = -1;
-
-    bool do_validate = false;
-    bool do_visualisation = false;
-    bool take_frame_screenshots = false;
     bool unit_test = false;
-    CVector<3,int> threads_per_dimension(16, 16, 1);
-
-//    std::string number_of_registers_string; ///< string storing the number of registers for opencl threads separated with comma
-//    std::string number_of_threads_string;       ///< string storing the number of threads for opencl separated with comma
     std::string test_suite;
-    bool use_config_file = false;
     std::string conf_file;
 
     int device_nr = 0;
-
     char optchar;
-    while ((optchar = getopt(argc, argv, "x:y:z:d:vr:F:gG:t:sl:X:Y:Z:S:u:c:n:m:p:")) > 0)
-//  while ((optchar = getopt(argc, argv, "x:y:z:d:vr:k:F:gG:t:sl:R:T:X:Y:Z:S:u:c:n:m:p:")) > 0)
+    while ((optchar = getopt(argc, argv, "u:c:")) > 0)
     {
         switch(optchar)
         {
-        case 'd':
-            device_nr = atoi(optarg);
-            break;
-
-        case 'v':
-            debug = true;
-            break;
-
-//        case 'R':
-//            number_of_registers_string = optarg;
-//            break;
-//
-//        case 'T':
-//            number_of_threads_string = optarg;
-//            break;
-
-        case 'x':
-            domain_size[0] = atoi(optarg);
-            break;
-
-        case 'X':
-            subdomain_nums[0] = atoi(optarg);
-            break;
-        case 'Y':
-            subdomain_nums[1] = atoi(optarg);
-            break;
-        case 'Z':
-            subdomain_nums[2] = atoi(optarg);
-            break;
-        case 'S':
-            domain_size[0] = atoi(optarg);
-            domain_size[1] = atoi(optarg);
-            domain_size[2] = atoi(optarg);
-            break;
-        case 'l':
-            loops = atoi(optarg);
-            break;
-
-        case 'y':
-            domain_size[1] = atoi(optarg);
-            break;
-
-//        case 'k':
-//            computation_kernel_count = atoi(optarg);
-//            break;
-        
-        case 'F':
-            threads_per_dimension[0] = atoi(optarg);
-            threads_per_dimension[1] = atoi(optarg);
-            threads_per_dimension[2] = atoi(optarg);
-            break;
-
-        case 'z':
-            domain_size[2] = atoi(optarg);
-            break;
-
-        case 'r':
-            viscosity = atof(optarg);
-            break;
-        case 'n':
-          domain_length[0] = atof(optarg);
-          break;
-        case 'm':
-          domain_length[1] = atof(optarg);
-          break;
-        case 'p':
-          domain_length[2] = atof(optarg);
-          break;
-        case 'g':
-            do_visualisation = true;
-            break;
-
-        case 'G':
-            gravitation[1] = atof(optarg);
-            break;
-
-        case 't':
-            timestep = atof(optarg);
-            break;
-
-        case 's':
-            take_frame_screenshots = true;
-            break;
-
         case 'u':
             unit_test = true;
             test_suite = optarg;
             break;
+
         case 'c':
-            use_config_file = true;
             conf_file = optarg;
             break;
         default:
-            goto parameter_error;
+            std::cout << "Not enough input arguments. Exiting!" << std::endl;
+			return -1;
         }
     }
 
-    goto parameter_error_ok;
-    parameter_error:
-    std::cout << "usage: " << argv[0] << std::endl;
-    std::cout << "      [-x resolution_x, default: 32]" << std::endl;
-    std::cout << "      [-y resolution_y, default: 32]" << std::endl;
-    std::cout << "      [-z resolution_z, default: 32]" << std::endl;
-    std::cout << "      [-X subdomain resolution_x, default: 1]" << std::endl;
-    std::cout << "      [-Y subdomain resolution_y, default: 1]" << std::endl;
-    std::cout << "      [-Z subdomain resolution_z, default: 1]" << std::endl;
-    std::cout << std::endl;
-    std::cout << "      [-G gravitation in down direction, default: -9.81]" << std::endl;
-    std::cout << std::endl;
-    std::cout << "      [-r viscosity, default: 0.001308]" << std::endl;
-    std::cout << "      [-v]    (debug mode on, be verbose)" << std::endl;
-    std::cout << "      [-d device_num] (-1: list available devices, or select device)" << std::endl;
-    std::cout << "      [-k number of kernels to run ]  (default: 0 - autodetect maximum)" << std::endl;
-    std::cout << "      [-g]    (activate gui, default:disabled)" << std::endl;
-    std::cout << "      [-p]    (pause simulation at start, default:disabled)" << std::endl;
-    std::cout << std::endl;
-    std::cout << "      [-R registers for OpenCL]   (comma separated list of number of registers per threads in OpenCL)" << std::endl;
-    std::cout << "      [-T work group threads]     (comma separated list of number of threads in OpenCL)" << std::endl;
-    std::cout << std::endl;
-    std::cout << "      [-t timestep]   (default: -1 for automatic detection)" << std::endl;
-    std::cout << "      [-s]    (take a screenshot every frame - default: disabled)" << std::endl;
-    std::cout << "      [-u] run unit tests" << std::endl;
-    std::cout << "      [-c] read the configuration file" << std::endl;
-    return -1;
+	// load the config file and read the configuration parameters
+	ConfigSingleton::Instance()->loadFile(conf_file);
 
-    parameter_error_ok:
-
-
-//    std::list<int> lbm_opencl_number_of_registers_list;
-//    std::list<int> lbm_opencl_number_of_threads_list;
-
-//    if (!number_of_threads_string.empty())
-//        extract_comma_separated_integers(lbm_opencl_number_of_threads_list, number_of_threads_string);
-//
-//    if (!number_of_registers_string.empty())
-//        extract_comma_separated_integers(lbm_opencl_number_of_registers_list, number_of_registers_string);
-
-    if( use_config_file) {
-        ConfigSingleton::Instance()->loadFile(conf_file);
-    } else {
-        ConfigSingleton::Instance()->domain_size = domain_size;
-        ConfigSingleton::Instance()->subdomain_num = subdomain_nums;
-        ConfigSingleton::Instance()->domain_length = domain_length;
-        ConfigSingleton::Instance()->gravitation = gravitation;
-        ConfigSingleton::Instance()->viscosity = viscosity;
-        ConfigSingleton::Instance()->threads_per_dimension = threads_per_dimension;
-        ConfigSingleton::Instance()->device_nr = device_nr;
-        ConfigSingleton::Instance()->do_visualization = do_visualisation;
-        ConfigSingleton::Instance()->timestep = timestep;
-        ConfigSingleton::Instance()->loops = loops;
-//        ConfigSingleton::Instance()->lbm_opencl_number_of_registers_list = lbm_opencl_number_of_registers_list;
-//        ConfigSingleton::Instance()->lbm_opencl_number_of_threads_list = lbm_opencl_number_of_threads_list;
-        ConfigSingleton::Instance()->do_validate = do_validate;
-        ConfigSingleton::Instance()->drivenCavityVelocity = drivenCavityVelocity;
-    }
 #if DEBUG
     ConfigSingleton::Instance()->debug_mode = true;
     ConfigSingleton::Instance()->printMe();

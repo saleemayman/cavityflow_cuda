@@ -114,7 +114,6 @@ private:
     CCL::CMem cMemVelocity;
     CCL::CMem cMemDensity;
 
-    CVector<3, int> threads_per_dimension;
     size_t domain_cells_count;
     size_t domain_x, domain_y, domain_z;
 
@@ -185,12 +184,12 @@ private:
         cKernelCopyRect.setArg(18, block_size[2]);
 
 		// copy rect kernel needs a 2D grid/block configuration
-		int blockSizeCopyRectKernel = 	cKernelCopyRect_ThreadsPerDim[0] * cKernelCopyRect_ThreadsPerDim[1] * cKernelCopyRect_ThreadsPerDim[2];
-		cKernelCopyRect_ThreadsPerDim[0] = sqrt(blockSizeCopyRectKernel);
-		cKernelCopyRect_ThreadsPerDim[1] = sqrt(blockSizeCopyRectKernel);
+//		int blockSizeCopyRectKernel = 	cKernelCopyRect_ThreadsPerDim[0] * cKernelCopyRect_ThreadsPerDim[1] * cKernelCopyRect_ThreadsPerDim[2];
+		cKernelCopyRect_ThreadsPerDim[0] = 16;
+		cKernelCopyRect_ThreadsPerDim[1] = 16; 
 		cKernelCopyRect_ThreadsPerDim[2] = 1; 
 
-		cKernelCopyRect.setGridAndBlockSize(2, cKernelCopyRect_ThreadsPerDim, domain_cells_count);
+		cKernelCopyRect.setGridAndBlockSize(NULL, cKernelCopyRect_ThreadsPerDim, domain_cells_count);
 #if DEBUG
 		printf("CopyKernel --> blockSize: [%u, %u, %u] \n", cKernelCopyRect.blockSize.x, cKernelCopyRect.blockSize.y, cKernelCopyRect.blockSize.z);
 		printf("CopyKernel --> gridSize: [%u, %u, %u] \n", cKernelCopyRect.gridSize.x, cKernelCopyRect.gridSize.y, cKernelCopyRect.gridSize.z);
@@ -215,7 +214,9 @@ public:
     CLbmSolver(int UID, CCL::CCommandQueue &p_cCommandQueue,
             CCL::CContext &p_cContext, CCL::CDevice &p_cDevice, int BC[3][2],
             CDomain<T> &domain, CVector<3, T> &p_d_gravitation, T p_d_viscosity,
-            CVector<3, int> p_threads_per_dimension,
+            CVector<3, int> p_cKernelInit_ThreadsPerDim, 
+            CVector<3, int> p_cLbmKernelAlpha_ThreadsPerDim, 
+            CVector<3, int> p_cLbmKernelBeta_ThreadsPerDim, 
             //bool p_debug,
             bool p_store_velocity, bool p_store_density, T p_d_timestep,
             CVector<4, T>& _drivenCavityVelocity
@@ -224,7 +225,9 @@ public:
             drivenCavityVelocity(_drivenCavityVelocity), _UID(UID), cCommandQueue(
                     p_cCommandQueue), cContext(p_cContext), cDevice(p_cDevice), cDeviceInfo(
                     p_cDevice), 
-                    threads_per_dimension(p_threads_per_dimension) 
+                    cKernelInit_ThreadsPerDim(p_cKernelInit_ThreadsPerDim),
+                    cLbmKernelAlpha_ThreadsPerDim(p_cLbmKernelAlpha_ThreadsPerDim),
+                    cLbmKernelBeta_ThreadsPerDim(p_cLbmKernelBeta_ThreadsPerDim)
     {
         CLbmSkeleton<T>::init(p_d_gravitation, p_d_viscosity, 1.0);
 
@@ -269,25 +272,8 @@ public:
         /**
          * WORK GROUP SIZE
          *
-         * initialize the variable (postfixed appropriately with _ThreadsPerDim)
-         * with either the standard value (max_local_work_group_size) or with the value from the list
          */
-#define INIT_WORK_GROUP_SIZE(variable)                                      				\
-		variable##_ThreadsPerDim[0] = threads_per_dimension[0];								\
-		variable##_ThreadsPerDim[1] = threads_per_dimension[1];								\
-		variable##_ThreadsPerDim[2] = threads_per_dimension[2];								\
-                                                                        					\
-        /* enlarge global work group size to be a multiple of collprop_work_group_size */   \
-        if (domain_cells_count % (variable##_ThreadsPerDim[0]*variable##_ThreadsPerDim[1]*variable##_ThreadsPerDim[2]) != 0)         \
-            variable##_GlobalWorkGroupSize = (domain_cells_count / (variable##_ThreadsPerDim[0]*variable##_ThreadsPerDim[1]*variable##_ThreadsPerDim[2]) + 1) * (variable##_ThreadsPerDim[0]*variable##_ThreadsPerDim[1]*variable##_ThreadsPerDim[2]);    \
-                                                                        					\
-
-		// set the block size for each kernel
-        INIT_WORK_GROUP_SIZE(cKernelInit);
-        INIT_WORK_GROUP_SIZE(cLbmKernelAlpha);
-        INIT_WORK_GROUP_SIZE(cLbmKernelBeta);
-        INIT_WORK_GROUP_SIZE(cKernelCopyRect);
-
+		// already initialized in the constructor of CLbmSolver
         
         domain_cells_count = this->domain_cells.elements();
         _isDomainSizePowOfTwo = isDomainPowerOfTwo(domain_cells_count);
