@@ -42,7 +42,8 @@ public:
     CVector(const T v[3]);
 
     void setZero();
-    CVector<3, T> normal();
+	int getGlobalIdx(CVector<3, T>& size);
+    CVector<3, T> getNormal();
     T dotProd(const CVector<3, T>& v);
     CVector<3, T> crossProd(CVector<3, T> &a);
     T dist2(const CVector<3, T>& v);

@@ -19,6 +19,8 @@
 
 #include "CVector.hpp"
 
+#include <cassert>
+
 #include "CMath.hpp"
 
 template <class T>
@@ -67,9 +69,18 @@ void CVector<3, T>::setZero()
     data[2] = T(0);
 }
 
+template <class T>
+int CVector<3, T>::getGlobalIdx(CVector<3, T>& size)
+{
+	assert(data[0] < size[0]);
+	assert(data[1] < size[1]);
+	assert(data[2] < size[2]);
+
+    return (data[2] * size[1] * size[2] + data[1] * size[0] + data[0]);
+}
 
 template <class T>
-CVector<3, T> CVector<3, T>::normal()
+CVector<3, T> CVector<3, T>::getNormal()
 {
     CVector<3, T> v = *this;
     T inv_length = (T) 1/CMath<T>::sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
