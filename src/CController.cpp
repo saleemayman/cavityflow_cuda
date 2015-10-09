@@ -31,7 +31,7 @@
 
 template <class T>
 CController<T>::CController(int id, CDomain<T> domain, std::vector<Flag> boundaryConditions, CConfiguration<T> *configuration) :
-        id(id), configuration(configuration), domain(domain), solverCPU(NULL), solverGPU(NULL), cLbmVisualization(NULL), boundaryConditions(boundaryConditions), communication(NULL), simulationStepCounter(0)
+        id(id), configuration(configuration), domain(domain), solverCPU(NULL), solverGPU(NULL), cLbmVisualization(NULL), boundaryConditions(boundaryConditions), simulationStepCounter(0)
 {
 	/*
     for (int i = 0; i < 3; i++)
@@ -80,10 +80,10 @@ void  CController<T>::outputDD(int dd_i)
     //                  int gcd = CMath<int>::gcd(cLbmPtr->domain_cells[0],wrap_max_line);
     //                  if (wrap_max_line % gcd == 0)
     //                      gcd = wrap_max_line;
-    int wrap_max_line = 16;
-    int gcd = wrap_max_line;
     // TODO reactivate
     /*
+    int wrap_max_line = 16;
+    int gcd = wrap_max_line;
     cLbmPtr->debugDD(dd_i, gcd,
             cLbmPtr->domain_cells[0] * cLbmPtr->domain_cells[1]);
     */
@@ -193,8 +193,8 @@ void CController<T>::syncAlpha()
     {
         CVector<3, int> send_size = (*it)->getSendSize();
         CVector<3, int> recv_size = (*it)->getRecvSize();
-        CVector<3, int> send_origin = (*it)->getSendOrigin();
-        CVector<3, int> recv_origin = (*it)->getRecvOrigin();
+        // CVector<3, int> send_origin = (*it)->getSendOrigin();
+        // CVector<3, int> recv_origin = (*it)->getRecvOrigin();
         int dst_rank = (*it)->getDstId();
 #if DEBUG
         // std::cout << "ALPHA RANK: " << dst_rank << std::endl;
@@ -257,9 +257,9 @@ void CController<T>::syncBeta()
         // will be sent back to their origin
         CVector<3, int> send_size = (*it)->getRecvSize();
         CVector<3, int> recv_size = (*it)->getSendSize();
-        CVector<3, int> send_origin = (*it)->getRecvOrigin();
-        CVector<3, int> recv_origin = (*it)->getSendOrigin();
-        CVector<3, int> normal = (*it)->getCommDirection();
+        // CVector<3, int> send_origin = (*it)->getRecvOrigin();
+        // CVector<3, int> recv_origin = (*it)->getSendOrigin();
+        // CVector<3, int> normal = (*it)->getCommDirection();
         int dst_rank = (*it)->getDstId();
 #if DEBUG
         // std::cout << "BETA RANK: " << dst_rank << std::endl;
@@ -373,9 +373,11 @@ int CController<T>::run()
     // cLbmPtr->wait();
     cStopwatch.stop();
 #if DEBUG
+    /*
     if (domain_size.elements() <= 512) {
-        cLbmPtr->debug_print();
+        solverGPU->debug_print();
     }
+    */
 #endif
 
 #if BENCHMARK
@@ -383,13 +385,13 @@ int CController<T>::run()
     double gtime;
     //int MPI_Reduce(void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm)
     MPI_Reduce(&ltime, &gtime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-    if (_UID == 0) {
+    if (id == 0) {
         double gfps = (((double)loops) / gtime);
         double gmlups = ((double)gfps*(double)CSingleton<CConfiguration<T> >::getInstance()->domain_size.elements())*(double)0.000001;
         double gbandwidth = (gmlups*floats_per_cell*(double)sizeof(T));
         std::stringstream benchmark_file_name;
         benchmark_file_name << "./" << BENCHMARK_OUTPUT_DIR << "/" <<
-        "benchmark_" << CSingleton<CConfiguration<T> >::getInstance()->subdomain_num.elements() //<< "_" << _UID
+        "benchmark_" << CSingleton<CConfiguration<T> >::getInstance()->subdomain_num.elements() //<< "_" << id
         << ".ini";
         const std::string& tmp = benchmark_file_name.str();
         const char* cstr = tmp.c_str();
@@ -468,7 +470,7 @@ template <class T>
 void CController<T>::setGeometry()
 {
 #if DEBUG
-    std::cout << "\nSetting Geometry for Domain " << _UID << std::endl;
+    std::cout << "\nSetting Geometry for Domain " << id << std::endl;
 #endif
     CVector<3, int> origin(1, domain.getSize()[1] - 2, 1);
     CVector<3, int> size(domain.getSize()[0] - 2, 1,

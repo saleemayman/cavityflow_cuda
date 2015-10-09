@@ -42,7 +42,7 @@ protected:
 	CDomain<T> domain;
 	
 	/*
-	 * Six slots for the boundary conditions of the six faces of a cuboid.
+	 * Vector for the boundary conditions of the six faces of a cuboid.
 	 * boundaryConditions[0]: boundary condition for right face (smallest x-coordinate)
 	 * boundaryConditions[1]: boundary condition for left face (largest x-coordinate)
 	 * boundaryConditions[2]: boundary condition for top face (smallest y-coordinate)
@@ -57,12 +57,13 @@ protected:
 	CVector<4, T> drivenCavityVelocity;
 	T viscocity;
 	T massExchangeFactor;
-	T reynolds;
-	T tau, tauInv, tauInvTrt;
 	T maxSimGravitationLength;
+	T tau;
 
 	bool storeDensities;
 	bool storeVelocities;
+
+	T reynolds, tauInv, tauInvTrt;
 
 public:
 	CLbmSolver();

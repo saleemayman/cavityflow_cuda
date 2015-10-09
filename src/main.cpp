@@ -31,6 +31,7 @@
 
 // internals
 // #include "helper.h"
+#include "libmath/CMath.hpp"
 #include "CConfiguration.hpp"
 #include "CController.hpp"
 #include "CDomain.hpp"
@@ -76,7 +77,7 @@ int main(int argc, char** argv)
      * TODO
      * Check if the following variables should be moved to constants.h
      */
-    bool debug = false;
+    // bool debug = false;
 
     CVector<3,int> domain_size(32,32,32);
     CVector<3,int> subdomain_nums(1,1,1);
@@ -90,7 +91,7 @@ int main(int argc, char** argv)
 
     bool do_validate = false;
     bool do_visualisation = false;
-    bool take_frame_screenshots = false;
+    // bool take_frame_screenshots = false;
     // bool unit_test = false;
     size_t computation_kernel_count = 128;
     size_t threads_per_dimension = 32;
@@ -112,9 +113,11 @@ int main(int argc, char** argv)
             device_nr = atoi(optarg);
             break;
 
+        /*
         case 'v':
             debug = true;
             break;
+        */
 
         case 'R':
             number_of_registers_string = optarg;
@@ -186,9 +189,11 @@ int main(int argc, char** argv)
             timestep = atof(optarg);
             break;
 
+        /*
         case 's':
             take_frame_screenshots = true;
             break;
+        */
 
 		/*
         case 'u':
@@ -392,7 +397,7 @@ int main(int argc, char** argv)
             int error_counter = 0;
             for ( int i = 0; i < local_size_without_halo.elements()*3; i++)
             {
-                if (fabs(sub_global_data[i] - local_data[i]) > tolerance )
+                if (CMath<TYPE>::abs(sub_global_data[i] - local_data[i]) > tolerance )
                 {
 #if 0
                     if ((i % 30) == 0)

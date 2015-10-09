@@ -48,7 +48,7 @@ CLbmSolver<T>::CLbmSolver(
 	tauInv = (T)1 / tau;
 	tauInvTrt = (T)1 / ((T)0.5 + (T)3 / ((T)16 * tau - (T)8));
 
-#if 1
+#if DEBUG
 	std::cout << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
 	std::cout << "id:                         " << this->id << std::endl;
 	std::cout << "---------------------------------------" << std::endl;

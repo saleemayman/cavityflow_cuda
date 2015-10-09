@@ -22,7 +22,7 @@
 
 #include <vector>
 
-#include "libcuda/CCL.hpp"
+// #include "libcuda/CCL.hpp"
 #include "libvis/ILbmVisualization.hpp"
 #include "CComm.hpp"
 #include "CConfiguration.hpp"

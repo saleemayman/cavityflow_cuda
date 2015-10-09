@@ -62,10 +62,8 @@ CUDAFILES		:=	src/gpukernels/copy_buffer_rect.cu \
 # compiler arguments and flags
 ################################################################################
 
-CCFLAGS			+=	 \
-#					-Wall
-CXXFLAGS		+=	 \
-#					-Wall
+CCFLAGS			+=	-Wall
+CXXFLAGS		+=	-Wall
 
 # arch: specifies the compatibility from source code to PTX stage. Can be a
 #       virtual (compute_*) or real (sm_*) compatibility.
