@@ -24,8 +24,10 @@
 // TinyXML2
 #include <tinyxml2.h>
 // UnitTest++
+/*
 #include <TestReporterStdout.h>
 #include <UnitTest++.h>
+*/
 
 // internals
 // #include "helper.h"
@@ -44,7 +46,7 @@ CVector<3,int> lbm_units[] = {
 };
 
 #define VALIDATION_RANK 0
-void extract_comma_separated_integers(std::list<int> &int_list, std::string &int_string)
+void extract_comma_separated_integers(std::vector<int> &int_list, std::string &int_string)
 {
     size_t start_pos = 0;
 
@@ -89,7 +91,6 @@ int main(int argc, char** argv)
             unit_test = true;
             test_suite = optarg;
             break;
-
         case 'c':
             conf_file = optarg;
             break;
@@ -101,13 +102,14 @@ int main(int argc, char** argv)
 
 	// load the config file and read the configuration parameters
 	ConfigSingleton::Instance()->loadFile(conf_file);
+    std::vector<dim3> lbm_opencl_number_of_threads_list;
 
 #if DEBUG
     CSingleton<CConfiguration<TYPE> >::getInstance()->debug_mode = true;
     CSingleton<CConfiguration<TYPE> >::getInstance()->printMe();
 #endif
 
-    if(unit_test)
+    /* if(unit_test)
     {
         if(strcmp( "all", test_suite.c_str() ) == 0 )
         {
@@ -133,7 +135,7 @@ int main(int argc, char** argv)
             UnitTest::TestRunner runner(reporter);
             return runner.RunTestsIf(selectedTests, 0, UnitTest::True(), 0 );
         }
-    } else if(CSingleton<CConfiguration<TYPE> >::getInstance()->do_validate) {
+    } else */ if(CSingleton<CConfiguration<TYPE> >::getInstance()->do_validate) {
         CVector<3,int> origin(0,0,0);
         CDomain<TYPE> domain(-1, CSingleton<CConfiguration<TYPE> >::getInstance()->domain_size, origin, CSingleton<CConfiguration<TYPE> >::getInstance()->domain_length);
         CManager<TYPE> *manager = new CManager<TYPE>(domain, CSingleton<CConfiguration<TYPE> >::getInstance()->subdomain_num);

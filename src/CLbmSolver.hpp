@@ -20,7 +20,7 @@
 #ifndef CLBMSOLVER_HPP
 #define CLBMSOLVER_HPP
 
-#include <array>
+#include <vector>
 
 #include "libmath/CVector.hpp"
 #include "CDomain.hpp"
@@ -50,7 +50,7 @@ protected:
 	 * boundaryConditions[4]: boundary condition for front face (smallest z-coordinate)
 	 * boundaryConditions[5]: boundary condition for back face (largest z-coordinate)
 	 */
-	std::array<Flag, 6> boundaryConditions;
+	std::vector<Flag> boundaryConditions;
 	T timestepSize;
 	
 	CVector<3, T> gravitation;
@@ -69,7 +69,7 @@ public:
 	CLbmSolver(
 			int id,
 			CDomain<T> &domain,
-			std::array<Flag, 6> boundaryConditions,
+			std::vector<Flag> boundaryConditions,
 			T timestepSize,
 			CVector<3, T> &gravitation,
 			CVector<4, T> &drivenCavityVelocity,

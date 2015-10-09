@@ -23,7 +23,7 @@ template <class T>
 CLbmSolver<T>::CLbmSolver(
 		int id,
 		CDomain<T> &domain,
-		std::array<Flag, 6> boundaryConditions,
+		std::vector<Flag> boundaryConditions,
 		T timestepSize,
 		CVector<3, T> &gravitation,
 		CVector<4, T> &drivenCavityVelocity,

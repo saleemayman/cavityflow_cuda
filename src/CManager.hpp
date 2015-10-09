@@ -32,24 +32,24 @@ class CManager
 {
 private:
     CDomain<T> _domain; ///< The simulation domain.
-    CVector<3,int> _subdomain_size; ///< Each subdomain have the same size which is specified with this class member.
-    CVector<3,T> _subdomain_length; ///< Each subdomain have the same lengthes which is specified with this class member.
-    CVector<3,int> _subdomain_nums; ///< number of subdomains in each direction.
+    CVector<3, int> _subdomain_size; ///< Each subdomain have the same size which is specified with this class member.
+    CVector<3, T> _subdomain_length; ///< Each subdomain have the same lengthes which is specified with this class member.
+    CVector<3, int> _subdomain_nums; ///< number of subdomains in each direction.
     CController<T>* _lbm_controller;
 
 public:
-    CManager(CDomain<T> domain, CVector<3, int> subdomainNums);
+    CManager(CDomain<T> domain, CVector<3,  int> subdomainNums);
     ~CManager();
 
     CDomain<T> getDomain() const;
     void setDomain(CDomain<T> grid);
-    CVector<3, int> getSubdomainNums() const;
-    void setSubdomainNums(CVector<3, int> subdomainNums);
+    CVector<3,  int> getSubdomainNums() const;
+    void setSubdomainNums(CVector<3,  int> subdomainNums);
     void initSimulation(int my_rank);
     void startSimulation();
     CController<T>* getController() const;
     void setController(CController<T>* lbmController);
-    CVector<3, int> getSubdomainSize() const;
+    CVector<3,  int> getSubdomainSize() const;
 };
 
 #endif

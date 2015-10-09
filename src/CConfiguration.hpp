@@ -20,10 +20,9 @@
 #ifndef CCONFIGURATION_HPP
 #define CCONFIGURATION_HPP
 
-#include <array>
 #include <cstdlib>
 #include <iostream>
-#include <list>
+#include <vector>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -80,6 +79,10 @@ public:
     CVector<3, int> beta_kernel_block_dim;
     int device_nr;
 	
+//    // TODO: lbm_opencl_number_of_registers_list, lbm_opencl_number_of_threads_list
+//    std::vector<dim3> lbm_opencl_number_of_registers_list;
+//    std::vector<dim3> lbm_opencl_number_of_threads_list;
+
     bool debug_mode;
 
     CConfiguration();

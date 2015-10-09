@@ -47,7 +47,7 @@ __global__ void lbm_kernel_alpha(
 
     // load cell type flag
     int flag = flag_array[gid];
-    if  (flag == Flag::GHOST_LAYER)
+    if  (flag == GHOST_LAYER)
         return;
     /**
      * we use a pointer instead of accessing the array directly
@@ -196,7 +196,7 @@ __global__ void lbm_kernel_alpha(
     T dd_param; // modified rho as temporary variable
     switch(flag)
     {
-        case Flag::FLUID:    // this is the whole collision operator
+        case FLUID:    // this is the whole collision operator
             vel2 = velocity_x*velocity_x + velocity_y*velocity_y + velocity_z*velocity_z;
             dd_param = rho - (T)(3.0f/2.0f)*(vel2);
 
@@ -322,7 +322,7 @@ __global__ void lbm_kernel_alpha(
 
             break;
 
-        case Flag::OBSTACLE: // in case of an obstacle, we bounce back the values
+        case OBSTACLE: // in case of an obstacle, we bounce back the values
 
             /**
              * if we are using only bounce back method, it's not necessary to write back the results.
@@ -362,7 +362,7 @@ __global__ void lbm_kernel_alpha(
 #endif
             break;
 
-        case Flag::VELOCITY_INJECTION:   // this flag specifies the injection area of the fluid
+        case VELOCITY_INJECTION:   // this flag specifies the injection area of the fluid
             velocity_x = drivenCavityVelocity;
             velocity_y = 0;
             velocity_z = 0;
@@ -499,7 +499,7 @@ __global__ void lbm_kernel_alpha(
             *current_dds = dd18;
             break;
 
-        case (Flag::GHOST_LAYER):
+        case (GHOST_LAYER):
                 break;
     }
 
