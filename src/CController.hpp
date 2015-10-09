@@ -25,6 +25,7 @@
 #include "libcuda/CCL.hpp"
 #include "libvis/ILbmVisualization.hpp"
 #include "CComm.hpp"
+#include "CConfiguration.hpp"
 #include "CDomain.hpp"
 #include "CLbmSolverCPU.hpp"
 #include "CLbmSolverGPU.cuh"
@@ -40,45 +41,56 @@ template<typename T>
 class CController
 {
 private:
-    int _UID; ///< Unique ID of each controller
-    CDomain<T> _domain; ///< Domain data
-    ILbmVisualization<T>* cLbmVisualization; ///< Visualization class
-    CLbmSolverGPU<T> *cLbmPtr;
-    std::vector<Flag> boundaryConditions; ///< Boundary conditions. First index specifies the dimension and second the upper or the lower boundary.
-    std::vector<CComm<T>*> _comm_container; ///< A std::Vector containing all the communcation objects for the subdomain
+    int id;                                        ///< Unique ID of each controller
+    CConfiguration<T> *configuration;              ///<
+    CDomain<T> domain;                             ///< Domain data
+    CLbmSolverCPU<T> *solverCPU;                   ///<
+    CLbmSolverGPU<T> *solverGPU;                   ///<
+    ILbmVisualization<T>* cLbmVisualization;       ///< Visualization class
+    std::vector<Flag> boundaryConditions;          ///< Boundary conditions
+    std::vector<CComm<T>*> communication;          ///< A std::vector containing all the communication objects for the subdomain
+    int simulationStepCounter;
+
     T vector_checksum;
+
+    /*
     CCL::CPlatforms* cPlatforms;
     CCL::CPlatform* cPlatform;
     CCL::CContext* cContext;
     CCL::CDevices* cDevices;
     CCL::CDevice* cDevice;
     CCL::CCommandQueue* cCommandQueue;
+    */
 
-    int simulationStepCounter;
-
-    void outputDD(int dd_i);
     int initLBMSolver();
-
-public:
-    CController(int UID, CDomain<T> domain, std::vector<Flag> boundaryConditions);
-    ~CController();
-
+    void computeNextStep();
     void syncAlpha();
     void syncBeta();
-    void computeNextStep();
+
+    void outputDD(int dd_i);
+
+public:
+    CController(int id, CDomain<T> domain, std::vector<Flag> boundaryConditions, CConfiguration<T> *configuration);
+    ~CController();
+
     int run();
     void addCommunication(CComm<T>* comm);
+    void setGeometry();
     /*
      * TODO
      * This piece of code should be obsolete since the ghost layer sizes are now
      * set implicitly by CLbmSolver depending on the domain size.
      */
     // void addCommToSolver();
-    void setGeometry();
+    /*
     CLbmSolver<T>* getSolver() const;
     void setSolver(CLbmSolverGPU<T>* lbmPtr);
     CDomain<T> getDomain() const;
     int getUid() const;
+    */
+
+    CLbmSolver<T>* getSolver() const;
+    CDomain<T> getDomain() const;
 };
 
 #endif

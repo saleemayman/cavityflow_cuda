@@ -18,6 +18,7 @@
  */
 
 #include "CManager.hpp"
+#include "CSingleton.hpp"
 
 template <class T>
 CManager<T>::CManager(CDomain<T> domain, CVector<3, int> subdomainNums) :
@@ -122,7 +123,7 @@ void CManager<T>::initSimulation(int my_rank)
     if (nz == (_subdomain_nums[2] - 1))
     	boundaryConditions[5] = OBSTACLE;
 
-    _lbm_controller = new CController<T>(id, *subdomain, boundaryConditions);
+    _lbm_controller = new CController<T>(id, *subdomain, boundaryConditions, CSingleton<CConfiguration<T> >::getInstance());
 
     // Initializing the Controller's communication classes based on the already computed boundary conditions
     if (boundaryConditions[0] == GHOST_LAYER) {

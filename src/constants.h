@@ -23,9 +23,9 @@
 #define TYPE double
 
 #define BENCHMARK_OUTPUT_DIR    "output/benchmark"
-#define PROFILE_OUTPUT_DIR      "output/profile"
+// #define PROFILE_OUTPUT_DIR      "output/profile"
 #define VTK_OUTPUT_DIR          "output/vtk"
-#define LOG_OUTPUT_DIR          "output/log"
-#define LOG_OUTPUT_FILE_PREFIX  "log"
+// #define LOG_OUTPUT_DIR          "output/log"
+// #define LOG_OUTPUT_FILE_PREFIX  "log"
 
 #endif

@@ -30,8 +30,8 @@
 #include "CSingleton.hpp"
 
 template <class T>
-CController<T>::CController(int UID, CDomain<T> domain, std::vector<Flag> boundaryConditions) :
-        _UID(UID), _domain(domain), boundaryConditions(boundaryConditions), cLbmVisualization(NULL)
+CController<T>::CController(int id, CDomain<T> domain, std::vector<Flag> boundaryConditions, CConfiguration<T> *configuration) :
+        id(id), configuration(configuration), domain(domain), solverCPU(NULL), solverGPU(NULL), cLbmVisualization(NULL), boundaryConditions(boundaryConditions), communication(NULL), simulationStepCounter(0)
 {
 	/*
     for (int i = 0; i < 3; i++)
@@ -47,6 +47,7 @@ CController<T>::CController(int UID, CDomain<T> domain, std::vector<Flag> bounda
 template <class T>
 CController<T>::~CController()
 {
+	/*
     if (cPlatforms)
         delete cPlatform;
 
@@ -58,15 +59,16 @@ CController<T>::~CController()
 
     if (cCommandQueue)
         delete cCommandQueue;
+       */
 
     if (cLbmVisualization) ///< Visualization class
         delete cLbmVisualization;
 
-    if (cLbmPtr)
-        delete cLbmPtr;
+    if (solverGPU)
+        delete solverGPU;
 
-    typename std::vector<CComm<T>*>::iterator it = _comm_container.begin();
-    for (; it != _comm_container.end(); it++) {
+    typename std::vector<CComm<T>*>::iterator it = communication.begin();
+    for (; it != communication.end(); it++) {
         delete *it;
     }
 }
@@ -90,6 +92,7 @@ void  CController<T>::outputDD(int dd_i)
 template <class T>
 int CController<T>::initLBMSolver()
 {
+/*
 #if DEBUG
     std::cout << "loading platforms" << std::endl;
 #endif
@@ -121,25 +124,26 @@ int CController<T>::initLBMSolver()
         return -1;
     }
 
-    if (CSingleton<CConfiguration<T> >::getInstance()->device_nr < 0
-            || CSingleton<CConfiguration<T> >::getInstance()->device_nr
-                    >= (int) cDevices->size()) {
+    if (configuration->device_nr < 0 || configuration->device_nr >= (int) cDevices->size()) {
         std::cerr
                 << "invalid device number - use option \"-d -1\" to list all devices"
                 << std::endl;
         return -1;
     }
+
     int dev_nr = 0;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     int name_len;
     MPI_Get_processor_name(processor_name, &name_len);
     if (strstr(processor_name, "mac-nvd") != NULL) {
-        if (_UID & 1)
+        if (id & 1)
             dev_nr = 1;
     }
-    cDevice = &((*cDevices)[/* CSingleton<CConfiguration<T> >::getInstance()->device_nrd*/dev_nr]);
+*/
+    // cDevice = &((*cDevices)[/* CSingleton<CConfiguration<T> >::getInstance()->device_nrd*/dev_nr]);
 
     // load standard context for GPU devices
+	/*
 #if DEBUG
     std::cout << "loading gpu context" << std::endl;
 #endif
@@ -148,18 +152,18 @@ int CController<T>::initLBMSolver()
 
     // initialize queue
     cCommandQueue = new CCL::CCommandQueue();
+*/
 
     // INIT LATTICE BOLTZMANN!
-    simulationStepCounter = 0;
-    cLbmPtr = new CLbmSolverGPU<T>(
-    		_UID,
-    		CSingleton<CConfiguration<T> >::getInstance()->lbm_opencl_number_of_threads_list,
-    		_domain,
+    solverGPU = new CLbmSolverGPU<T>(
+    		id,
+    		configuration->lbm_opencl_number_of_threads_list,
+    		domain,
     		boundaryConditions,
-    		CSingleton<CConfiguration<T> >::getInstance()->timestep,
-    		CSingleton<CConfiguration<T> >::getInstance()->gravitation,
-    		CSingleton<CConfiguration<T> >::getInstance()->drivenCavityVelocity,
-    		CSingleton<CConfiguration<T> >::getInstance()->viscosity);
+    		configuration->timestep,
+    		configuration->gravitation,
+    		configuration->drivenCavityVelocity,
+    		configuration->viscosity);
 
     // TODO reactivate
     /*
@@ -184,8 +188,8 @@ void CController<T>::syncAlpha()
 #endif
     // TODO: OPTIMIZATION: communication of different neighbors can be done in Non-blocking way.
     int i = 0;
-    typename std::vector<CComm<T>*>::iterator it = _comm_container.begin();
-    for (; it != _comm_container.end(); it++, i++)
+    typename std::vector<CComm<T>*>::iterator it = communication.begin();
+    for (; it != communication.end(); it++, i++)
     {
         CVector<3, int> send_size = (*it)->getSendSize();
         CVector<3, int> recv_size = (*it)->getRecvSize();
@@ -208,7 +212,7 @@ void CController<T>::syncAlpha()
         MPI_Status status[2];
 
         // Download data from device to host
-        cLbmPtr->getDensityDistributions(Direction(i), send_buffer);
+        solverGPU->getDensityDistributions(Direction(i), send_buffer);
         //cLbmPtr->wait();
         int my_rank, num_procs;
         MPI_Comm_rank(MPI_COMM_WORLD, &my_rank); /// Get current process id
@@ -229,7 +233,7 @@ void CController<T>::syncAlpha()
         }
         MPI_Waitall(2, req, status);
 
-        cLbmPtr->setDensityDistributions(Direction(i), recv_buffer);
+        solverGPU->setDensityDistributions(Direction(i), recv_buffer);
         //cLbmPtr->wait();
 
         delete[] send_buffer;
@@ -245,8 +249,8 @@ void CController<T>::syncBeta()
 #endif
     int i = 0;
     // TODO: OPTIMIZATION: communication of different neighbors can be done in Non-blocking form.
-    typename std::vector<CComm<T>*>::iterator it = _comm_container.begin();
-    for (; it != _comm_container.end(); it++, i++)
+    typename std::vector<CComm<T>*>::iterator it = communication.begin();
+    for (; it != communication.end(); it++, i++)
     {
         // the send and receive values in beta sync is the opposite values of
         // Comm instance related to current communication, since the ghost layer data
@@ -272,7 +276,7 @@ void CController<T>::syncBeta()
         MPI_Status status[2];
 
         // Download data from device to host
-        cLbmPtr->getDensityDistributions(Direction(i), send_buffer);
+        solverGPU->getDensityDistributions(Direction(i), send_buffer);
         //cLbmPtr->wait();
         int my_rank, num_procs;
         MPI_Comm_rank(MPI_COMM_WORLD, &my_rank); /// Get current process id
@@ -294,7 +298,7 @@ void CController<T>::syncBeta()
         MPI_Waitall(2, req, status);
 
         // TODO: OPTIMIZATION: you need to wait only for receiving to execute following command
-        cLbmPtr->setDensityDistributions(Direction(i), recv_buffer);
+        solverGPU->setDensityDistributions(Direction(i), recv_buffer);
         //cLbmPtr->wait();
 
         delete[] send_buffer;
@@ -306,10 +310,10 @@ template <class T>
 void CController<T>::computeNextStep()
 {
     if (simulationStepCounter & 1) {
-    	cLbmPtr->simulationStepAlpha();
+    	solverGPU->simulationStepAlpha();
         syncBeta();
     } else {
-    	cLbmPtr->simulationStepAlpha();
+    	solverGPU->simulationStepAlpha();
         syncAlpha();
     }
     simulationStepCounter++;
@@ -322,7 +326,7 @@ void CController<T>::computeNextStep()
 template <class T>
 int CController<T>::run()
 {
-    CVector<3, int> domain_size = _domain.getSize();
+    CVector<3, int> domain_size = domain.getSize();
     int loops = CSingleton<CConfiguration<T> >::getInstance()->loops;
     if (loops < 0)
         loops = 100;
@@ -350,8 +354,8 @@ int CController<T>::run()
     ss_file << "./" << VTK_OUTPUT_DIR << "/" << outputfilename;
     std::string outputfile = ss_file.str();
     if (CSingleton<CConfiguration<T> >::getInstance()->do_visualization) {
-        cLbmVisualization = new CLbmVisualizationVTK<T>(_UID, outputfile);
-        cLbmVisualization->setup(cLbmPtr);
+        cLbmVisualization = new CLbmVisualizationVTK<T>(id, outputfile);
+        cLbmVisualization->setup(solverGPU);
     }
 
     cStopwatch.start();
@@ -413,7 +417,7 @@ int CController<T>::run()
     double fps = (((double) loops) / cStopwatch.time);
     std::cout << "FPS: " << fps << std::endl;
     double mlups =
-            ((double) fps * (double) _domain.getNumOfCells())
+            ((double) fps * (double) domain.getNumOfCells())
                     * (double) 0.000001;
     std::cout << "MLUPS: " << mlups << std::endl;
     std::cout << "Bandwidth: "
@@ -441,7 +445,7 @@ int CController<T>::run()
 template <class T>
 void CController<T>::addCommunication(CComm<T>* comm)
 {
-    _comm_container.push_back(comm);
+    communication.push_back(comm);
 }
 
 /*
@@ -466,9 +470,9 @@ void CController<T>::setGeometry()
 #if DEBUG
     std::cout << "\nSetting Geometry for Domain " << _UID << std::endl;
 #endif
-    CVector<3, int> origin(1, _domain.getSize()[1] - 2, 1);
-    CVector<3, int> size(_domain.getSize()[0] - 2, 1,
-            _domain.getSize()[2] - 2);
+    CVector<3, int> origin(1, domain.getSize()[1] - 2, 1);
+    CVector<3, int> size(domain.getSize()[0] - 2, 1,
+            domain.getSize()[2] - 2);
 #if DEBUG
     std::cout << "\nCController.setGeometry() GEOMETRY: " << size << std::endl;
     std::cout << "\nCController.setGeometry() origin: " << origin << std::endl;
@@ -480,11 +484,22 @@ void CController<T>::setGeometry()
         src[i] = VELOCITY_INJECTION;
     }
     printf("\n");
-    cLbmPtr->setFlags(origin, size, src);
+    solverGPU->setFlags(origin, size, src);
 
     delete[] src;
 }
 
+template <class T>
+CLbmSolver<T>* CController<T>::getSolver() const {
+    return solverGPU;
+}
+
+template <class T>
+CDomain<T> CController<T>::getDomain() const {
+    return domain;
+}
+
+/*
 template <class T>
 CLbmSolver<T>* CController<T>::getSolver() const {
     return cLbmPtr;
@@ -505,6 +520,7 @@ template <class T>
 int CController<T>::getUid() const {
     return _UID;
 }
+*/
 
 template class CController<double>;
 template class CController<float>;

@@ -9,18 +9,15 @@ CXXLIBDIR			:=
 CUDALIBDIR			:=	
 
 CCINCLUDES			:=	-I/usr/include \
-						-I/usr/include/unittest++ \
 						-I/usr/lib/openmpi/include
 CXXINCLUDES			:=	-I/usr/include \
-						-I/usr/include/unittest++ \
 						-I/usr/lib/openmpi/include
 CUDAINCLUDES		:=	-I/usr/include \
-						-I/usr/include/unittest++ \
 						-I/usr/lib/openmpi/include
 
 CCLIB				:=	
 CXXLIB				:=	
-CUDALIB				:=	
+CUDALIB				:=	-lcuda \
 
 COMPUTE_CAPABILITY	:=	20
 
@@ -39,9 +36,11 @@ NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 ################################################################################
 
 CCFLAGS				:=	-D USE_MPI \
-						-O3
+						-O3 \
+#						-std=c11
 CXXFLAGS			:=	-D USE_MPI \
-						-O3
+						-O3 \
+#						-std=c++11
 
 # arch: specifies the compatibility from source code to PTX stage. Can be a
 #       virtual (compute_*) or real (sm_*) compatibility.
@@ -50,8 +49,10 @@ CXXFLAGS			:=	-D USE_MPI \
 # -rdc: -rdc is short for --relocatable-device-code which generates relocatable
 #       device code. This is necessary to generate multiple CUDA object files
 #       which can then be linked together.
-NVCCFLAGS			:=	-O3 \
+NVCCFLAGS			:=	-D USE_MPI \
+						-O3 \
 						-gencode arch=compute_$(COMPUTE_CAPABILITY),code=sm_$(COMPUTE_CAPABILITY) \
+#						-Xcompiler "-std=c++11"
 
 ################################################################################
 # linker arguments and flags
@@ -63,3 +64,4 @@ LINKERFLAGS			:=
 NVCCLINKERFLAGS		:=	-arch=sm_$(COMPUTE_CAPABILITY)
 
 include common.make
+

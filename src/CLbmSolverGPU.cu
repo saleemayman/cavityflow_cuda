@@ -48,12 +48,36 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
                 storeDensities, storeVelocities),
         threadsPerBlock(threadsPerBlock)
 {
+	int numOfGPUsPerNode;
+
+	GPU_ERROR_CHECK(cudaGetDeviceCount(&numOfGPUsPerNode))
+	GPU_ERROR_CHECK(cudaSetDevice(this->id % numOfGPUsPerNode))
+
+#if DEBUG
+    std::cout << "----- CLbmSolverGPU<T>::CLbmSolverGPU() -----" << std::endl;
+    std::cout << "id:                      " << this->id << std::endl;
+    std::cout << "---------------------------------------------" << std::endl;
+    std::cout << "number of GPUs per node: " << numOfGPUsPerNode << std::endl;
+    std::cout << "number of selected GPU:  " << (this->id % numOfGPUsPerNode) << std::endl;
+    std::cout << "---------------------------------------------" << std::endl;
+#endif
+
     GPU_ERROR_CHECK(cudaMalloc(&densityDistributions, this->domain.getNumOfCells() * NUM_LATTICE_VECTORS * sizeof(T)))
     GPU_ERROR_CHECK(cudaMalloc(&flags, this->domain.getNumOfCells() * sizeof(Flag)))
     if(this->storeDensities)
         GPU_ERROR_CHECK(cudaMalloc(&densities, this->domain.getNumOfCells() * 3 * sizeof(T)))
     if(this->storeVelocities)
         GPU_ERROR_CHECK(cudaMalloc(&velocities, this->domain.getNumOfCells() * sizeof(T)))
+
+#if DEBUG
+    std::cout << "size of allocated memory for density distributions: " << (this->domain.getNumOfCells() * NUM_LATTICE_VECTORS * sizeof(T)) << "Bytes" << std::endl;
+    std::cout << "size of allocated memory for flags:                 " << (this->domain.getNumOfCells() * sizeof(Flag)) << "Bytes" << std::endl;
+    if(this->storeDensities)
+    	std::cout << "size of allocated memory for velocities:            " << (this->domain.getNumOfCells() * 3 * sizeof(T)) << "Bytes" << std::endl;
+    if(this->storeVelocities)
+    	std::cout << "size of allocated memory for densities:             " << (this->domain.getNumOfCells() * sizeof(T)) << "Bytes" << std::endl;
+    std::cout << "---------------------------------------------" << std::endl;
+#endif
 
     GPU_ERROR_CHECK(cudaMalloc<T>(&(getDensityDistributionsHalo[0]), this->domain.getNumOfXFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
     GPU_ERROR_CHECK(cudaMalloc<T>(&(setDensityDistributionsHalo[0]), this->domain.getNumOfXFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
