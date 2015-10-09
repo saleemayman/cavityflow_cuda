@@ -21,8 +21,6 @@
 
 #include <cassert>
 
-#include <cuda.h>
-
 #include "gpukernels/copy_buffer_rect.cuh"
 #include "gpukernels/lbm_alpha.cuh"
 #include "gpukernels/lbm_beta.cuh"
@@ -31,9 +29,9 @@
 template <class T>
 CLbmSolverGPU<T>::CLbmSolverGPU(
         int id,
-        std::array<dim3,3> threadsPerBlock,
+        std::vector<dim3> threadsPerBlock,
         CDomain<T> &domain,
-        std::array<Flag, 6> boundaryConditions,
+        std::vector<Flag> boundaryConditions,
         T timestepSize,
         CVector<3, T> &gravitation,
         CVector<4, T> &drivenCavityVelocity,

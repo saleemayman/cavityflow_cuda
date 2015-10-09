@@ -75,7 +75,7 @@ __global__ void lbm_init(
     T velocity_y = 0;
     T velocity_z = 0;
 
-    Flag flag = Flag::FLUID;
+    Flag flag = FLUID;
 
     if(pos.x == 0)
         flag = boundaryConditionRight;
@@ -98,17 +98,17 @@ __global__ void lbm_init(
         pos.x == domainCells_x-1 || pos.y == domainCells_y-1 || pos.z == domainCells_z-1
     )
     {
-        flag = Flag::OBSTACLE;
+        flag = OBSTACLE;
     }
     else
     {
 #if 1
         if (pos.y == domainCells_y-2)
-            flag = Flag::VELOCITY_INJECTION;
+            flag = VELOCITY_INJECTION;
 #endif
 #if 0
         if (pos.y == 10)
-            flag = Flag::OBSTACLE;
+            flag = OBSTACLE;
 
         if (pos.y == 2)
             velocity_x = 10;
@@ -124,19 +124,19 @@ __global__ void lbm_init(
 #if 0
         if ((pos.x == domainCells_x/2 || pos.x == domainCells_x-2) && pos.y <= domainCells_y/2)
         {
-            flag = Flag::INTERFACE;
+            flag = INTERFACE;
         }
         else if ((pos.y == domainCells_y/2 || pos.y == 1) && pos.x >= domainCells_x/2)
         {
-            flag = Flag::INTERFACE;
+            flag = INTERFACE;
         }
         else if ((pos.z == domainCells_z-1 || pos.z == 1) && pos.x >= domainCells_x/2 && pos.y <= domainCells_y/2)
         {
-            flag = Flag::INTERFACE;
+            flag = INTERFACE;
         }
         else if (pos.x < domainCells_x/2 || pos.y > domainCells_y/2)
         {
-            flag = Flag::GAS;
+            flag = GAS;
         }
 #endif
     }

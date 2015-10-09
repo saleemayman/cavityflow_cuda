@@ -15,22 +15,16 @@ CXXINCLUDES		+=	-I$(CUDAINSTALLPATH)/include
 CUDAINCLUDES	+=	-I$(CUDAINSTALLPATH)/include
 
 CCLIB			+=	-lrt \
-					-lcuda \
-					-ltinyxml2 \
-					-lUnitTest++
+					-ltinyxml2
 CXXLIB			+=	-lrt \
-					-lcuda \
-					-ltinyxml2 \
-					-lUnitTest++
+					-ltinyxml2
 # libcuda:      required for access to driver api
 # libcudart:    required for execution of a cuda program
 # libcudadevrt: required for dynamic parallelism which is again required for
 #               valid linking of multiple cuda files
-CUDALIB			+=	-lcuda \
-					-lcudart \
+CUDALIB			+=	-lcudart \
 					-lcudadevrt \
-					-ltinyxml2 \
-					-lUnitTest++
+					-ltinyxml2
 
 EXECUTABLE		:=	lbm
 
@@ -68,9 +62,9 @@ CUDAFILES		:=	src/gpukernels/copy_buffer_rect.cu \
 # compiler arguments and flags
 ################################################################################
 
-CCFLAGS			+=	-std=c11 \
+CCFLAGS			+=	 \
 #					-Wall
-CXXFLAGS		+=	-std=c++11 \
+CXXFLAGS		+=	 \
 #					-Wall
 
 # arch: specifies the compatibility from source code to PTX stage. Can be a
@@ -82,10 +76,9 @@ CXXFLAGS		+=	-std=c++11 \
 #       which can then be linked together.
 NVCCFLAGS		+=	-lineinfo \
 					-rdc=true \
-					-std=c++11 \
 					-use_fast_math \
 					--compiler-options -Wall \
-#					--ptxas-options -v \
+#					--ptxas-options -v
 
 ################################################################################
 # linker arguments and flags
@@ -105,7 +98,7 @@ VPATH 			:=	src/ \
 					src/gpukernels/ \
 					src/libmath/ \
 					src/libtools/ \
-					src/libvis/ \
+					src/libvis/
 
 ################################################################################
 # set up object files

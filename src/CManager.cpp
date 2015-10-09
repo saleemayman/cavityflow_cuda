@@ -86,9 +86,7 @@ template <class T>
 void CManager<T>::initSimulation(int my_rank)
 {
     // initialize the boundary condition
-	std::array<Flag, 6> boundaryConditions = {/* x BC */ GHOST_LAYER, GHOST_LAYER,
-                                              /* y BC */ GHOST_LAYER, GHOST_LAYER,
-                                              /* z BC */ GHOST_LAYER, GHOST_LAYER};
+	std::vector<Flag> boundaryConditions(6, GHOST_LAYER);
     int id = my_rank;
     if (id < 0)
         id = 0;

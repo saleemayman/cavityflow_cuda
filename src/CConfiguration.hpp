@@ -20,10 +20,9 @@
 #ifndef CCONFIGURATION_HPP
 #define CCONFIGURATION_HPP
 
-#include <array>
 #include <cstdlib>
 #include <iostream>
-#include <list>
+#include <vector>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -79,8 +78,8 @@ public:
     bool do_validate;
 
     // TODO: lbm_opencl_number_of_registers_list, lbm_opencl_number_of_threads_list
-    std::array<dim3,3> lbm_opencl_number_of_registers_list;
-    std::array<dim3,3> lbm_opencl_number_of_threads_list;
+    std::vector<dim3> lbm_opencl_number_of_registers_list;
+    std::vector<dim3> lbm_opencl_number_of_threads_list;
 
     // domain configuration data
 

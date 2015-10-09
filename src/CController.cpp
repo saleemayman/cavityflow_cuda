@@ -30,7 +30,7 @@
 #include "CSingleton.hpp"
 
 template <class T>
-CController<T>::CController(int UID, CDomain<T> domain, std::array<Flag, 6> boundaryConditions) :
+CController<T>::CController(int UID, CDomain<T> domain, std::vector<Flag> boundaryConditions) :
         _UID(UID), _domain(domain), boundaryConditions(boundaryConditions), cLbmVisualization(NULL)
 {
 	/*

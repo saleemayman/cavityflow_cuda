@@ -44,7 +44,7 @@ private:
     CDomain<T> _domain; ///< Domain data
     ILbmVisualization<T>* cLbmVisualization; ///< Visualization class
     CLbmSolverGPU<T> *cLbmPtr;
-    std::array<Flag, 6> boundaryConditions; ///< Boundary conditions. First index specifies the dimension and second the upper or the lower boundary.
+    std::vector<Flag> boundaryConditions; ///< Boundary conditions. First index specifies the dimension and second the upper or the lower boundary.
     std::vector<CComm<T>*> _comm_container; ///< A std::Vector containing all the communcation objects for the subdomain
     T vector_checksum;
     CCL::CPlatforms* cPlatforms;
@@ -60,7 +60,7 @@ private:
     int initLBMSolver();
 
 public:
-    CController(int UID, CDomain<T> domain, std::array<Flag, 6> boundaryConditions);
+    CController(int UID, CDomain<T> domain, std::vector<Flag> boundaryConditions);
     ~CController();
 
     void syncAlpha();

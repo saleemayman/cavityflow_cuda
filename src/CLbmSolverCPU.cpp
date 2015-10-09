@@ -23,10 +23,10 @@ template <class T>
 CLbmSolverCPU<T>::CLbmSolverCPU(
 		int id,
 		CDomain<T> &domain,
-		std::array<Flag,6> boundaryConditions,
+		std::vector<Flag> boundaryConditions,
 		T timestepSize,
-		CVector<3,T> &gravitation,
-		CVector<4,T> &drivenCavityVelocity,
+		CVector<3, T> &gravitation,
+		CVector<4, T> &drivenCavityVelocity,
 		T viscocity,
 		T massExchangeFactor,
 		T maxSimGravitationLength,
@@ -52,7 +52,7 @@ void CLbmSolverCPU<T>::simulationStepAlpha()
 }
 
 template <class T>
-void CLbmSolverCPU<T>::simulationStepAlphaRect(CVector<3,int> origin, CVector<3,int> size)
+void CLbmSolverCPU<T>::simulationStepAlphaRect(CVector<3, int> origin, CVector<3, int> size)
 {
 }
 
@@ -62,7 +62,7 @@ void CLbmSolverCPU<T>::simulationStepBeta()
 }
 
 template <class T>
-void CLbmSolverCPU<T>::simulationStepBetaRect(CVector<3,int> origin, CVector<3,int> size)
+void CLbmSolverCPU<T>::simulationStepBetaRect(CVector<3, int> origin, CVector<3, int> size)
 {
 }
 
@@ -72,7 +72,7 @@ void CLbmSolverCPU<T>::reset()
 }
 
 template <class T>
-void CLbmSolverCPU<T>::getDensityDistributions(CVector<3,int> &origin, CVector<3,int> &size, T* src)
+void CLbmSolverCPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* src)
 {
 }
 
@@ -82,7 +82,7 @@ void CLbmSolverCPU<T>::getDensityDistributions(T* src)
 }
 
 template <class T>
-void CLbmSolverCPU<T>::setDensityDistributions(CVector<3,int> &origin, CVector<3,int> &size, T* dst)
+void CLbmSolverCPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* dst)
 {
 }
 
@@ -92,7 +92,7 @@ void CLbmSolverCPU<T>::setDensityDistributions(T* dst)
 }
 
 template <class T>
-void CLbmSolverCPU<T>::getFlags(CVector<3,int> &origin, CVector<3,int> &size, Flag* src)
+void CLbmSolverCPU<T>::getFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* src)
 {
 }
 
@@ -102,7 +102,7 @@ void CLbmSolverCPU<T>::getFlags(Flag* src)
 }
 
 template <class T>
-void CLbmSolverCPU<T>::setFlags(CVector<3,int> &origin, CVector<3,int> &size, Flag* dst)
+void CLbmSolverCPU<T>::setFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* dst)
 {
 }
 
@@ -112,7 +112,7 @@ void CLbmSolverCPU<T>::setFlags(Flag* dst)
 }
 
 template <class T>
-void CLbmSolverCPU<T>::getVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* src)
+void CLbmSolverCPU<T>::getVelocities(CVector<3, int> &origin, CVector<3, int> &size, T* src)
 {
 }
 
@@ -122,7 +122,7 @@ void CLbmSolverCPU<T>::getVelocities(T* src)
 }
 
 template <class T>
-void CLbmSolverCPU<T>::setVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* dst)
+void CLbmSolverCPU<T>::setVelocities(CVector<3, int> &origin, CVector<3, int> &size, T* dst)
 {
 }
 
@@ -132,7 +132,7 @@ void CLbmSolverCPU<T>::setVelocities(T* dst)
 }
 
 template <class T>
-void CLbmSolverCPU<T>::getDensities(CVector<3,int> &origin, CVector<3,int> &size, T* src)
+void CLbmSolverCPU<T>::getDensities(CVector<3, int> &origin, CVector<3, int> &size, T* src)
 {
 }
 
@@ -142,7 +142,7 @@ void CLbmSolverCPU<T>::getDensities(T* src)
 }
 
 template <class T>
-void CLbmSolverCPU<T>::setDensities(CVector<3,int> &origin, CVector<3,int> &size, T* dst)
+void CLbmSolverCPU<T>::setDensities(CVector<3, int> &origin, CVector<3, int> &size, T* dst)
 {
 }
 

@@ -24,8 +24,10 @@
 // TinyXML2
 #include <tinyxml2.h>
 // UnitTest++
+/*
 #include <TestReporterStdout.h>
 #include <UnitTest++.h>
+*/
 
 // internals
 // #include "helper.h"
@@ -44,7 +46,7 @@ CVector<3,int> lbm_units[] = {
 };
 
 #define VALIDATION_RANK 0
-void extract_comma_separated_integers(std::list<int> &int_list, std::string &int_string)
+void extract_comma_separated_integers(std::vector<int> &int_list, std::string &int_string)
 {
     size_t start_pos = 0;
 
@@ -89,13 +91,13 @@ int main(int argc, char** argv)
     bool do_validate = false;
     bool do_visualisation = false;
     bool take_frame_screenshots = false;
-    bool unit_test = false;
+    // bool unit_test = false;
     size_t computation_kernel_count = 128;
     size_t threads_per_dimension = 32;
 
     std::string number_of_registers_string; ///< string storing the number of registers for opencl threads separated with comma
     std::string number_of_threads_string;   ///< string storing the number of threads for opencl separated with comma
-    std::string test_suite;
+    // std::string test_suite;
     bool use_config_file = false;
     std::string conf_file;
 
@@ -188,10 +190,12 @@ int main(int argc, char** argv)
             take_frame_screenshots = true;
             break;
 
+		/*
         case 'u':
             unit_test = true;
             test_suite = optarg;
             break;
+        */
         case 'c':
             use_config_file = true;
             conf_file = optarg;
@@ -226,13 +230,13 @@ int main(int argc, char** argv)
     std::cout << std::endl;
     std::cout << "      [-t timestep]   (default: -1 for automatic detection)" << std::endl;
     std::cout << "      [-s]    (take a screenshot every frame - default: disabled)" << std::endl;
-    std::cout << "      [-u] run unit tests" << std::endl;
+    // std::cout << "      [-u] run unit tests" << std::endl;
     std::cout << "      [-c] read the configuration file" << std::endl;
     return -1;
 
     parameter_error_ok:
     // std::list<int> lbm_opencl_number_of_registers_list;
-    std::array<dim3, 3> lbm_opencl_number_of_threads_list;
+    std::vector<dim3> lbm_opencl_number_of_threads_list;
 
     /*
      * TODO
@@ -271,7 +275,7 @@ int main(int argc, char** argv)
     CSingleton<CConfiguration<TYPE> >::getInstance()->printMe();
 #endif
 
-    if(unit_test)
+    /* if(unit_test)
     {
         if(strcmp( "all", test_suite.c_str() ) == 0 )
         {
@@ -297,7 +301,7 @@ int main(int argc, char** argv)
             UnitTest::TestRunner runner(reporter);
             return runner.RunTestsIf(selectedTests, 0, UnitTest::True(), 0 );
         }
-    } else if(CSingleton<CConfiguration<TYPE> >::getInstance()->do_validate) {
+    } else */ if(CSingleton<CConfiguration<TYPE> >::getInstance()->do_validate) {
         CVector<3,int> origin(0,0,0);
         CDomain<TYPE> domain(-1, CSingleton<CConfiguration<TYPE> >::getInstance()->domain_size, origin, CSingleton<CConfiguration<TYPE> >::getInstance()->domain_length);
         CManager<TYPE> *manager = new CManager<TYPE>(domain, CSingleton<CConfiguration<TYPE> >::getInstance()->subdomain_num);

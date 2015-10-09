@@ -34,10 +34,10 @@ class CLbmSolverCPU : public CLbmSolver<T>
 private:
 	CLbmSolverGPU<T>* solverGPU;
 
-	std::array<T*, 6> densityDistributions;
-	std::array<Flag*, 6> flags;
-	std::array<T*, 6> velocities;
-	std::array<T*, 6> densities;
+	std::vector<T*> densityDistributions;
+	std::vector<Flag*> flags;
+	std::vector<T*> velocities;
+	std::vector<T*> densities;
 	
 	/*
 	 * Maybe these members are not required if data copy operations during sync
@@ -55,10 +55,10 @@ public:
 	CLbmSolverCPU(
 			int id,
 			CDomain<T> &domain,
-			std::array<Flag,6> boundaryConditions,
+			std::vector<Flag> boundaryConditions,
 			T timestepSize,
-			CVector<3,T> &gravitation,
-			CVector<4,T> &drivenCavityVelocity,
+			CVector<3, T> &gravitation,
+			CVector<4, T> &drivenCavityVelocity,
 			T viscocity,
 			T massExchangeFactor = MASS_EXCHANGE_FACTOR,
 			T maxSimGravitationLength = MAX_SIM_GRAVITATION_LENGTH,
@@ -68,25 +68,25 @@ public:
 	~CLbmSolverCPU();
 
 	void simulationStepAlpha();
-	void simulationStepAlphaRect(CVector<3,int> origin, CVector<3,int> size);
+	void simulationStepAlphaRect(CVector<3, int> origin, CVector<3, int> size);
 	void simulationStepBeta();
-	void simulationStepBetaRect(CVector<3,int> origin, CVector<3,int> size);
+	void simulationStepBetaRect(CVector<3, int> origin, CVector<3, int> size);
 	void reset();
-	void getDensityDistributions(CVector<3,int> &origin, CVector<3,int> &size, T* dst);
+	void getDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* dst);
 	void getDensityDistributions(T* dst);
-	void setDensityDistributions(CVector<3,int> &origin, CVector<3,int> &size, T* src);
+	void setDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* src);
 	void setDensityDistributions(T* src);
-	void getFlags(CVector<3,int> &origin, CVector<3,int> &size, Flag* src);
+	void getFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* src);
 	void getFlags(Flag* src);
-	void setFlags(CVector<3,int> &origin, CVector<3,int> &size, Flag* dst);
+	void setFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* dst);
 	void setFlags(Flag* dst);
-	void getVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* src);
+	void getVelocities(CVector<3, int> &origin, CVector<3, int> &size, T* src);
 	void getVelocities(T* src);
-	void setVelocities(CVector<3,int> &origin, CVector<3,int> &size, T* dst);
+	void setVelocities(CVector<3, int> &origin, CVector<3, int> &size, T* dst);
 	void setVelocities(T* dst);
-	void getDensities(CVector<3,int> &origin, CVector<3,int> &size, T* src);
+	void getDensities(CVector<3, int> &origin, CVector<3, int> &size, T* src);
 	void getDensities(T* src);
-	void setDensities(CVector<3,int> &origin, CVector<3,int> &size, T* dst);
+	void setDensities(CVector<3, int> &origin, CVector<3, int> &size, T* dst);
 	void setDensities(T* dst);
 };
 

@@ -22,10 +22,6 @@
 
 #include "CLbmSolver.hpp"
 
-#include <vector>
-
-#include <vector_types.h>
-
 template<typename T>
 class CLbmSolverGPU : public CLbmSolver<T>
 {
@@ -49,8 +45,8 @@ private:
      * [g/s]etDensityDistributionsHalo[4]: halo layer for front face
      * [g/s]etDensityDistributionsHalo[5]: halo layer for back face
      */
-    std::array<T*, 6> getDensityDistributionsHalo;
-    std::array<T*, 6> setDensityDistributionsHalo;
+    std::vector<T*> getDensityDistributionsHalo;
+    std::vector<T*> setDensityDistributionsHalo;
 
     /*
      * Four slots for the parallel setup (threads per block) for the four different GPU kernels.
@@ -58,15 +54,15 @@ private:
      * threadsPerBlock[1]: number of threads per block for kernel lbm_alpha()
      * threadsPerBlock[2]: number of threads per block for kernel lbm_beta()
      */
-    std::array<dim3,3> threadsPerBlock;
+    std::vector<dim3> threadsPerBlock;
 
 public:
     CLbmSolverGPU();
     CLbmSolverGPU(
             int id,
-            std::array<dim3,3> threadsPerBlock,
+            std::vector<dim3> threadsPerBlock,
             CDomain<T>& domain,
-            std::array<Flag,6> boundaryConditions,
+            std::vector<Flag> boundaryConditions,
             T timestepSize,
             CVector<3, T>& gravitation,
             CVector<4, T>& drivenCavityVelocity,
