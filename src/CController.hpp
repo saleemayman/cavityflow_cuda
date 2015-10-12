@@ -51,6 +51,13 @@ private:
     std::vector<CComm<T>*> communication;          ///< A std::vector containing all the communication objects for the subdomain
     int simulationStepCounter;
 
+    int _UID; ///< Unique ID of each controller
+    CDomain<T> _domain; ///< Domain data
+    ILbmVisualization<T>* cLbmVisualization; ///< Visualization class
+    CLbmSolverCPU<T> *cLbmPtr;
+    CLbmSolverGPU<T> *cLbmPtrGPU;
+    std::vector<Flag> boundaryConditions; ///< Boundary conditions. First index specifies the dimension and second the upper or the lower boundary.
+    std::vector<CComm<T>*> _comm_container; ///< A std::Vector containing all the communcation objects for the subdomain
     T vector_checksum;
 
     /*

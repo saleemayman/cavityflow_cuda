@@ -20,17 +20,18 @@
 #include "CConfiguration.hpp"
 
 template <class T>
-CConfiguration<T>::CConfiguration()
+CConfiguration<T>::CConfiguration() : block_threads_per_dim(3)
 {
 }
 
 template <class T>
-CConfiguration<T>::CConfiguration(std::string file_name)
+CConfiguration<T>::CConfiguration(std::string file_name) : block_threads_per_dim(3)
 {
 	int loading_file_res = load_xml(file_name);
 	if (loading_file_res != txml::XML_SUCCESS)
 		throw "Loading XML file failed";
 	interpret_xml_doc();
+	check_parameters();
 }
 
 template <class T>
@@ -94,11 +95,45 @@ void CConfiguration<T>::interpret_simulation_data(const txml::XMLNode* root)
 template <class T>
 void CConfiguration<T>::interpret_device_data(const txml::XMLNode* root)
 {
-	const txml::XMLNode* child_four = root->FirstChildElement(TAG_NAME_CHILD_FOUR);
-	computation_kernel_count = atoi(child_four->FirstChildElement( "kernel-count" )->GetText());
-	threads_per_dimension = atoi(child_four->FirstChildElement( "threads-per-dim" )->GetText());
-	device_nr = atoi(child_four->FirstChildElement( "device-number" )->GetText());
+    const txml::XMLNode* child_four = root->FirstChildElement(TAG_NAME_CHILD_FOUR);
+
+	int threads_per_block[3];
+    threads_per_block[0] = atoi(child_four->FirstChildElement( "init-kernel-block-dim" )->FirstChildElement( "x" )->GetText());
+    threads_per_block[1] = atoi(child_four->FirstChildElement( "init-kernel-block-dim" )->FirstChildElement( "y" )->GetText());
+    threads_per_block[2] = atoi(child_four->FirstChildElement( "init-kernel-block-dim" )->FirstChildElement( "z" )->GetText());
+	block_threads_per_dim[0] = dim3(threads_per_block[0], threads_per_block[1], threads_per_block[2]);
+
+    threads_per_block[0] = atoi(child_four->FirstChildElement( "alpha-kernel-block-dim" )->FirstChildElement( "x" )->GetText());
+    threads_per_block[1] = atoi(child_four->FirstChildElement( "alpha-kernel-block-dim" )->FirstChildElement( "y" )->GetText());
+    threads_per_block[2] = atoi(child_four->FirstChildElement( "alpha-kernel-block-dim" )->FirstChildElement( "z" )->GetText());
+	block_threads_per_dim[1] = dim3(threads_per_block[0], threads_per_block[1], threads_per_block[2]);
+
+    threads_per_block[0] = atoi(child_four->FirstChildElement( "beta-kernel-block-dim" )->FirstChildElement( "x" )->GetText());
+    threads_per_block[1] = atoi(child_four->FirstChildElement( "beta-kernel-block-dim" )->FirstChildElement( "y" )->GetText());
+    threads_per_block[2] = atoi(child_four->FirstChildElement( "beta-kernel-block-dim" )->FirstChildElement( "z" )->GetText());  
+	block_threads_per_dim[2] = dim3(threads_per_block[0], threads_per_block[1], threads_per_block[2]);
+    device_nr = atoi(child_four->FirstChildElement( "device-number" )->GetText());                                                   
 }
+
+template <class T>
+void CConfiguration<T>::check_parameters()
+{
+    // check parameter correctness
+    if (viscosity < 0)
+        throw "Loading XML file failed. Invalid value: viscosity must be positive.";
+
+    if (domain_size[0] <= 0 || domain_size[1] <= 0 || domain_size[2] <= 0)                                                              
+        throw "Loading XML file failed. Invalid value: domain size must be greater than zero.";
+        
+    if (subdomain_num[0] <= 0 || subdomain_num[1] <= 0 || subdomain_num[2] <= 0)                                                     
+        throw "Loading XML file failed. Invalid value: number of sub-domains must be greater than zero.";
+
+    if (domain_length[0] <= 0 || domain_length[1] <= 0 || domain_length[2] <= 0)                                                        
+        throw "Loading XML file failed. Invalid value: domain-length must be greater than positive.";
+
+    // TODO: parameter check for the kernels' block size to be done in the solver class.
+}
+
 
 template <class T>
 void CConfiguration<T>::interpret_xml_doc()
@@ -121,6 +156,7 @@ void CConfiguration<T>::loadFile(std::string file_name)
 	if (loading_file_res != txml::XML_SUCCESS)
 		throw "Loading XML file failed";
 	interpret_xml_doc();
+	check_parameters();
 }
 
 template <class T>
@@ -142,8 +178,9 @@ void CConfiguration<T>::printMe()
 	std::cout <<  "             VTK: " << do_visualization << std::endl;
 	std::cout <<  "        VALIDATE: " << do_validate << std::endl;
 	std::cout <<  "DEVICE:" << std::endl;
-	std::cout <<  "     KERNEL_COUNT: " << computation_kernel_count << std::endl;
-	std::cout <<  "  THREADS_PER_DIM: " << threads_per_dimension << std::endl;
+//	std::cout <<  " INIT BLOCK DIM: " <<  block_threads_per_dim[0] << std::endl;
+//	std::cout <<  "ALPHA BLOCK DIM: " <<  block_threads_per_dim[1] << std::endl;
+//	std::cout <<  " BETA BLOCK DIM: " <<  block_threads_per_dim[2] << std::endl;
 	std::cout <<  "        DEVICE_NR: " << device_nr << std::endl;
 }
 

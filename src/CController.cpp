@@ -167,8 +167,8 @@ int CController<T>::initLBMSolver()
 
     // TODO reactivate
     /*
-    if (cLbmPtr->error()) {
-        std::cout << cLbmPtr->error.getString();
+    if (cLbmPtrGPU->error()) {
+        std::cout << cLbmPtrGPU->error.getString();
         return -1;
     }
 

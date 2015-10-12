@@ -31,7 +31,6 @@
 
 // internals
 // #include "helper.h"
-#include "libmath/CMath.hpp"
 #include "CConfiguration.hpp"
 #include "CController.hpp"
 #include "CDomain.hpp"
@@ -77,204 +76,34 @@ int main(int argc, char** argv)
      * TODO
      * Check if the following variables should be moved to constants.h
      */
-    // bool debug = false;
-
-    CVector<3,int> domain_size(32,32,32);
-    CVector<3,int> subdomain_nums(1,1,1);
-    CVector<3,TYPE> domain_length(0.1,0.1,0.1);
-
-    CVector<3,TYPE> gravitation(0,-9.81,0);
-    CVector<4,TYPE> drivenCavityVelocity(100,0,0,1);
-    TYPE viscosity = 0.001308;
-    TYPE timestep = -1.0;
-    int loops = -1;
-
-    bool do_validate = false;
-    bool do_visualisation = false;
-    // bool take_frame_screenshots = false;
-    // bool unit_test = false;
-    size_t computation_kernel_count = 128;
-    size_t threads_per_dimension = 32;
-
-    std::string number_of_registers_string; ///< string storing the number of registers for opencl threads separated with comma
-    std::string number_of_threads_string;   ///< string storing the number of threads for opencl separated with comma
-    // std::string test_suite;
-    bool use_config_file = false;
+    bool debug = false;
+    bool unit_test = false;
+    std::string test_suite;
     std::string conf_file;
 
     int device_nr = 0;
-
     char optchar;
-    while ((optchar = getopt(argc, argv, "x:y:z:d:vr:k:f:gG:t:sl:R:T:X:Y:Z:S:u:c:n:m:p:")) > 0)
+    while ((optchar = getopt(argc, argv, "u:c:")) > 0)
     {
         switch(optchar)
         {
-        case 'd':
-            device_nr = atoi(optarg);
-            break;
-
-        /*
-        case 'v':
-            debug = true;
-            break;
-        */
-
-        case 'R':
-            number_of_registers_string = optarg;
-            break;
-
-        case 'T':
-            number_of_threads_string = optarg;
-            break;
-
-        case 'x':
-            domain_size[0] = atoi(optarg);
-            break;
-
-        case 'X':
-            subdomain_nums[0] = atoi(optarg);
-            break;
-        case 'Y':
-            subdomain_nums[1] = atoi(optarg);
-            break;
-        case 'Z':
-            subdomain_nums[2] = atoi(optarg);
-            break;
-        case 'S':
-            domain_size[0] = atoi(optarg);
-            domain_size[1] = atoi(optarg);
-            domain_size[2] = atoi(optarg);
-            break;
-        case 'l':
-            loops = atoi(optarg);
-            break;
-
-        case 'y':
-            domain_size[1] = atoi(optarg);
-            break;
-
-        case 'k':
-            computation_kernel_count = atoi(optarg);
-            break;
-        
-        case 'f':
-            threads_per_dimension = atoi(optarg);
-            break;
-
-        case 'z':
-            domain_size[2] = atoi(optarg);
-            break;
-
-        case 'r':
-            viscosity = atof(optarg);
-            break;
-        case 'n':
-          domain_length[0] = atof(optarg);
-          break;
-        case 'm':
-          domain_length[1] = atof(optarg);
-          break;
-        case 'p':
-          domain_length[2] = atof(optarg);
-          break;
-        case 'g':
-            do_visualisation = true;
-            break;
-
-        case 'G':
-            gravitation[1] = atof(optarg);
-            break;
-
-        case 't':
-            timestep = atof(optarg);
-            break;
-
-        /*
-        case 's':
-            take_frame_screenshots = true;
-            break;
-        */
-
-		/*
         case 'u':
             unit_test = true;
             test_suite = optarg;
             break;
-        */
         case 'c':
-            use_config_file = true;
             conf_file = optarg;
             break;
         default:
-            goto parameter_error;
+            std::cout << "Not enough input arguments. Exiting!" << std::endl;
+			return -1;
         }
     }
 
-    goto parameter_error_ok;
-
-    parameter_error:
-    std::cout << "usage: " << argv[0] << std::endl;
-    std::cout << "      [-x resolution_x, default: 32]" << std::endl;
-    std::cout << "      [-y resolution_y, default: 32]" << std::endl;
-    std::cout << "      [-z resolution_z, default: 32]" << std::endl;
-    std::cout << "      [-X subdomain resolution_x, default: 1]" << std::endl;
-    std::cout << "      [-Y subdomain resolution_y, default: 1]" << std::endl;
-    std::cout << "      [-Z subdomain resolution_z, default: 1]" << std::endl;
-    std::cout << std::endl;
-    std::cout << "      [-G gravitation in down direction, default: -9.81]" << std::endl;
-    std::cout << std::endl;
-    std::cout << "      [-r viscosity, default: 0.001308]" << std::endl;
-    std::cout << "      [-v]    (debug mode on, be verbose)" << std::endl;
-    std::cout << "      [-d device_num] (-1: list available devices, or select device)" << std::endl;
-    std::cout << "      [-k number of kernels to run ]  (default: 0 - autodetect maximum)" << std::endl;
-    std::cout << "      [-g]    (activate gui, default:disabled)" << std::endl;
-    std::cout << "      [-p]    (pause simulation at start, default:disabled)" << std::endl;
-    std::cout << std::endl;
-    std::cout << "      [-R registers for OpenCL]   (comma separated list of number of registers per threads in OpenCL)" << std::endl;
-    std::cout << "      [-T work group threads]     (comma separated list of number of threads in OpenCL)" << std::endl;
-    std::cout << std::endl;
-    std::cout << "      [-t timestep]   (default: -1 for automatic detection)" << std::endl;
-    std::cout << "      [-s]    (take a screenshot every frame - default: disabled)" << std::endl;
-    // std::cout << "      [-u] run unit tests" << std::endl;
-    std::cout << "      [-c] read the configuration file" << std::endl;
-    return -1;
-
-    parameter_error_ok:
-    // std::list<int> lbm_opencl_number_of_registers_list;
+	// load the config file and read the configuration parameters
+	ConfigSingleton::Instance()->loadFile(conf_file);
     std::vector<dim3> lbm_opencl_number_of_threads_list;
 
-    /*
-     * TODO
-     * Implement new way to manage grid configurations
-     */
-    /*
-    if (!number_of_threads_string.empty())
-        extract_comma_separated_integers(lbm_opencl_number_of_threads_list, number_of_threads_string);
-
-    if (!number_of_registers_string.empty())
-        extract_comma_separated_integers(lbm_opencl_number_of_registers_list, number_of_registers_string);
-    */
-
-    if(use_config_file)
-    {
-        CSingleton<CConfiguration<TYPE> >::getInstance()->loadFile(conf_file);
-    } else {
-        CSingleton<CConfiguration<TYPE> >::getInstance()->domain_size = domain_size;
-        CSingleton<CConfiguration<TYPE> >::getInstance()->subdomain_num = subdomain_nums;
-        CSingleton<CConfiguration<TYPE> >::getInstance()->domain_length = domain_length;
-        CSingleton<CConfiguration<TYPE> >::getInstance()->gravitation = gravitation;
-        CSingleton<CConfiguration<TYPE> >::getInstance()->viscosity = viscosity;
-        CSingleton<CConfiguration<TYPE> >::getInstance()->computation_kernel_count = computation_kernel_count;
-        CSingleton<CConfiguration<TYPE> >::getInstance()->threads_per_dimension = threads_per_dimension;
-        CSingleton<CConfiguration<TYPE> >::getInstance()->device_nr = device_nr;
-        CSingleton<CConfiguration<TYPE> >::getInstance()->do_visualization = do_visualisation;
-        CSingleton<CConfiguration<TYPE> >::getInstance()->timestep = timestep;
-        CSingleton<CConfiguration<TYPE> >::getInstance()->loops = loops;
-        // CSingleton<CConfiguration<TYPE> >::getInstance()->lbm_opencl_number_of_registers_list = lbm_opencl_number_of_registers_list;
-        CSingleton<CConfiguration<TYPE> >::getInstance()->lbm_opencl_number_of_threads_list = lbm_opencl_number_of_threads_list;
-        CSingleton<CConfiguration<TYPE> >::getInstance()->do_validate = do_validate;
-        CSingleton<CConfiguration<TYPE> >::getInstance()->drivenCavityVelocity = drivenCavityVelocity;
-    }
 #if DEBUG
     CSingleton<CConfiguration<TYPE> >::getInstance()->debug_mode = true;
     CSingleton<CConfiguration<TYPE> >::getInstance()->printMe();
@@ -397,7 +226,7 @@ int main(int argc, char** argv)
             int error_counter = 0;
             for ( int i = 0; i < local_size_without_halo.elements()*3; i++)
             {
-                if (CMath<TYPE>::abs(sub_global_data[i] - local_data[i]) > tolerance )
+                if (fabs(sub_global_data[i] - local_data[i]) > tolerance )
                 {
 #if 0
                     if ((i % 30) == 0)

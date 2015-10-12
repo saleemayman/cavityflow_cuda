@@ -32,7 +32,7 @@ template<typename T>
 class CLbmSolverCPU : public CLbmSolver<T>
 {
 private:
-	CLbmSolverGPU<T>* solverGPU;
+//	CLbmSolverGPU<T>* solverGPU;
 
 	std::vector<T*> densityDistributions;
 	std::vector<Flag*> flags;
@@ -60,6 +60,7 @@ public:
 			CVector<3, T> &gravitation,
 			CVector<4, T> &drivenCavityVelocity,
 			T viscocity,
+			CLbmSolverGPU<T> *solverGPU,
 			T massExchangeFactor = MASS_EXCHANGE_FACTOR,
 			T maxSimGravitationLength = MAX_SIM_GRAVITATION_LENGTH,
 			T tau = TAU,
