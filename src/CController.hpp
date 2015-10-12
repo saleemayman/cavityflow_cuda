@@ -41,23 +41,16 @@ template<typename T>
 class CController
 {
 private:
-    int id;                                        ///< Unique ID of each controller
-    CConfiguration<T> *configuration;              ///<
-    CDomain<T> domain;                             ///< Domain data
-    CLbmSolverCPU<T> *solverCPU;                   ///<
-    CLbmSolverGPU<T> *solverGPU;                   ///<
-    ILbmVisualization<T>* cLbmVisualization;       ///< Visualization class
-    std::vector<Flag> boundaryConditions;          ///< Boundary conditions
-    std::vector<CComm<T>*> communication;          ///< A std::vector containing all the communication objects for the subdomain
+    int id;
+    CConfiguration<T>* configuration;
+    CDomain<T> domain;
+    // CLbmSolverCPU<T> *solverCPU;
+    CLbmSolverGPU<T> *solverGPU;
+    ILbmVisualization<T>* cLbmVisualization;
+    std::vector<Flag> boundaryConditions;
+    std::vector<CComm<T> > communication;
     int simulationStepCounter;
 
-    int _UID; ///< Unique ID of each controller
-    CDomain<T> _domain; ///< Domain data
-    ILbmVisualization<T>* cLbmVisualization; ///< Visualization class
-    CLbmSolverCPU<T> *cLbmPtr;
-    CLbmSolverGPU<T> *cLbmPtrGPU;
-    std::vector<Flag> boundaryConditions; ///< Boundary conditions. First index specifies the dimension and second the upper or the lower boundary.
-    std::vector<CComm<T>*> _comm_container; ///< A std::Vector containing all the communcation objects for the subdomain
     T vector_checksum;
 
     /*
@@ -69,35 +62,25 @@ private:
     CCL::CCommandQueue* cCommandQueue;
     */
 
-    int initLBMSolver();
     void computeNextStep();
     void syncAlpha();
     void syncBeta();
 
-    void outputDD(int dd_i);
-
 public:
-    CController(int id, CDomain<T> domain, std::vector<Flag> boundaryConditions, CConfiguration<T> *configuration);
+    CController(
+    		int id,
+    		CDomain<T> domain,
+    		std::vector<Flag> boundaryConditions,
+    		std::vector<CComm<T> > communication,
+    		CConfiguration<T>* configuration);
     ~CController();
 
+    void setDrivenCavitySzenario();
     int run();
-    void addCommunication(CComm<T>* comm);
-    void setGeometry();
-    /*
-     * TODO
-     * This piece of code should be obsolete since the ghost layer sizes are now
-     * set implicitly by CLbmSolver depending on the domain size.
-     */
-    // void addCommToSolver();
-    /*
-    CLbmSolver<T>* getSolver() const;
-    void setSolver(CLbmSolverGPU<T>* lbmPtr);
-    CDomain<T> getDomain() const;
-    int getUid() const;
-    */
 
-    CLbmSolver<T>* getSolver() const;
-    CDomain<T> getDomain() const;
+    int getId();
+    CDomain<T>* getDomain();
+    CLbmSolver<T>* getSolver();
 };
 
 #endif

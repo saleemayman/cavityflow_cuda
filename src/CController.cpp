@@ -30,154 +30,54 @@
 #include "CSingleton.hpp"
 
 template <class T>
-CController<T>::CController(int id, CDomain<T> domain, std::vector<Flag> boundaryConditions, CConfiguration<T> *configuration) :
-        id(id), configuration(configuration), domain(domain), solverCPU(NULL), solverGPU(NULL), cLbmVisualization(NULL), boundaryConditions(boundaryConditions), simulationStepCounter(0)
+CController<T>::CController(
+		int id,
+		CDomain<T> domain,
+		std::vector<Flag> boundaryConditions,
+	    std::vector<CComm<T> > communication,
+		CConfiguration<T>* configuration) :
+        id(id),
+        configuration(configuration),
+        domain(domain),
+        boundaryConditions(boundaryConditions),
+        communication(communication),
+        simulationStepCounter(0)
 {
-	/*
-    for (int i = 0; i < 3; i++)
-        for (int j = 0; j < 2; j++)
-            _BC[i][j] = BC[i][j];
+    solverGPU = new CLbmSolverGPU<T>(
+    		this->id,
+    		this->configuration->lbm_opencl_number_of_threads_list,
+    		this->domain,
+    		this->boundaryConditions,
+    		this->configuration->timestep,
+    		this->configuration->gravitation,
+    		this->configuration->drivenCavityVelocity,
+    		this->configuration->viscosity);
+    /*
+    solverCPU = new CLbmSolverCPU<T>(
+    		this->id,
+    		this->domain,
+    		this->boundaryConditions,
+    		this->configuration->timestep,
+    		this->configuration->gravitation,
+    		this->configuration->drivenCavityVelocity,
+    		this->configuration->viscosity);
     */
 
-    // initialize the LBMSolver
-    if (-1 == initLBMSolver())
-        throw "Initialization of LBM Solver failed!";
+    setDrivenCavitySzenario();
+
+    if(this->configuration->do_visualization) {
+    	cLbmVisualization = new CLbmVisualizationVTK<T>(this->id, this->configuration->visualization_output_dir);
+    }
 }
 
 template <class T>
 CController<T>::~CController()
 {
-	/*
-    if (cPlatforms)
-        delete cPlatform;
+    if(this->configuration->do_visualization)
+    	delete cLbmVisualization;
 
-    if (cContext)
-        delete cContext;
-
-    if (cDevices)
-        delete cDevices;
-
-    if (cCommandQueue)
-        delete cCommandQueue;
-       */
-
-    if (cLbmVisualization) ///< Visualization class
-        delete cLbmVisualization;
-
-    if (solverGPU)
-        delete solverGPU;
-
-    typename std::vector<CComm<T>*>::iterator it = communication.begin();
-    for (; it != communication.end(); it++) {
-        delete *it;
-    }
-}
-
-template <class T>
-void  CController<T>::outputDD(int dd_i)
-{
-    std::cout << "DD " << dd_i << std::endl;
-    //                  int gcd = CMath<int>::gcd(cLbmPtr->domain_cells[0],wrap_max_line);
-    //                  if (wrap_max_line % gcd == 0)
-    //                      gcd = wrap_max_line;
-    // TODO reactivate
-    /*
-    int wrap_max_line = 16;
-    int gcd = wrap_max_line;
-    cLbmPtr->debugDD(dd_i, gcd,
-            cLbmPtr->domain_cells[0] * cLbmPtr->domain_cells[1]);
-    */
-}
-
-template <class T>
-int CController<T>::initLBMSolver()
-{
-/*
-#if DEBUG
-    std::cout << "loading platforms" << std::endl;
-#endif
-    cPlatforms = new CCL::CPlatforms();
-    cPlatforms->load();
-
-    // load devices belonging to cContext
-#if DEBUG
-    std::cout << "loading devices" << std::endl;
-#endif
-    cDevices = new CCL::CDevices(); // context is attached below
-
-    if (cDevices->size() == 0) {
-        std::cerr << "no device found - aborting" << std::endl;
-        return -1;
-    }
-
-    if (CSingleton<CConfiguration<T> >::getInstance()->device_nr == -1) {
-        // list available devices
-        for (int i = 0; i < (int) cDevices->size(); i++) {
-            CCL::CDeviceInfo cDeviceInfo((*cDevices)[i]);
-            std::cout << "Device " << (i) << ":" << std::endl;
-            std::cout << "          Name: " << cDeviceInfo.name << std::endl;
-            std::cout << "    Available?: " << cDeviceInfo.available << std::endl;
-            std::cout << "Driver Version: " << cDeviceInfo.driver_version << std::endl;
-            std::cout << "            CC: " << cDeviceInfo.execution_capabilities_major << std::endl;
-            std::cout << std::endl;
-        }
-        return -1;
-    }
-
-    if (configuration->device_nr < 0 || configuration->device_nr >= (int) cDevices->size()) {
-        std::cerr
-                << "invalid device number - use option \"-d -1\" to list all devices"
-                << std::endl;
-        return -1;
-    }
-
-    int dev_nr = 0;
-    char processor_name[MPI_MAX_PROCESSOR_NAME];
-    int name_len;
-    MPI_Get_processor_name(processor_name, &name_len);
-    if (strstr(processor_name, "mac-nvd") != NULL) {
-        if (id & 1)
-            dev_nr = 1;
-    }
-*/
-    // cDevice = &((*cDevices)[/* CSingleton<CConfiguration<T> >::getInstance()->device_nrd*/dev_nr]);
-
-    // load standard context for GPU devices
-	/*
-#if DEBUG
-    std::cout << "loading gpu context" << std::endl;
-#endif
-
-    cContext = new CCL::CContext(*cDevice);
-
-    // initialize queue
-    cCommandQueue = new CCL::CCommandQueue();
-*/
-
-    // INIT LATTICE BOLTZMANN!
-    solverGPU = new CLbmSolverGPU<T>(
-    		id,
-    		configuration->lbm_opencl_number_of_threads_list,
-    		domain,
-    		boundaryConditions,
-    		configuration->timestep,
-    		configuration->gravitation,
-    		configuration->drivenCavityVelocity,
-    		configuration->viscosity);
-
-    // TODO reactivate
-    /*
-    if (cLbmPtrGPU->error()) {
-        std::cout << cLbmPtrGPU->error.getString();
-        return -1;
-    }
-
-    cLbmPtr->wait();
-    */
-    CStopwatch cStopwatch;
-
-
-    return 0;
+    // delete solverCPU;
+    delete solverGPU;
 }
 
 template <class T>
@@ -188,14 +88,14 @@ void CController<T>::syncAlpha()
 #endif
     // TODO: OPTIMIZATION: communication of different neighbors can be done in Non-blocking way.
     int i = 0;
-    typename std::vector<CComm<T>*>::iterator it = communication.begin();
+    typename std::vector<CComm<T> >::iterator it = communication.begin();
     for (; it != communication.end(); it++, i++)
     {
-        CVector<3, int> send_size = (*it)->getSendSize();
-        CVector<3, int> recv_size = (*it)->getRecvSize();
+        CVector<3, int> send_size = it->getSendSize();
+        CVector<3, int> recv_size = it->getRecvSize();
         // CVector<3, int> send_origin = (*it)->getSendOrigin();
         // CVector<3, int> recv_origin = (*it)->getRecvOrigin();
-        int dst_rank = (*it)->getDstId();
+        int dst_rank = it->getDstId();
 #if DEBUG
         // std::cout << "ALPHA RANK: " << dst_rank << std::endl;
 #endif
@@ -249,18 +149,18 @@ void CController<T>::syncBeta()
 #endif
     int i = 0;
     // TODO: OPTIMIZATION: communication of different neighbors can be done in Non-blocking form.
-    typename std::vector<CComm<T>*>::iterator it = communication.begin();
+    typename std::vector<CComm<T> >::iterator it = communication.begin();
     for (; it != communication.end(); it++, i++)
     {
         // the send and receive values in beta sync is the opposite values of
         // Comm instance related to current communication, since the ghost layer data
         // will be sent back to their origin
-        CVector<3, int> send_size = (*it)->getRecvSize();
-        CVector<3, int> recv_size = (*it)->getSendSize();
+        CVector<3, int> send_size = it->getRecvSize();
+        CVector<3, int> recv_size = it->getSendSize();
         // CVector<3, int> send_origin = (*it)->getRecvOrigin();
         // CVector<3, int> recv_origin = (*it)->getSendOrigin();
         // CVector<3, int> normal = (*it)->getCommDirection();
-        int dst_rank = (*it)->getDstId();
+        int dst_rank = it->getDstId();
 #if DEBUG
         // std::cout << "BETA RANK: " << dst_rank << std::endl;
 #endif
@@ -317,6 +217,38 @@ void CController<T>::computeNextStep()
         syncAlpha();
     }
     simulationStepCounter++;
+}
+
+template <class T>
+void CController<T>::setDrivenCavitySzenario()
+{
+#if DEBUG
+    std::cout << "----- CController<T>::setDrivenCavitySzenario() -----" << std::endl;
+    std::cout << "Cells where velocity injection takes place due to driven cavity scenario are marked accordingly." << std::endl;
+    std::cout << "-----------------------------------------------------" << std::endl;
+    std::cout << "id:     " << id << std::endl;
+    std::cout << "-----------------------------------------------------" << std::endl;
+#endif
+
+    CVector<3, int> origin(1, domain.getSize()[1] - 2, 1);
+    CVector<3, int> size(domain.getSize()[0] - 2, 1, domain.getSize()[2] - 2);
+
+#if DEBUG
+    std::cout << "origin: " << origin << std::endl;
+    std::cout << "size:   " << size << std::endl;
+    std::cout << "-----------------------------------------------------" << std::endl;
+#endif
+
+    Flag* src = new Flag[size.elements()];
+
+    for (int i = 0; i < size.elements(); i++)
+    {
+        src[i] = VELOCITY_INJECTION;
+    }
+
+    solverGPU->setFlags(origin, size, src);
+
+    delete[] src;
 }
 
 /*
@@ -444,11 +376,13 @@ int CController<T>::run()
     return EXIT_SUCCESS;
 }
 
+/*
 template <class T>
 void CController<T>::addCommunication(CComm<T>* comm)
 {
     communication.push_back(comm);
 }
+*/
 
 /*
  * TODO
@@ -463,42 +397,19 @@ void CController<T>::addCommToSolver()
 }
 */
 
-/*
- * This Function is used the set the geometry (e.g obstacles, velocity injections, ...) of corresponding domain
- */
 template <class T>
-void CController<T>::setGeometry()
-{
-#if DEBUG
-    std::cout << "\nSetting Geometry for Domain " << id << std::endl;
-#endif
-    CVector<3, int> origin(1, domain.getSize()[1] - 2, 1);
-    CVector<3, int> size(domain.getSize()[0] - 2, 1,
-            domain.getSize()[2] - 2);
-#if DEBUG
-    std::cout << "\nCController.setGeometry() GEOMETRY: " << size << std::endl;
-    std::cout << "\nCController.setGeometry() origin: " << origin << std::endl;
-#endif
-    Flag* src = new Flag[size.elements()];
-
-    for (int i = 0; i < size.elements(); i++)
-    {
-        src[i] = VELOCITY_INJECTION;
-    }
-    printf("\n");
-    solverGPU->setFlags(origin, size, src);
-
-    delete[] src;
+int CController<T>::getId() {
+    return id;
 }
 
 template <class T>
-CLbmSolver<T>* CController<T>::getSolver() const {
+CDomain<T>* CController<T>::getDomain() {
+    return &domain;
+}
+
+template <class T>
+CLbmSolver<T>* CController<T>::getSolver() {
     return solverGPU;
-}
-
-template <class T>
-CDomain<T> CController<T>::getDomain() const {
-    return domain;
 }
 
 /*
