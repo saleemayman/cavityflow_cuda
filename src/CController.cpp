@@ -26,8 +26,6 @@
 
 #include "libtools/CStopwatch.hpp"
 #include "libvis/CLbmVisualizationVTK.hpp"
-#include "CConfiguration.hpp"
-#include "CSingleton.hpp"
 
 template <class T>
 CController<T>::CController(
@@ -35,7 +33,7 @@ CController<T>::CController(
 		CDomain<T> domain,
 		std::vector<Flag> boundaryConditions,
 	    std::vector<CComm<T> > communication,
-		CConfiguration<T>* configuration) :
+	    CConfiguration<T>* configuration) :
         id(id),
         configuration(configuration),
         domain(domain),
@@ -45,12 +43,12 @@ CController<T>::CController(
 {
     solverGPU = new CLbmSolverGPU<T>(
     		this->id,
-    		this->configuration->block_threads_per_dim,
+    		this->configuration->threadsPerBlock,
     		this->domain,
     		this->boundaryConditions,
     		this->configuration->timestep,
     		this->configuration->gravitation,
-    		this->configuration->drivenCavityVelocity,
+    		this->configuration->cavityVelocity,
     		this->configuration->viscosity);
     /*
     solverCPU = new CLbmSolverCPU<T>(
@@ -65,15 +63,15 @@ CController<T>::CController(
 
     setDrivenCavitySzenario();
 
-    if(this->configuration->do_visualization) {
-    	// cLbmVisualization = new CLbmVisualizationVTK<T>(this->id, this->configuration->visualization_output_dir);
+    if(this->configuration->doVisualization) {
+    	cLbmVisualization = new CLbmVisualizationVTK<T>(this->id, this->configuration->visualizationOutputDir);
     }
 }
 
 template <class T>
 CController<T>::~CController()
 {
-    if(this->configuration->do_visualization)
+    if(this->configuration->doVisualization)
     	delete cLbmVisualization;
 
     // delete solverCPU;
@@ -259,7 +257,7 @@ template <class T>
 int CController<T>::run()
 {
     CVector<3, int> domain_size = domain.getSize();
-    int loops = CSingleton<CConfiguration<T> >::getInstance()->loops;
+    int loops = configuration->loops;
     if (loops < 0)
         loops = 100;
 
@@ -275,17 +273,17 @@ int CController<T>::run()
     floats_per_cell += 1.0;
 
     // velocity vector is also stored
-    if (CSingleton<CConfiguration<T> >::getInstance()->do_visualization
-            || CSingleton<CConfiguration<T> >::getInstance()->debug_mode)
+    if (configuration->doVisualization
+            /*|| configuration->debug_mode*/)
         floats_per_cell += 3;
     CStopwatch cStopwatch;
 
     // setting up the visualization
     std::string outputfilename = "OUTPUT";
     std::stringstream ss_file;
-    ss_file << "./" << VTK_OUTPUT_DIR << "/" << outputfilename;
+    ss_file << "./" << configuration->visualizationOutputDir << "/" << outputfilename;
     std::string outputfile = ss_file.str();
-    if (CSingleton<CConfiguration<T> >::getInstance()->do_visualization) {
+    if (configuration->doVisualization) {
         cLbmVisualization = new CLbmVisualizationVTK<T>(id, outputfile);
         cLbmVisualization->setup(solverGPU);
     }
@@ -294,7 +292,7 @@ int CController<T>::run()
     for (int i = 0; i < loops; i++) {
         computeNextStep();
         //simulation
-        if (CSingleton<CConfiguration<T> >::getInstance()->do_visualization // && (i %  100 == 0)
+        if (configuration->doVisualization // && (i %  100 == 0)
             )
             cLbmVisualization->render(i);
     }
@@ -319,11 +317,11 @@ int CController<T>::run()
     MPI_Reduce(&ltime, &gtime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     if (id == 0) {
         double gfps = (((double)loops) / gtime);
-        double gmlups = ((double)gfps*(double)CSingleton<CConfiguration<T> >::getInstance()->domain_size.elements())*(double)0.000001;
+        double gmlups = ((double)gfps*(double)configuration->domain_size.elements())*(double)0.000001;
         double gbandwidth = (gmlups*floats_per_cell*(double)sizeof(T));
         std::stringstream benchmark_file_name;
         benchmark_file_name << "./" << BENCHMARK_OUTPUT_DIR << "/" <<
-        "benchmark_" << CSingleton<CConfiguration<T> >::getInstance()->subdomain_num.elements() //<< "_" << id
+        "benchmark_" << configuration->subdomain_num.elements() //<< "_" << id
         << ".ini";
         const std::string& tmp = benchmark_file_name.str();
         const char* cstr = tmp.c_str();
@@ -331,9 +329,9 @@ int CController<T>::run()
         if (benchmark_file.is_open())
         {
             //benchmark_file << "[RESULTS]" << std::endl;
-            benchmark_file << "CUBE_X : " << CSingleton<CConfiguration<T> >::getInstance()->domain_size[0] << std::endl;
-            benchmark_file << "CUBE_Y : " << CSingleton<CConfiguration<T> >::getInstance()->domain_size[1] << std::endl;
-            benchmark_file << "CUBE_Z : " << CSingleton<CConfiguration<T> >::getInstance()->domain_size[2] << std::endl;
+            benchmark_file << "CUBE_X : " << configuration->domain_size[0] << std::endl;
+            benchmark_file << "CUBE_Y : " << configuration->domain_size[1] << std::endl;
+            benchmark_file << "CUBE_Z : " << configuration->domain_size[2] << std::endl;
             benchmark_file << "SECONDS : " << gtime << std::endl;
             benchmark_file << "FPS : " << gfps << std::endl;
             benchmark_file << "MLUPS : " << gmlups << std::endl;

@@ -23,7 +23,7 @@
 
 template <class T>
 CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
-		domain(rank, configuration->domain_size, CVector<3, int>(0), configuration->domain_length)
+		domain(rank, configuration->domainSize, CVector<3, int>(0), configuration->domainLength)
 {
     /*
 	 * Determine parameters for subdomain managed by this class.
@@ -31,25 +31,25 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
 	int id = rank;
     int subdomainX, subdomainY, subdomainZ;
 
-    subdomainX = id % configuration->subdomain_num[0];
-    id /= configuration->subdomain_num[0];
-    subdomainY = id % configuration->subdomain_num[1];
-    id /= configuration->subdomain_num[1];
+    subdomainX = id % configuration->numOfSubdomains[0];
+    id /= configuration->numOfSubdomains[0];
+    subdomainY = id % configuration->numOfSubdomains[1];
+    id /= configuration->numOfSubdomains[1];
     subdomainZ = id;
 
     // create the subdomains instances for the whole domain
     CVector<3, int> subdomainSize(
-    		configuration->domain_size[0] / configuration->subdomain_num[0],
-    		configuration->domain_size[1] / configuration->subdomain_num[1],
-    		configuration->domain_size[2] / configuration->subdomain_num[2]);
+    		configuration->domainSize[0] / configuration->numOfSubdomains[0],
+    		configuration->domainSize[1] / configuration->numOfSubdomains[1],
+    		configuration->domainSize[2] / configuration->numOfSubdomains[2]);
     CVector<3, int> subdomainOrigin(
     		subdomainX * subdomainSize[0],
     		subdomainY * subdomainSize[1],
     		subdomainZ * subdomainSize[2]);
     CVector<3, T> subdomainLength(
-    		configuration->domain_length[0] / (T)configuration->subdomain_num[0],
-    		configuration->domain_length[1] / (T)configuration->subdomain_num[1],
-    		configuration->domain_length[2] / (T)configuration->subdomain_num[2]);
+    		configuration->domainLength[0] / (T)configuration->numOfSubdomains[0],
+    		configuration->domainLength[1] / (T)configuration->numOfSubdomains[1],
+    		configuration->domainLength[2] / (T)configuration->numOfSubdomains[2]);
     CDomain<T> *subdomain = new CDomain<T>(rank, subdomainSize, subdomainOrigin, subdomainLength);
 
 #if DEBUG
@@ -74,15 +74,15 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
 
     if (subdomainX == 0)
     	boundaryConditions[0] = OBSTACLE;
-    if (subdomainX == (configuration->subdomain_num[0] - 1))
+    if (subdomainX == (configuration->numOfSubdomains[0] - 1))
     	boundaryConditions[1] = OBSTACLE;
     if (subdomainY == 0)
     	boundaryConditions[2] = OBSTACLE;
-    if (subdomainY == (configuration->subdomain_num[1] - 1))
+    if (subdomainY == (configuration->numOfSubdomains[1] - 1))
     	boundaryConditions[3] = OBSTACLE;
     if (subdomainZ == 0)
     	boundaryConditions[4] = OBSTACLE;
-    if (subdomainZ == (configuration->subdomain_num[2] - 1))
+    if (subdomainZ == (configuration->numOfSubdomains[2] - 1))
     	boundaryConditions[5] = OBSTACLE;
 
 #if DEBUG
@@ -126,7 +126,7 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
         communication.push_back(comm);
     }
     if (boundaryConditions[2] == GHOST_LAYER) {
-        int commDestination = rank - configuration->subdomain_num[0];
+        int commDestination = rank - configuration->numOfSubdomains[0];
         CVector<3, int> sendSize(subdomainSize[0], 1, subdomainSize[2]);
         CVector<3, int> recvSize(subdomainSize[0], 1, subdomainSize[2]);
         CVector<3, int> sendOrigin(0, 1, 0);
@@ -138,7 +138,7 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
         communication.push_back(comm);
     }
     if (boundaryConditions[3] == GHOST_LAYER) {
-        int commDestination = rank + configuration->subdomain_num[0];
+        int commDestination = rank + configuration->numOfSubdomains[0];
         CVector<3, int> sendSize(subdomainSize[0], 1, subdomainSize[2]);
         CVector<3, int> recvSize(subdomainSize[0], 1,  subdomainSize[2]);
         CVector<3, int> sendOrigin(0, subdomainSize[1] - 2, 0);
@@ -150,7 +150,7 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
         communication.push_back(comm);
     }
     if (boundaryConditions[4] == GHOST_LAYER) {
-        int commDestination = rank - configuration->subdomain_num[0] * configuration->subdomain_num[1];
+        int commDestination = rank - configuration->numOfSubdomains[0] * configuration->numOfSubdomains[1];
         CVector<3, int> sendSize(subdomainSize[0], subdomainSize[1], 1);
         CVector<3, int> recvSize(subdomainSize[0], subdomainSize[1], 1);
         CVector<3, int> sendOrigin(0, 0, 1);
@@ -162,7 +162,7 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
         communication.push_back(comm);
     }
     if (boundaryConditions[5] == GHOST_LAYER) {
-        int commDestination = rank + configuration->subdomain_num[0] * configuration->subdomain_num[1];
+        int commDestination = rank + configuration->numOfSubdomains[0] * configuration->numOfSubdomains[1];
         CVector<3, int> sendSize(subdomainSize[0], subdomainSize[1], 1);
         CVector<3, int> recvSize(subdomainSize[0], subdomainSize[1], 1);
         CVector<3, int> sendOrigin(0, 0, subdomainSize[2] - 2);
@@ -176,7 +176,7 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
 
     controller = new CController<T>(id, *subdomain, boundaryConditions, communication, configuration);
 
-    if (subdomainY == configuration->subdomain_num[1] - 1) {
+    if (subdomainY == configuration->numOfSubdomains[1] - 1) {
         controller->setDrivenCavitySzenario();
     }
 }

@@ -48,7 +48,6 @@ CXXFILES		:=	src/libmath/CMath.cpp \
 					src/CManager.cpp \
 					src/CLbmSolver.cpp \
 					src/CLbmSolverCPU.cpp \
-					src/CSingleton.cpp \
 					src/main.cpp
 
 # cuda source files (compiled with $(NVCC))

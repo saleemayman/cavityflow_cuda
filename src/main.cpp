@@ -104,8 +104,8 @@ int main(int argc, char** argv)
     std::vector<dim3> lbm_opencl_number_of_threads_list;
 
 #if DEBUG
-    configuration->debug_mode = true;
-    configuration->printMe();
+    // configuration->debug_mode = true;
+    configuration->print();
 #endif
 
     /* if(unit_test)
@@ -134,7 +134,7 @@ int main(int argc, char** argv)
             UnitTest::TestRunner runner(reporter);
             return runner.RunTestsIf(selectedTests, 0, UnitTest::True(), 0 );
         }
-    } else */ if(configuration->do_validate) {
+    } else */ if(configuration->doValidation) {
         CVector<3,int> origin(0,0,0);
     	/*
         CDomain<TYPE> domain(-1, CSingleton<CConfiguration<TYPE> >::getInstance()->domain_size, origin, CSingleton<CConfiguration<TYPE> >::getInstance()->domain_length);
@@ -201,12 +201,12 @@ int main(int argc, char** argv)
             //  the halo regions is subtracted form each direction.
             //  The size of halo regions is dependent to the number of subdomains in each direction
             CVector<3,int> validation_domain_size(
-                    configuration->domain_size[0] - 2*(configuration->subdomain_num[0] - 1),
-                    configuration->domain_size[1] - 2*(configuration->subdomain_num[1] - 1),
-                    configuration->domain_size[2] - 2*(configuration->subdomain_num[2] - 1));
-            TYPE cell_length_x = configuration->domain_length[0] / (TYPE) configuration->domain_size[0];
-            TYPE cell_length_y = configuration->domain_length[1] / (TYPE) configuration->domain_size[1];
-            TYPE cell_length_z = configuration->domain_length[2] / (TYPE) configuration->domain_size[2];
+                    configuration->domainSize[0] - 2*(configuration->numOfSubdomains[0] - 1),
+                    configuration->domainSize[1] - 2*(configuration->numOfSubdomains[1] - 1),
+                    configuration->domainSize[2] - 2*(configuration->numOfSubdomains[2] - 1));
+            TYPE cell_length_x = configuration->domainLength[0] / (TYPE) configuration->domainSize[0];
+            TYPE cell_length_y = configuration->domainLength[1] / (TYPE) configuration->domainSize[1];
+            TYPE cell_length_z = configuration->domainLength[2] / (TYPE) configuration->domainSize[2];
             CVector<3,TYPE> validation_domain_length(validation_domain_size[0]*cell_length_x, validation_domain_size[1]*cell_length_y, validation_domain_size[2]*cell_length_z);
             CDomain<TYPE> validatiaon_domain(-2, validation_domain_size, origin, validation_domain_length);
             CManager<TYPE> validataion_manager(my_rank, configuration);
@@ -219,10 +219,10 @@ int main(int argc, char** argv)
             int id = VALIDATION_RANK;
             int tmpid = id;
             int nx, ny, nz;
-            nx = tmpid % configuration->subdomain_num[0];
-            tmpid /= configuration->subdomain_num[0];
-            ny = tmpid % configuration->subdomain_num[1];
-            tmpid /= configuration->subdomain_num[1];
+            nx = tmpid % configuration->numOfSubdomains[0];
+            tmpid /= configuration->numOfSubdomains[0];
+            ny = tmpid % configuration->numOfSubdomains[1];
+            tmpid /= configuration->numOfSubdomains[1];
             nz = tmpid;
             CVector<3,int> sub_origin(
                     1+nx*(local_size_without_halo[0]),

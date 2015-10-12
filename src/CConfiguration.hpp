@@ -34,63 +34,62 @@
 /*
  * Class CConfiguration stores the necessary information for the simulation process.
  */
-namespace txml = tinyxml2;
-
-#define TAG_NAME_ROOT           "lbm-configuration"
-#define TAG_NAME_CHILD_ONE      "physics"
-#define TAG_NAME_CHILD_TWO      "grid"
-#define TAG_NAME_CHILD_THREE    "simulation"
-#define TAG_NAME_CHILD_FOUR     "device"
+#define TAG_NAME_ROOT             "lbm-configuration"
+#define TAG_NAME_CHILD_PHYSICS    "physics"
+#define TAG_NAME_CHILD_GRID       "grid"
+#define TAG_NAME_CHILD_SIMULATION "simulation"
+#define TAG_NAME_CHILD_DEVICE     "device"
 
 template <typename T>
 class CConfiguration
 {
 private:
-    txml::XMLDocument doc;
+	tinyxml2::XMLDocument doc;
 
-    int load_xml(std::string file_name);
-    void interpret_physiscs_data(const txml::XMLNode* root);
-    void interpret_grid_data(const txml::XMLNode* root);
-    void interpret_simulation_data(const txml::XMLNode* root);
-    void interpret_device_data(const txml::XMLNode* root);
-    void interpret_xml_doc();
-	void check_parameters();
+    void interpretPhysiscsData(const tinyxml2::XMLNode* root);
+    void interpretGridData(const tinyxml2::XMLNode* root);
+    void interpretSimulationData(const tinyxml2::XMLNode* root);
+    void interpretDeviceData(const tinyxml2::XMLNode* root);
+    void interpretXMLDoc();
+	void checkParameters();
 
 public:
-    // grid data
-    CVector<3, int> domain_size;
-    CVector<3, int> subdomain_num;
-    CVector<3, T> domain_length;
-
-    // physics configuration data
+	/*
+     * physics configuration data
+     */
+	T viscosity;
     CVector<3, T> gravitation;
-    T viscosity;
-    CVector<4, T> drivenCavityVelocity;
+    CVector<4, T> cavityVelocity;
 
-    // simulation configuration data
+    /*
+     * grid configuration data
+     */
+    CVector<3, int> domainSize;
+    CVector<3, T> domainLength;
+    CVector<3, int> numOfSubdomains;
+    CVector<3, T> CPUSubdomainRatio;
+
+    /*
+     * simulation configuration data
+     */
     int loops;
     T timestep;
-    bool do_visualization;
-    bool do_validate;
+    bool doBenchmark;
+    std::string benchmarkOutputDir;
+    bool doValidation;
+    std::string validationOutputDir;
+    bool doVisualization;
+    std::string visualizationOutputDir;
 
-    // device configuration data
-    std::vector<dim3> block_threads_per_dim;
-//    CVector<3, int> alpha_kernel_block_dim;
-//    CVector<3, int> beta_kernel_block_dim;
-    int device_nr;
-	
-//    // TODO: lbm_opencl_number_of_registers_list, lbm_opencl_number_of_threads_list
-//    std::vector<dim3> lbm_opencl_number_of_registers_list;
-//    std::vector<dim3> lbm_opencl_number_of_threads_list;
+    /*
+     * Device configuration data
+     */
+    std::vector<dim3> threadsPerBlock;
 
-    bool debug_mode;
-
-    CConfiguration();
-    CConfiguration(std::string file_name);
+    CConfiguration(std::string fileName);
     ~CConfiguration();
 
-    void loadFile(std::string file_name);
-    void printMe();
+    void print();
 };
 
 #endif
