@@ -45,7 +45,7 @@ CController<T>::CController(
 {
     solverGPU = new CLbmSolverGPU<T>(
     		this->id,
-    		this->configuration->lbm_opencl_number_of_threads_list,
+    		this->configuration->block_threads_per_dim,
     		this->domain,
     		this->boundaryConditions,
     		this->configuration->timestep,
@@ -66,7 +66,7 @@ CController<T>::CController(
     setDrivenCavitySzenario();
 
     if(this->configuration->do_visualization) {
-    	cLbmVisualization = new CLbmVisualizationVTK<T>(this->id, this->configuration->visualization_output_dir);
+    	// cLbmVisualization = new CLbmVisualizationVTK<T>(this->id, this->configuration->visualization_output_dir);
     }
 }
 

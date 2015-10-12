@@ -54,6 +54,7 @@ private:
     void interpret_simulation_data(const txml::XMLNode* root);
     void interpret_device_data(const txml::XMLNode* root);
     void interpret_xml_doc();
+	void check_parameters();
 
 public:
     // grid data
@@ -62,27 +63,25 @@ public:
     CVector<3, T> domain_length;
 
     // physics configuration data
-    CVector<3, T> gravitation;       ///< Specify the gravitation vector
+    CVector<3, T> gravitation;
     T viscosity;
-
     CVector<4, T> drivenCavityVelocity;
-    // device configuration data
-    size_t computation_kernel_count;
-    size_t threads_per_dimension;
-    int device_nr;
 
     // simulation configuration data
-    bool do_visualization;
-    std::string visualization_output_dir;
-    T timestep;
     int loops;
+    T timestep;
+    bool do_visualization;
     bool do_validate;
 
-    // TODO: lbm_opencl_number_of_registers_list, lbm_opencl_number_of_threads_list
-    std::vector<dim3> lbm_opencl_number_of_registers_list;
-    std::vector<dim3> lbm_opencl_number_of_threads_list;
-
-    // domain configuration data
+    // device configuration data
+    std::vector<dim3> block_threads_per_dim;
+//    CVector<3, int> alpha_kernel_block_dim;
+//    CVector<3, int> beta_kernel_block_dim;
+    int device_nr;
+	
+//    // TODO: lbm_opencl_number_of_registers_list, lbm_opencl_number_of_threads_list
+//    std::vector<dim3> lbm_opencl_number_of_registers_list;
+//    std::vector<dim3> lbm_opencl_number_of_threads_list;
 
     bool debug_mode;
 

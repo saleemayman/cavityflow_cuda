@@ -18,218 +18,197 @@
  */
 
 #include "CManager.hpp"
-#include "CSingleton.hpp"
+
+#include "libmath/CVector.hpp"
 
 template <class T>
-CManager<T>::CManager(CDomain<T> domain, CVector<3, int> subdomainNums) :
-        _domain(domain), _lbm_controller(NULL)
+CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
+		domain(rank, configuration->domain_size, CVector<3, int>(0), configuration->domain_length)
 {
-    this->setSubdomainNums(subdomainNums);
+    /*
+	 * Determine parameters for subdomain managed by this class.
+	 */
+	int id = rank;
+    int subdomainX, subdomainY, subdomainZ;
+
+    subdomainX = id % configuration->subdomain_num[0];
+    id /= configuration->subdomain_num[0];
+    subdomainY = id % configuration->subdomain_num[1];
+    id /= configuration->subdomain_num[1];
+    subdomainZ = id;
+
+    // create the subdomains instances for the whole domain
+    CVector<3, int> subdomainSize(
+    		configuration->domain_size[0] / configuration->subdomain_num[0],
+    		configuration->domain_size[1] / configuration->subdomain_num[1],
+    		configuration->domain_size[2] / configuration->subdomain_num[2]);
+    CVector<3, int> subdomainOrigin(
+    		subdomainX * subdomainSize[0],
+    		subdomainY * subdomainSize[1],
+    		subdomainZ * subdomainSize[2]);
+    CVector<3, T> subdomainLength(
+    		configuration->domain_length[0] / (T)configuration->subdomain_num[0],
+    		configuration->domain_length[1] / (T)configuration->subdomain_num[1],
+    		configuration->domain_length[2] / (T)configuration->subdomain_num[2]);
+    CDomain<T> *subdomain = new CDomain<T>(rank, subdomainSize, subdomainOrigin, subdomainLength);
+
+#if DEBUG
+	std::cout << "----- CManager<T>::CManager() -----" << std::endl;
+	std::cout << "id:                     " << rank << std::endl;
+	std::cout << "---------------------------------------" << std::endl;
+	std::cout << "domain size:            " << domain.getSize() << std::endl;
+	std::cout << "domain length:          " << domain.getLength() << std::endl;
+	std::cout << "domain origin:          " << domain.getOrigin() << std::endl;
+	std::cout << "---------------------------------------" << std::endl;
+	std::cout << "subdomain coordinates:  [" << subdomainX << ", " << subdomainY << ", " << subdomainZ << "]" << std::endl;
+	std::cout << "subdomain size:         " << subdomainSize << std::endl;
+	std::cout << "subdomain length:       " << subdomainLength << std::endl;
+	std::cout << "subdomain origin:       " << subdomainOrigin << std::endl;
+	std::cout << "---------------------------------------" << std::endl;
+#endif
+
+    /*
+     * Setting the boundary conditions for the current Controller
+     */
+	std::vector<Flag> boundaryConditions(6, GHOST_LAYER);
+
+    if (subdomainX == 0)
+    	boundaryConditions[0] = OBSTACLE;
+    if (subdomainX == (configuration->subdomain_num[0] - 1))
+    	boundaryConditions[1] = OBSTACLE;
+    if (subdomainY == 0)
+    	boundaryConditions[2] = OBSTACLE;
+    if (subdomainY == (configuration->subdomain_num[1] - 1))
+    	boundaryConditions[3] = OBSTACLE;
+    if (subdomainZ == 0)
+    	boundaryConditions[4] = OBSTACLE;
+    if (subdomainZ == (configuration->subdomain_num[2] - 1))
+    	boundaryConditions[5] = OBSTACLE;
+
+#if DEBUG
+	std::cout << "boundaryConditions[0]:  " << boundaryConditions[0] << std::endl;
+	std::cout << "boundaryConditions[1]:  " << boundaryConditions[1] << std::endl;
+	std::cout << "boundaryConditions[2]:  " << boundaryConditions[2] << std::endl;
+	std::cout << "boundaryConditions[3]:  " << boundaryConditions[3] << std::endl;
+	std::cout << "boundaryConditions[4]:  " << boundaryConditions[4] << std::endl;
+	std::cout << "boundaryConditions[5]:  " << boundaryConditions[5] << std::endl;
+	std::cout << "---------------------------------------" << std::endl;
+#endif
+
+    /*
+     * Initializing the Controller's communication classes based on the already
+     * computed boundary conditions
+     */
+    std::vector<CComm<T> > communication;
+
+    if (boundaryConditions[0] == GHOST_LAYER) {
+        int commDestination = id - 1;
+        CVector<3, int> sendSize(1, subdomainSize[1], subdomainSize[2]);
+        CVector<3, int> recvSize(1, subdomainSize[1], subdomainSize[2]);
+        CVector<3, int> sendOrigin(1, 0, 0);
+        CVector<3, int> recvOrigin(0, 0, 0);
+        CVector<3, int> commDirection(1, 0, 0);
+
+        CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, commDirection);
+
+        communication.push_back(comm);
+    }
+    if (boundaryConditions[1] == GHOST_LAYER) {
+        int commDestination = rank + 1;
+        CVector<3, int> sendSize(1, subdomainSize[1], subdomainSize[2]);
+        CVector<3, int> recvSize(1, subdomainSize[1], subdomainSize[2]);
+        CVector<3, int> sendOrigin(subdomainSize[0] - 2, 0, 0);
+        CVector<3, int> recvOrigin(subdomainSize[0] - 1, 0, 0);
+        CVector<3, int> commDirection(-1, 0, 0);
+
+        CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, commDirection);
+
+        communication.push_back(comm);
+    }
+    if (boundaryConditions[2] == GHOST_LAYER) {
+        int commDestination = rank - configuration->subdomain_num[0];
+        CVector<3, int> sendSize(subdomainSize[0], 1, subdomainSize[2]);
+        CVector<3, int> recvSize(subdomainSize[0], 1, subdomainSize[2]);
+        CVector<3, int> sendOrigin(0, 1, 0);
+        CVector<3, int> recvOrigin(0, 0, 0);
+        CVector<3, int> commDirection(0, 1, 0);
+
+        CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, commDirection);
+
+        communication.push_back(comm);
+    }
+    if (boundaryConditions[3] == GHOST_LAYER) {
+        int commDestination = rank + configuration->subdomain_num[0];
+        CVector<3, int> sendSize(subdomainSize[0], 1, subdomainSize[2]);
+        CVector<3, int> recvSize(subdomainSize[0], 1,  subdomainSize[2]);
+        CVector<3, int> sendOrigin(0, subdomainSize[1] - 2, 0);
+        CVector<3, int> recvOrigin(0, subdomainSize[1] - 1, 0);
+        CVector<3, int> commDirection(0, -1, 0);
+
+        CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, commDirection);
+
+        communication.push_back(comm);
+    }
+    if (boundaryConditions[4] == GHOST_LAYER) {
+        int commDestination = rank - configuration->subdomain_num[0] * configuration->subdomain_num[1];
+        CVector<3, int> sendSize(subdomainSize[0], subdomainSize[1], 1);
+        CVector<3, int> recvSize(subdomainSize[0], subdomainSize[1], 1);
+        CVector<3, int> sendOrigin(0, 0, 1);
+        CVector<3, int> recvOrigin(0, 0, 0);
+        CVector<3, int> commDirection(0, 0, 1);
+
+        CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, commDirection);
+
+        communication.push_back(comm);
+    }
+    if (boundaryConditions[5] == GHOST_LAYER) {
+        int commDestination = rank + configuration->subdomain_num[0] * configuration->subdomain_num[1];
+        CVector<3, int> sendSize(subdomainSize[0], subdomainSize[1], 1);
+        CVector<3, int> recvSize(subdomainSize[0], subdomainSize[1], 1);
+        CVector<3, int> sendOrigin(0, 0, subdomainSize[2] - 2);
+        CVector<3, int> recvOrigin(0, 0, subdomainSize[2] - 1);
+        CVector<3, int> commDirection(0, 0, -1);
+
+        CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, commDirection);
+
+        communication.push_back(comm);
+    }
+
+    controller = new CController<T>(id, *subdomain, boundaryConditions, communication, configuration);
+
+    if (subdomainY == configuration->subdomain_num[1] - 1) {
+        controller->setDrivenCavitySzenario();
+    }
 }
 
 template <class T>
 CManager<T>::~CManager()
 {
-    if (_lbm_controller)
-        delete _lbm_controller;
+    delete controller;
 }
 
 template <class T>
-CDomain<T> CManager<T>::getDomain() const
+void CManager<T>::run()
 {
-    return _domain;
+    controller->run();
 }
 
 template <class T>
-void CManager<T>::setDomain(CDomain<T> grid)
+CDomain<T>* CManager<T>::getDomain()
 {
-    _domain = grid;
+    return &domain;
 }
 
 template <class T>
-CVector<3,int> CManager<T>::getSubdomainNums() const
+CDomain<T>* CManager<T>::getSubDomain()
 {
-    return _subdomain_nums;
+    return controller->getDomain();
 }
 
 template <class T>
-void CManager<T>::setSubdomainNums(CVector<3,int> subdomainNums)
+CController<T>* CManager<T>::getController()
 {
-    CVector<3, int> do_size = _domain.getSize();
-    if ((do_size[0] % subdomainNums[0] != 0)
-            || (do_size[1] % subdomainNums[1] != 0)
-            || (do_size[2] % subdomainNums[2] != 0)) {
-        throw "Number of subdomains does not match with the grid size!";
-    }
-
-    CVector<3, int> tmpSD_size;
-    tmpSD_size[0] = do_size[0] / subdomainNums[0];
-    tmpSD_size[1] = do_size[1] / subdomainNums[1];
-    tmpSD_size[2] = do_size[2] / subdomainNums[2];
-
-    _subdomain_size = tmpSD_size;
-    _subdomain_nums = subdomainNums;
-
-    // subdomain lengths
-    CVector<3, T> domain_length = _domain.getLength();
-    _subdomain_length[0] = domain_length[0] / _subdomain_nums[0];
-    _subdomain_length[1] = domain_length[1] / _subdomain_nums[1];
-    _subdomain_length[2] = domain_length[2] / _subdomain_nums[2];
-
-#if DEBUG
-    std::cout << "NUMBER OF SUBDOMAINS: " << _subdomain_nums << std::endl;
-    std::cout << "SUBDOMAIN_SIZE: " << _subdomain_size << std::endl;
-    std::cout << "SUBDOMAIN_LENGTHS: " << _subdomain_length << std::endl;
-#endif
-}
-
-template <class T>
-void CManager<T>::initSimulation(int my_rank)
-{
-    // initialize the boundary condition
-	std::vector<Flag> boundaryConditions(6, GHOST_LAYER);
-    int id = my_rank;
-    if (id < 0)
-        id = 0;
-
-    int tmpid = id;
-    int nx, ny, nz;
-    nx = tmpid % _subdomain_nums[0];
-    tmpid /= _subdomain_nums[0];
-    ny = tmpid % _subdomain_nums[1];
-    tmpid /= _subdomain_nums[1];
-    nz = tmpid;
-#if DEBUG
-    std::cout << "ID: "<< id << " NX: " << nx << " NY: " << ny << " NZ: " << nz << std::endl;
-#endif
-
-    // create the subdomains instances for the whole domain
-    CVector<3, int> origin(nx * _subdomain_size[0], ny * _subdomain_size[1],
-            nz * _subdomain_size[2]);
-    CDomain<T> *subdomain = new CDomain<T>(id, _subdomain_size, origin,
-            _subdomain_length);
-
-    // Setting the boundary conditions for the current Controller
-    if (nx == 0)
-    	boundaryConditions[0] = OBSTACLE;
-    if (nx == (_subdomain_nums[0] - 1))
-    	boundaryConditions[1] = OBSTACLE;
-    if (ny == 0)
-    	boundaryConditions[2] = OBSTACLE;
-    if (ny == (_subdomain_nums[1] - 1))
-    	boundaryConditions[3] = OBSTACLE;
-    if (nz == 0)
-    	boundaryConditions[4] = OBSTACLE;
-    if (nz == (_subdomain_nums[2] - 1))
-    	boundaryConditions[5] = OBSTACLE;
-
-    _lbm_controller = new CController<T>(id, *subdomain, boundaryConditions, CSingleton<CConfiguration<T> >::getInstance());
-
-    // Initializing the Controller's communication classes based on the already computed boundary conditions
-    if (boundaryConditions[0] == GHOST_LAYER) {
-        int comm_destination = id - 1;
-        CVector<3, int> send_size(1, _subdomain_size[1], _subdomain_size[2]);
-        CVector<3, int> recv_size(1, _subdomain_size[1], _subdomain_size[2]);
-        CVector<3, int> send_origin(1, 0, 0);
-        CVector<3, int> recv_origin(0, 0, 0);
-        CVector<3, int> comm_direction(1, 0, 0);
-        _lbm_controller->addCommunication(
-                new CComm<T>(comm_destination, send_size, recv_size,
-                        send_origin, recv_origin, comm_direction));
-    }
-    if (boundaryConditions[1] == GHOST_LAYER) {
-        int comm_destination = id + 1;
-        CVector<3, int> send_size(1, _subdomain_size[1], _subdomain_size[2]);
-        CVector<3, int> recv_size(1, _subdomain_size[1], _subdomain_size[2]);
-        CVector<3, int> send_origin(_subdomain_size[0] - 2, 0, 0);
-        CVector<3, int> recv_origin(_subdomain_size[0] - 1, 0, 0);
-        CVector<3, int> comm_direction(-1, 0, 0);
-        _lbm_controller->addCommunication(
-                new CComm<T>(comm_destination, send_size, recv_size,
-                        send_origin, recv_origin, comm_direction));
-    }
-    if (boundaryConditions[2] == GHOST_LAYER) {
-        int comm_destination = id - _subdomain_nums[0];
-        CVector<3, int> send_size(_subdomain_size[0], 1, _subdomain_size[2]);
-        CVector<3, int> recv_size(_subdomain_size[0], 1, _subdomain_size[2]);
-        CVector<3, int> send_origin(0, 1, 0);
-        CVector<3, int> recv_origin(0, 0, 0);
-        CVector<3, int> comm_direction(0, 1, 0);
-        _lbm_controller->addCommunication(
-                new CComm<T>(comm_destination, send_size, recv_size,
-                        send_origin, recv_origin, comm_direction));
-    }
-    if (boundaryConditions[3] == GHOST_LAYER) {
-        int comm_destination = id + _subdomain_nums[0];
-        CVector<3, int> send_size(_subdomain_size[0], 1, _subdomain_size[2]);
-        CVector<3, int> recv_size(_subdomain_size[0], 1,  _subdomain_size[2]);
-        CVector<3, int> send_origin(0, _subdomain_size[1] - 2, 0);
-        CVector<3, int> recv_origin(0, _subdomain_size[1] - 1, 0);
-        CVector<3, int> comm_direction(0, -1, 0);
-        _lbm_controller->addCommunication(
-                new CComm<T>(comm_destination, send_size, recv_size,
-                        send_origin, recv_origin, comm_direction));
-    }
-    if (boundaryConditions[4] == GHOST_LAYER) {
-        int comm_destination = id - _subdomain_nums[0] * _subdomain_nums[1];
-        CVector<3, int> send_size(_subdomain_size[0], _subdomain_size[1], 1);
-        CVector<3, int> recv_size(_subdomain_size[0], _subdomain_size[1], 1);
-        CVector<3, int> send_origin(0, 0, 1);
-        CVector<3, int> recv_origin(0, 0, 0);
-        CVector<3, int> comm_direction(0, 0, 1);
-        _lbm_controller->addCommunication(
-                new CComm<T>(comm_destination, send_size, recv_size,
-                        send_origin, recv_origin, comm_direction));
-    }
-    if (boundaryConditions[5] == GHOST_LAYER) {
-        int comm_destination = id + _subdomain_nums[0] * _subdomain_nums[1];
-        CVector<3, int> send_size(_subdomain_size[0], _subdomain_size[1], 1);
-        CVector<3, int> recv_size(_subdomain_size[0], _subdomain_size[1], 1);
-        CVector<3, int> send_origin(0, 0, _subdomain_size[2] - 2);
-        CVector<3, int> recv_origin(0, 0, _subdomain_size[2] - 1);
-        CVector<3, int> comm_direction(0, 0, -1);
-        _lbm_controller->addCommunication(
-                new CComm<T>(comm_destination, send_size, recv_size,
-                        send_origin, recv_origin, comm_direction));
-    }
-    if (ny == _subdomain_nums[1] - 1) {
-        _lbm_controller->setGeometry();
-    }
-
-    /*
-     * TODO
-     * This piece of code should be obsolete since the ghost layer sizes are now
-     * set implicitly by CLbmSolver depending on the domain size.
-     */
-    //_lbm_controller->addCommToSolver();
-
-}
-
-template <class T>
-void CManager<T>::startSimulation()
-{
-    if (!_lbm_controller)
-        throw "CManager: Initialize the simulation before starting it!";
-    _lbm_controller->run();
-
-}
-
-template <class T>
-CController<T>* CManager<T>::getController() const
-{
-    return _lbm_controller;
-}
-
-template <class T>
-void CManager<T>::setController(CController<T>* lbmController)
-{
-    _lbm_controller = lbmController;
-}
-
-template <class T>
-CVector<3,int> CManager<T>::getSubdomainSize() const
-{
-    return _subdomain_size;
+    return controller;
 }
 
 template class CManager<double>;

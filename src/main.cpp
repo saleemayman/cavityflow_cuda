@@ -30,12 +30,11 @@
 */
 
 // internals
-// #include "helper.h"
+#include "libmath/CMath.hpp"
 #include "CConfiguration.hpp"
 #include "CController.hpp"
 #include "CDomain.hpp"
 #include "CManager.hpp"
-#include "CSingleton.hpp"
 
 CVector<3,int> lbm_units[] = {
 		E0, E1, E2, E3,
@@ -72,7 +71,7 @@ void extract_comma_separated_integers(std::vector<int> &int_list, std::string &i
 
 int main(int argc, char** argv)
 {
-    /*
+	/*
      * TODO
      * Check if the following variables should be moved to constants.h
      */
@@ -101,12 +100,12 @@ int main(int argc, char** argv)
     }
 
 	// load the config file and read the configuration parameters
-	ConfigSingleton::Instance()->loadFile(conf_file);
+    CConfiguration<TYPE>* configuration = new CConfiguration<TYPE>(conf_file);
     std::vector<dim3> lbm_opencl_number_of_threads_list;
 
 #if DEBUG
-    CSingleton<CConfiguration<TYPE> >::getInstance()->debug_mode = true;
-    CSingleton<CConfiguration<TYPE> >::getInstance()->printMe();
+    configuration->debug_mode = true;
+    configuration->printMe();
 #endif
 
     /* if(unit_test)
@@ -135,29 +134,40 @@ int main(int argc, char** argv)
             UnitTest::TestRunner runner(reporter);
             return runner.RunTestsIf(selectedTests, 0, UnitTest::True(), 0 );
         }
-    } else */ if(CSingleton<CConfiguration<TYPE> >::getInstance()->do_validate) {
+    } else */ if(configuration->do_validate) {
         CVector<3,int> origin(0,0,0);
+    	/*
         CDomain<TYPE> domain(-1, CSingleton<CConfiguration<TYPE> >::getInstance()->domain_size, origin, CSingleton<CConfiguration<TYPE> >::getInstance()->domain_length);
-        CManager<TYPE> *manager = new CManager<TYPE>(domain, CSingleton<CConfiguration<TYPE> >::getInstance()->subdomain_num);
+        */
 
         int my_rank, num_procs;
         MPI_Init(&argc, &argv);    /// Start MPI
         MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);    /// Get current process id
         MPI_Comm_size(MPI_COMM_WORLD, &num_procs);    /// Get number of processes
 
+        CManager<TYPE> *manager = new CManager<TYPE>(my_rank, configuration);
+
+        /*
+         * TODO
+         * Should be obsolete since parameter checks are done in CConfig and
+         * the debug commands in CManager
+         */
+        /*
         if(num_procs != CSingleton<CConfiguration<TYPE> >::getInstance()->subdomain_num.elements()+1)
         {
             std::cout << "Number of allocated processors should be one more than of the number of subdomains! The last processor is used to generate validation data." << std::endl;
             std::cout << "Current number of subdomains is : " << CSingleton<CConfiguration<TYPE> >::getInstance()->subdomain_num.elements() << std::endl;
             exit(EXIT_FAILURE);
         }
+        */
 
         if(my_rank != num_procs - 1)
         {
-            manager->initSimulation(my_rank);
-            manager->startSimulation();
+            // manager->initSimulation(my_rank);
+            manager->run();
 
             // getting the local data
+            /*
             if(my_rank == VALIDATION_RANK)
             {
                 CController<TYPE>* controller = manager->getController();
@@ -172,6 +182,7 @@ int main(int argc, char** argv)
 
                 delete[] local_data;
             }
+            */
 
             delete manager;
         }
@@ -190,28 +201,28 @@ int main(int argc, char** argv)
             //  the halo regions is subtracted form each direction.
             //  The size of halo regions is dependent to the number of subdomains in each direction
             CVector<3,int> validation_domain_size(
-                    CSingleton<CConfiguration<TYPE> >::getInstance()->domain_size[0] - 2*(CSingleton<CConfiguration<TYPE> >::getInstance()->subdomain_num[0] - 1),
-                    CSingleton<CConfiguration<TYPE> >::getInstance()->domain_size[1] - 2*(CSingleton<CConfiguration<TYPE> >::getInstance()->subdomain_num[1] - 1),
-                    CSingleton<CConfiguration<TYPE> >::getInstance()->domain_size[2] - 2*(CSingleton<CConfiguration<TYPE> >::getInstance()->subdomain_num[2] - 1));
-            TYPE cell_length_x = CSingleton<CConfiguration<TYPE> >::getInstance()->domain_length[0] / (TYPE) CSingleton<CConfiguration<TYPE> >::getInstance()->domain_size[0];
-            TYPE cell_length_y = CSingleton<CConfiguration<TYPE> >::getInstance()->domain_length[1] / (TYPE) CSingleton<CConfiguration<TYPE> >::getInstance()->domain_size[1];
-            TYPE cell_length_z = CSingleton<CConfiguration<TYPE> >::getInstance()->domain_length[2] / (TYPE) CSingleton<CConfiguration<TYPE> >::getInstance()->domain_size[2];
+                    configuration->domain_size[0] - 2*(configuration->subdomain_num[0] - 1),
+                    configuration->domain_size[1] - 2*(configuration->subdomain_num[1] - 1),
+                    configuration->domain_size[2] - 2*(configuration->subdomain_num[2] - 1));
+            TYPE cell_length_x = configuration->domain_length[0] / (TYPE) configuration->domain_size[0];
+            TYPE cell_length_y = configuration->domain_length[1] / (TYPE) configuration->domain_size[1];
+            TYPE cell_length_z = configuration->domain_length[2] / (TYPE) configuration->domain_size[2];
             CVector<3,TYPE> validation_domain_length(validation_domain_size[0]*cell_length_x, validation_domain_size[1]*cell_length_y, validation_domain_size[2]*cell_length_z);
             CDomain<TYPE> validatiaon_domain(-2, validation_domain_size, origin, validation_domain_length);
-            CManager<TYPE> validataion_manager(validatiaon_domain, CVector<3,int>(1,1,1));
+            CManager<TYPE> validataion_manager(my_rank, configuration);
             std::cout <<  my_rank << "--> Compute the results for one domain." << std::endl;
 
-            validataion_manager.initSimulation(-1);
-            validataion_manager.startSimulation();
+            // validataion_manager.initSimulation(-1);
+            validataion_manager.run();
             TYPE* sub_global_data = new TYPE[local_size_without_halo.elements()*3];
             // getting the global data
             int id = VALIDATION_RANK;
             int tmpid = id;
             int nx, ny, nz;
-            nx = tmpid % CSingleton<CConfiguration<TYPE> >::getInstance()->subdomain_num[0];
-            tmpid /= CSingleton<CConfiguration<TYPE> >::getInstance()->subdomain_num[0];
-            ny = tmpid % CSingleton<CConfiguration<TYPE> >::getInstance()->subdomain_num[1];
-            tmpid /= CSingleton<CConfiguration<TYPE> >::getInstance()->subdomain_num[1];
+            nx = tmpid % configuration->subdomain_num[0];
+            tmpid /= configuration->subdomain_num[0];
+            ny = tmpid % configuration->subdomain_num[1];
+            tmpid /= configuration->subdomain_num[1];
             nz = tmpid;
             CVector<3,int> sub_origin(
                     1+nx*(local_size_without_halo[0]),
@@ -226,7 +237,7 @@ int main(int argc, char** argv)
             int error_counter = 0;
             for ( int i = 0; i < local_size_without_halo.elements()*3; i++)
             {
-                if (fabs(sub_global_data[i] - local_data[i]) > tolerance )
+                if (CMath<TYPE>::abs(sub_global_data[i] - local_data[i]) > tolerance )
                 {
 #if 0
                     if ((i % 30) == 0)
@@ -244,11 +255,12 @@ int main(int argc, char** argv)
         }
         MPI_Finalize();    /// Cleanup MPI
     } else {
+    	/*
         CVector<3,int> origin(0,0,0);
         CDomain<TYPE> domain(-1, CSingleton<CConfiguration<TYPE> >::getInstance()->domain_size, origin, CSingleton<CConfiguration<TYPE> >::getInstance()->domain_length);
+        */
         // printf("main() CDomain initialized. \n");
 
-        CManager<TYPE> *manager = new CManager<TYPE>(domain, CSingleton<CConfiguration<TYPE> >::getInstance()->subdomain_num);
         // printf("main() CManager initialized. \n");
 
         int my_rank, num_procs;
@@ -256,23 +268,29 @@ int main(int argc, char** argv)
         MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
         MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
 
-        if(num_procs != CSingleton<CConfiguration<TYPE> >::getInstance()->subdomain_num.elements())
+        CManager<TYPE> *manager = new CManager<TYPE>(my_rank, configuration);
+
+        /*
+         * TODO
+         * Should be obsolete since parameter checks are done in CConfig and
+         * the debug commands in CManager
+         */
+        /*
+        if(num_procs != CSingleton<CConfiguration<TYPE> >::getInstance()->subdomain_num.elements()+1)
         {
-            std::cout << "Number of allocated processors should be equal to the number of subdomains!" << std::endl;
+            std::cout << "Number of allocated processors should be one more than of the number of subdomains! The last processor is used to generate validation data." << std::endl;
             std::cout << "Current number of subdomains is : " << CSingleton<CConfiguration<TYPE> >::getInstance()->subdomain_num.elements() << std::endl;
             exit(EXIT_FAILURE);
         }
+        */
 
-        // printf("main() before initSimulation. \n");
-        manager->initSimulation(my_rank);
-
-        // printf("main() start simulation. \n");
-        manager->startSimulation();
-        // delete manager;
+        manager->run();
 
         printf("Rank: %i done.\n", my_rank);
         MPI_Finalize();    /// Cleanup MPI
     }
+
+    delete configuration;
 
     return 0;
 }

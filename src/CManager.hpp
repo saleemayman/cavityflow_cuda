@@ -20,9 +20,9 @@
 #ifndef CMANAGER_HPP
 #define CMANAGER_HPP
 
-#include "libmath/CVector.hpp"
-#include "CDomain.hpp"
+#include "CConfiguration.hpp"
 #include "CController.hpp"
+#include "CDomain.hpp"
 
 /*
  * Class CManager is responsible for dividing and assigning the subdomains to different processors.
@@ -31,25 +31,17 @@ template<typename T>
 class CManager
 {
 private:
-    CDomain<T> _domain; ///< The simulation domain.
-    CVector<3, int> _subdomain_size; ///< Each subdomain have the same size which is specified with this class member.
-    CVector<3, T> _subdomain_length; ///< Each subdomain have the same lengthes which is specified with this class member.
-    CVector<3, int> _subdomain_nums; ///< number of subdomains in each direction.
-    CController<T>* _lbm_controller;
+    CDomain<T> domain;
+    CController<T>* controller;
 
 public:
-    CManager(CDomain<T> domain, CVector<3,  int> subdomainNums);
+    CManager(int rank, CConfiguration<T>* configuration);
     ~CManager();
 
-    CDomain<T> getDomain() const;
-    void setDomain(CDomain<T> grid);
-    CVector<3,  int> getSubdomainNums() const;
-    void setSubdomainNums(CVector<3,  int> subdomainNums);
-    void initSimulation(int my_rank);
-    void startSimulation();
-    CController<T>* getController() const;
-    void setController(CController<T>* lbmController);
-    CVector<3,  int> getSubdomainSize() const;
+    void run();
+    CDomain<T>* getDomain();
+    CDomain<T>* getSubDomain();
+    CController<T>* getController();
 };
 
 #endif
