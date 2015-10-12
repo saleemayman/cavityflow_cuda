@@ -62,6 +62,9 @@ CController<T>::~CController()
     if (cLbmVisualization) ///< Visualization class
         delete cLbmVisualization;
 
+    if (cLbmPtrGPU)
+        delete cLbmPtrGPU;
+
     if (cLbmPtr)
         delete cLbmPtr;
 
@@ -75,15 +78,15 @@ template <class T>
 void  CController<T>::outputDD(int dd_i)
 {
     std::cout << "DD " << dd_i << std::endl;
-    //                  int gcd = CMath<int>::gcd(cLbmPtr->domain_cells[0],wrap_max_line);
+    //                  int gcd = CMath<int>::gcd(cLbmPtrGPU->domain_cells[0],wrap_max_line);
     //                  if (wrap_max_line % gcd == 0)
     //                      gcd = wrap_max_line;
     int wrap_max_line = 16;
     int gcd = wrap_max_line;
     // TODO reactivate
     /*
-    cLbmPtr->debugDD(dd_i, gcd,
-            cLbmPtr->domain_cells[0] * cLbmPtr->domain_cells[1]);
+    cLbmPtrGPU->debugDD(dd_i, gcd,
+            cLbmPtrGPU->domain_cells[0] * cLbmPtrGPU->domain_cells[1]);
     */
 }
 
@@ -151,17 +154,7 @@ int CController<T>::initLBMSolver()
 
     // INIT LATTICE BOLTZMANN!
     simulationStepCounter = 0;
-//    cLbmPtr = new CLbmSolverGPU<T>(
-//    		_UID,
-//    		CSingleton<CConfiguration<T> >::getInstance()->lbm_opencl_number_of_threads_list,
-//    		_domain,
-//    		boundaryConditions,
-//    		CSingleton<CConfiguration<T> >::getInstance()->timestep,
-//    		CSingleton<CConfiguration<T> >::getInstance()->gravitation,
-//    		CSingleton<CConfiguration<T> >::getInstance()->drivenCavityVelocity,
-//    		CSingleton<CConfiguration<T> >::getInstance()->viscosity);
-
-	cLbmPtr = new CLbmSolverGPU<T>(
+	cLbmPtrGPU = new CLbmSolverGPU<T>(
 			_UID, 
     		CSingleton< CConfiguration<T> >::getInstance()->block_threads_per_dim,
 			_domain,
@@ -174,12 +167,12 @@ int CController<T>::initLBMSolver()
 
     // TODO reactivate
     /*
-    if (cLbmPtr->error()) {
-        std::cout << cLbmPtr->error.getString();
+    if (cLbmPtrGPU->error()) {
+        std::cout << cLbmPtrGPU->error.getString();
         return -1;
     }
 
-    cLbmPtr->wait();
+    cLbmPtrGPU->wait();
     */
     CStopwatch cStopwatch;
 
@@ -219,8 +212,8 @@ void CController<T>::syncAlpha()
         MPI_Status status[2];
 
         // Download data from device to host
-        cLbmPtr->getDensityDistributions(Direction(i), send_buffer);
-        //cLbmPtr->wait();
+        cLbmPtrGPU->getDensityDistributions(Direction(i), send_buffer);
+        //cLbmPtrGPU->wait();
         int my_rank, num_procs;
         MPI_Comm_rank(MPI_COMM_WORLD, &my_rank); /// Get current process id
         MPI_Comm_size(MPI_COMM_WORLD, &num_procs); /// get number of processes
@@ -240,8 +233,8 @@ void CController<T>::syncAlpha()
         }
         MPI_Waitall(2, req, status);
 
-        cLbmPtr->setDensityDistributions(Direction(i), recv_buffer);
-        //cLbmPtr->wait();
+        cLbmPtrGPU->setDensityDistributions(Direction(i), recv_buffer);
+        //cLbmPtrGPU->wait();
 
         delete[] send_buffer;
         delete[] recv_buffer;
@@ -283,8 +276,8 @@ void CController<T>::syncBeta()
         MPI_Status status[2];
 
         // Download data from device to host
-        cLbmPtr->getDensityDistributions(Direction(i), send_buffer);
-        //cLbmPtr->wait();
+        cLbmPtrGPU->getDensityDistributions(Direction(i), send_buffer);
+        //cLbmPtrGPU->wait();
         int my_rank, num_procs;
         MPI_Comm_rank(MPI_COMM_WORLD, &my_rank); /// Get current process id
         MPI_Comm_size(MPI_COMM_WORLD, &num_procs); /// get number of processes
@@ -305,8 +298,8 @@ void CController<T>::syncBeta()
         MPI_Waitall(2, req, status);
 
         // TODO: OPTIMIZATION: you need to wait only for receiving to execute following command
-        cLbmPtr->setDensityDistributions(Direction(i), recv_buffer);
-        //cLbmPtr->wait();
+        cLbmPtrGPU->setDensityDistributions(Direction(i), recv_buffer);
+        //cLbmPtrGPU->wait();
 
         delete[] send_buffer;
         delete[] recv_buffer;
@@ -317,10 +310,10 @@ template <class T>
 void CController<T>::computeNextStep()
 {
     if (simulationStepCounter & 1) {
-    	cLbmPtr->simulationStepAlpha();
+    	cLbmPtrGPU->simulationStepAlpha();
         syncBeta();
     } else {
-    	cLbmPtr->simulationStepAlpha();
+    	cLbmPtrGPU->simulationStepAlpha();
         syncAlpha();
     }
     simulationStepCounter++;
@@ -362,7 +355,7 @@ int CController<T>::run()
     std::string outputfile = ss_file.str();
     if (CSingleton<CConfiguration<T> >::getInstance()->do_visualization) {
         cLbmVisualization = new CLbmVisualizationVTK<T>(_UID, outputfile);
-        cLbmVisualization->setup(cLbmPtr);
+        cLbmVisualization->setup(cLbmPtrGPU);
     }
 
     cStopwatch.start();
@@ -377,11 +370,11 @@ int CController<T>::run()
      * TODO
      * Check if this comment out affects the correctness of the code
      */
-    // cLbmPtr->wait();
+    // cLbmPtrGPU->wait();
     cStopwatch.stop();
 #if DEBUG
     if (domain_size.elements() <= 512) {
-        cLbmPtr->debug_print();
+        cLbmPtrGPU->debug_print();
     }
 #endif
 
@@ -439,7 +432,7 @@ int CController<T>::run()
      * TODO
      * Alternative to getVelocityChecksum() with equivalent behavior has to be coded in CLbmSolver
      */
-    // vector_checksum = cLbmPtr->getVelocityChecksum();
+    // vector_checksum = cLbmPtrGPU->getVelocityChecksum();
     std::cout << "Checksum: " << (vector_checksum*1000.0f) << std::endl;
 #endif // end of DEBUG
     std::cout.precision(ss);
@@ -464,7 +457,7 @@ void CController<T>::addCommunication(CComm<T>* comm)
 template <class T>
 void CController<T>::addCommToSolver()
 {
-    cLbmPtr->setGhostLayerBuffers(_comm_container);
+    cLbmPtrGPU->setGhostLayerBuffers(_comm_container);
 }
 */
 
@@ -491,20 +484,20 @@ void CController<T>::setGeometry()
         src[i] = VELOCITY_INJECTION;
     }
     printf("\n");
-    cLbmPtr->setFlags(origin, size, src);
+    cLbmPtrGPU->setFlags(origin, size, src);
 
     delete[] src;
 }
 
 template <class T>
 CLbmSolver<T>* CController<T>::getSolver() const {
-    return cLbmPtr;
+    return cLbmPtrGPU;
 }
 
 template <class T>
 void CController<T>::setSolver(CLbmSolverGPU<T>* lbmPtr)
 {
-    cLbmPtr = lbmPtr;
+    cLbmPtrGPU = lbmPtr;
 }
 
 template <class T>

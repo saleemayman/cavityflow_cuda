@@ -20,12 +20,12 @@
 #include "CConfiguration.hpp"
 
 template <class T>
-CConfiguration<T>::CConfiguration()
+CConfiguration<T>::CConfiguration() : block_threads_per_dim(3)
 {
 }
 
 template <class T>
-CConfiguration<T>::CConfiguration(std::string file_name)
+CConfiguration<T>::CConfiguration(std::string file_name) : block_threads_per_dim(3)
 {
 	int loading_file_res = load_xml(file_name);
 	if (loading_file_res != txml::XML_SUCCESS)
@@ -96,15 +96,22 @@ template <class T>
 void CConfiguration<T>::interpret_device_data(const txml::XMLNode* root)
 {
     const txml::XMLNode* child_four = root->FirstChildElement(TAG_NAME_CHILD_FOUR);
-    init_kernel_block_dim[0] = atoi(child_four->FirstChildElement( "init-kernel-block-dim" )->FirstChildElement( "x" )->GetText());
-    init_kernel_block_dim[1] = atoi(child_four->FirstChildElement( "init-kernel-block-dim" )->FirstChildElement( "y" )->GetText());
-    init_kernel_block_dim[2] = atoi(child_four->FirstChildElement( "init-kernel-block-dim" )->FirstChildElement( "z" )->GetText());
-    alpha_kernel_block_dim[0] = atoi(child_four->FirstChildElement( "alpha-kernel-block-dim" )->FirstChildElement( "x" )->GetText());
-    alpha_kernel_block_dim[1] = atoi(child_four->FirstChildElement( "alpha-kernel-block-dim" )->FirstChildElement( "y" )->GetText());
-    alpha_kernel_block_dim[2] = atoi(child_four->FirstChildElement( "alpha-kernel-block-dim" )->FirstChildElement( "z" )->GetText());
-    beta_kernel_block_dim[0] = atoi(child_four->FirstChildElement( "beta-kernel-block-dim" )->FirstChildElement( "x" )->GetText());
-    beta_kernel_block_dim[1] = atoi(child_four->FirstChildElement( "beta-kernel-block-dim" )->FirstChildElement( "y" )->GetText());
-    beta_kernel_block_dim[2] = atoi(child_four->FirstChildElement( "beta-kernel-block-dim" )->FirstChildElement( "z" )->GetText());  
+
+	int threads_per_block[3];
+    threads_per_block[0] = atoi(child_four->FirstChildElement( "init-kernel-block-dim" )->FirstChildElement( "x" )->GetText());
+    threads_per_block[1] = atoi(child_four->FirstChildElement( "init-kernel-block-dim" )->FirstChildElement( "y" )->GetText());
+    threads_per_block[2] = atoi(child_four->FirstChildElement( "init-kernel-block-dim" )->FirstChildElement( "z" )->GetText());
+	block_threads_per_dim[0] = dim3(threads_per_block[0], threads_per_block[1], threads_per_block[2]);
+
+    threads_per_block[0] = atoi(child_four->FirstChildElement( "alpha-kernel-block-dim" )->FirstChildElement( "x" )->GetText());
+    threads_per_block[1] = atoi(child_four->FirstChildElement( "alpha-kernel-block-dim" )->FirstChildElement( "y" )->GetText());
+    threads_per_block[2] = atoi(child_four->FirstChildElement( "alpha-kernel-block-dim" )->FirstChildElement( "z" )->GetText());
+	block_threads_per_dim[1] = dim3(threads_per_block[0], threads_per_block[1], threads_per_block[2]);
+
+    threads_per_block[0] = atoi(child_four->FirstChildElement( "beta-kernel-block-dim" )->FirstChildElement( "x" )->GetText());
+    threads_per_block[1] = atoi(child_four->FirstChildElement( "beta-kernel-block-dim" )->FirstChildElement( "y" )->GetText());
+    threads_per_block[2] = atoi(child_four->FirstChildElement( "beta-kernel-block-dim" )->FirstChildElement( "z" )->GetText());  
+	block_threads_per_dim[2] = dim3(threads_per_block[0], threads_per_block[1], threads_per_block[2]);
     device_nr = atoi(child_four->FirstChildElement( "device-number" )->GetText());                                                   
 }
 
@@ -171,9 +178,9 @@ void CConfiguration<T>::printMe()
 	std::cout <<  "             VTK: " << do_visualization << std::endl;
 	std::cout <<  "        VALIDATE: " << do_validate << std::endl;
 	std::cout <<  "DEVICE:" << std::endl;
-	std::cout <<  " INIT BLOCK DIM: " <<  init_kernel_block_dim << std::endl;
-	std::cout <<  "ALPHA BLOCK DIM: " <<  alpha_kernel_block_dim << std::endl;
-	std::cout <<  " BETA BLOCK DIM: " <<  beta_kernel_block_dim << std::endl;
+//	std::cout <<  " INIT BLOCK DIM: " <<  block_threads_per_dim[0] << std::endl;
+//	std::cout <<  "ALPHA BLOCK DIM: " <<  block_threads_per_dim[1] << std::endl;
+//	std::cout <<  " BETA BLOCK DIM: " <<  block_threads_per_dim[2] << std::endl;
 	std::cout <<  "        DEVICE_NR: " << device_nr << std::endl;
 }
 

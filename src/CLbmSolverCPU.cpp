@@ -28,6 +28,7 @@ CLbmSolverCPU<T>::CLbmSolverCPU(
 		CVector<3, T> &gravitation,
 		CVector<4, T> &drivenCavityVelocity,
 		T viscocity,
+		CLbmSolverGPU<T> *solverGPU,
 		T massExchangeFactor,
 		T maxSimGravitationLength,
 		T tau,

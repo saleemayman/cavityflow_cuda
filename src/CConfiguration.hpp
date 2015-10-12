@@ -74,9 +74,9 @@ public:
     bool do_validate;
 
     // device configuration data
-    CVector<3, int> init_kernel_block_dim;
-    CVector<3, int> alpha_kernel_block_dim;
-    CVector<3, int> beta_kernel_block_dim;
+    std::vector<dim3> block_threads_per_dim;
+//    CVector<3, int> alpha_kernel_block_dim;
+//    CVector<3, int> beta_kernel_block_dim;
     int device_nr;
 	
 //    // TODO: lbm_opencl_number_of_registers_list, lbm_opencl_number_of_threads_list

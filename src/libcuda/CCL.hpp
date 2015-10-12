@@ -794,7 +794,7 @@ public:
 			}
 
 			// use default work dimensions if specified
-			if (work_dim_def != NULL)		
+			if (work_dim_def != '\0')		
 				work_dim = work_dim_def;
 
             if (work_dim == 1)
