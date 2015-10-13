@@ -80,13 +80,17 @@ enum Direction
 }
 
 inline void gpuErrorCheck(cudaError_t code, std::string file, int line, bool abort = true) {
-    // cudaDeviceSynchronize();
     if (code != cudaSuccess) {
-        std::cerr << "!!! The following CUDA API error occurred !!! " << std::endl;
-        std::cerr << cudaGetErrorString(code) << std::endl;
-        std::cerr << "Info: file -> " << file << ", line -> " << line << std::endl;
+        std::cerr << "----- !!! The following CUDA API error occurred !!! -----" << std::endl;
+        std::cerr << "error code:     " << code << std::endl;
+        std::cerr << "error string:   " << cudaGetErrorString(code) << std::endl;
+        std::cerr << "error location: " << std::endl;
+        std::cerr << "          file: " << file << std::endl;
+        std::cerr << "          line: " << line << std::endl;
+        std::cerr << "---------------------------------------------------------" << std::endl;
+
         if(abort) {
-            exit(code);
+            exit (code);
         }
     }
 }

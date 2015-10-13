@@ -17,16 +17,11 @@
  * limitations under the License.
  */
 
-#include <getopt.h>
-
 // MPI
 #include <mpi.h>
 
 // internals
-#include "libmath/CMath.hpp"
 #include "CConfiguration.hpp"
-#include "CController.hpp"
-#include "CDomain.hpp"
 #include "CManager.hpp"
 
 #define VALIDATION_RANK 0
