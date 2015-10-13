@@ -19,10 +19,25 @@
 
 #include "CConfiguration.hpp"
 
+#include <cassert>
+
 template <class T>
 CConfiguration<T>::CConfiguration(std::string fileName)
 {
-	doc.LoadFile(fileName.c_str());
+	int status;
+
+	status = doc.LoadFile(fileName.c_str());
+
+	if (status != tinyxml2::XML_NO_ERROR)
+	{
+		std::cerr << "----- CConfiguration<T>::CConfiguration() -----" << std::endl;
+		std::cerr << "Loading XML configuration file \"" << fileName << "\" failed" << std::endl;
+		std::cerr << "EXECUTION WILL BE IMMEDIATELY TERMINATED" << std::endl;
+		std::cerr << "-----------------------------------------------" << std::endl;
+
+		exit (EXIT_FAILURE);
+	}
+
 	interpretXMLDoc();
 	checkParameters();
 }
@@ -38,18 +53,18 @@ void CConfiguration<T>::interpretPhysiscsData(const tinyxml2::XMLNode* root)
 	const tinyxml2::XMLNode* physicsChild = root->FirstChildElement(TAG_NAME_CHILD_PHYSICS);
 
 	// viscosity
-	viscosity = atof(physicsChild->FirstChildElement( "viscosity" )->GetText());
+	viscosity = atof(physicsChild->FirstChildElement("viscosity")->GetText());
 
 	// gravitation
-	gravitation[0] = atof(physicsChild->FirstChildElement( "gravitation" )->FirstChildElement( "x" )->GetText());
-	gravitation[1] = atof(physicsChild->FirstChildElement( "gravitation" )->FirstChildElement( "y" )->GetText());
-	gravitation[2] = atof(physicsChild->FirstChildElement( "gravitation" )->FirstChildElement( "z" )->GetText());
+	gravitation[0] = atof(physicsChild->FirstChildElement("gravitation")->FirstChildElement("x")->GetText());
+	gravitation[1] = atof(physicsChild->FirstChildElement("gravitation")->FirstChildElement("y")->GetText());
+	gravitation[2] = atof(physicsChild->FirstChildElement("gravitation")->FirstChildElement("z")->GetText());
 
 	// cavity velocity
-	cavityVelocity[0] = atof(physicsChild->FirstChildElement( "cavity-velocity" )->FirstChildElement( "x" )->GetText());
-	cavityVelocity[1] = atof(physicsChild->FirstChildElement( "cavity-velocity" )->FirstChildElement( "y" )->GetText());
-	cavityVelocity[2] = atof(physicsChild->FirstChildElement( "cavity-velocity" )->FirstChildElement( "z" )->GetText());
-	cavityVelocity[3] = atof(physicsChild->FirstChildElement( "cavity-velocity" )->FirstChildElement( "w" )->GetText());
+	cavityVelocity[0] = atof(physicsChild->FirstChildElement("cavity-velocity")->FirstChildElement("x")->GetText());
+	cavityVelocity[1] = atof(physicsChild->FirstChildElement("cavity-velocity")->FirstChildElement("y")->GetText());
+	cavityVelocity[2] = atof(physicsChild->FirstChildElement("cavity-velocity")->FirstChildElement("z")->GetText());
+	cavityVelocity[3] = atof(physicsChild->FirstChildElement("cavity-velocity")->FirstChildElement("w")->GetText());
 }
 
 template <class T>
@@ -57,21 +72,21 @@ void CConfiguration<T>::interpretGridData(const tinyxml2::XMLNode* root)
 {
 	const tinyxml2::XMLNode* gridChild = root->FirstChildElement(TAG_NAME_CHILD_GRID);
 
-	domainSize[0] = atoi(gridChild->FirstChildElement( "domain-size" )->FirstChildElement( "x" )->GetText());
-	domainSize[1] = atoi(gridChild->FirstChildElement( "domain-size" )->FirstChildElement( "y" )->GetText());
-	domainSize[2] = atoi(gridChild->FirstChildElement( "domain-size" )->FirstChildElement( "z" )->GetText());
+	domainSize[0] = atoi(gridChild->FirstChildElement("domain-size")->FirstChildElement("x")->GetText());
+	domainSize[1] = atoi(gridChild->FirstChildElement("domain-size")->FirstChildElement("y")->GetText());
+	domainSize[2] = atoi(gridChild->FirstChildElement("domain-size")->FirstChildElement("z")->GetText());
 
-	domainLength[0] = atof(gridChild->FirstChildElement( "domian-length" )->FirstChildElement( "x" )->GetText());
-	domainLength[1] = atof(gridChild->FirstChildElement( "domian-length" )->FirstChildElement( "y" )->GetText());
-	domainLength[2] = atof(gridChild->FirstChildElement( "domian-length" )->FirstChildElement( "z" )->GetText());
+	domainLength[0] = atof(gridChild->FirstChildElement("domian-length")->FirstChildElement("x")->GetText());
+	domainLength[1] = atof(gridChild->FirstChildElement("domian-length")->FirstChildElement("y")->GetText());
+	domainLength[2] = atof(gridChild->FirstChildElement("domian-length")->FirstChildElement("z")->GetText());
 
-	numOfSubdomains[0] = atoi(gridChild->FirstChildElement( "subdomain-num" )->FirstChildElement( "x" )->GetText());
-	numOfSubdomains[1] = atoi(gridChild->FirstChildElement( "subdomain-num" )->FirstChildElement( "y" )->GetText());
-	numOfSubdomains[2] = atoi(gridChild->FirstChildElement( "subdomain-num" )->FirstChildElement( "z" )->GetText());
+	numOfSubdomains[0] = atoi(gridChild->FirstChildElement("subdomain-num")->FirstChildElement("x")->GetText());
+	numOfSubdomains[1] = atoi(gridChild->FirstChildElement("subdomain-num")->FirstChildElement("y")->GetText());
+	numOfSubdomains[2] = atoi(gridChild->FirstChildElement("subdomain-num")->FirstChildElement("z")->GetText());
 
-	CPUSubdomainRatio[0] = atof(gridChild->FirstChildElement( "cpu-subdomain-ratio" )->FirstChildElement( "x" )->GetText());
-	CPUSubdomainRatio[1] = atof(gridChild->FirstChildElement( "cpu-subdomain-ratio" )->FirstChildElement( "y" )->GetText());
-	CPUSubdomainRatio[2] = atof(gridChild->FirstChildElement( "cpu-subdomain-ratio" )->FirstChildElement( "z" )->GetText());
+	CPUSubdomainRatio[0] = atof(gridChild->FirstChildElement("cpu-subdomain-ratio")->FirstChildElement("x")->GetText());
+	CPUSubdomainRatio[1] = atof(gridChild->FirstChildElement("cpu-subdomain-ratio")->FirstChildElement("y")->GetText());
+	CPUSubdomainRatio[2] = atof(gridChild->FirstChildElement("cpu-subdomain-ratio")->FirstChildElement("z")->GetText());
 }
 
 template <class T>
@@ -79,19 +94,19 @@ void CConfiguration<T>::interpretSimulationData(const tinyxml2::XMLNode* root)
 {
 	const tinyxml2::XMLNode* simulationChild = root->FirstChildElement(TAG_NAME_CHILD_SIMULATION);
 
-	loops = atoi(simulationChild->FirstChildElement( "loops" )->GetText());
-	timestep = atof(simulationChild->FirstChildElement( "timestep" )->GetText());
+	loops = atoi(simulationChild->FirstChildElement("loops")->GetText());
+	timestep = atof(simulationChild->FirstChildElement("timestep")->GetText());
 
-	doBenchmark = atoi(simulationChild->FirstChildElement( "do-benchmark" )->GetText());
-	const char* benchmarkOutputDirChar = simulationChild->FirstChildElement( "benchmark-output-dir" )->GetText();
+	doBenchmark = atoi(simulationChild->FirstChildElement("do-benchmark")->GetText());
+	const char* benchmarkOutputDirChar = simulationChild->FirstChildElement("benchmark-output-dir")->GetText();
 	benchmarkOutputDir.assign(benchmarkOutputDirChar);
 
-	doValidation = atoi(simulationChild->FirstChildElement( "do-validation" )->GetText());
-	const char* validationOutputDirChar = simulationChild->FirstChildElement( "validation-output-dir" )->GetText();
+	doValidation = atoi(simulationChild->FirstChildElement("do-validation")->GetText());
+	const char* validationOutputDirChar = simulationChild->FirstChildElement("validation-output-dir")->GetText();
 	validationOutputDir.assign(validationOutputDirChar);
 
-	doVisualization = atoi(simulationChild->FirstChildElement( "do-visualization" )->GetText());
-	const char* visualizationOutputDirChar = simulationChild->FirstChildElement( "visualization-output-dir" )->GetText();
+	doVisualization = atoi(simulationChild->FirstChildElement("do-visualization")->GetText());
+	const char* visualizationOutputDirChar = simulationChild->FirstChildElement("visualization-output-dir")->GetText();
 	visualizationOutputDir.assign(visualizationOutputDirChar);
 }
 
@@ -101,19 +116,19 @@ void CConfiguration<T>::interpretDeviceData(const tinyxml2::XMLNode* root)
     const tinyxml2::XMLNode* deviceChild = root->FirstChildElement(TAG_NAME_CHILD_DEVICE);
 
 	dim3 configuration;
-	configuration.x = atoi(deviceChild->FirstChildElement( "init-grid-configuration" )->FirstChildElement( "x" )->GetText());
-	configuration.y = atoi(deviceChild->FirstChildElement( "init-grid-configuration" )->FirstChildElement( "y" )->GetText());
-	configuration.z = atoi(deviceChild->FirstChildElement( "init-grid-configuration" )->FirstChildElement( "z" )->GetText());
+	configuration.x = atoi(deviceChild->FirstChildElement("grid-configuration")->FirstChildElement("init-grid-configuration")->FirstChildElement("x")->GetText());
+	configuration.y = atoi(deviceChild->FirstChildElement("grid-configuration")->FirstChildElement("init-grid-configuration")->FirstChildElement("y")->GetText());
+	configuration.z = atoi(deviceChild->FirstChildElement("grid-configuration")->FirstChildElement("init-grid-configuration")->FirstChildElement("z")->GetText());
     threadsPerBlock.push_back(configuration);
 
-    configuration.x = atoi(deviceChild->FirstChildElement( "alpha-grid-configuration" )->FirstChildElement( "x" )->GetText());
-    configuration.y = atoi(deviceChild->FirstChildElement( "alpha-grid-configuration" )->FirstChildElement( "y" )->GetText());
-    configuration.z = atoi(deviceChild->FirstChildElement( "alpha-grid-configuration" )->FirstChildElement( "z" )->GetText());
+    configuration.x = atoi(deviceChild->FirstChildElement("grid-configuration")->FirstChildElement("alpha-grid-configuration")->FirstChildElement("x")->GetText());
+    configuration.y = atoi(deviceChild->FirstChildElement("grid-configuration")->FirstChildElement("alpha-grid-configuration")->FirstChildElement("y")->GetText());
+    configuration.z = atoi(deviceChild->FirstChildElement("grid-configuration")->FirstChildElement("alpha-grid-configuration")->FirstChildElement("z")->GetText());
     threadsPerBlock.push_back(configuration);
 
-    configuration.x = atoi(deviceChild->FirstChildElement( "beta-grid-configuration" )->FirstChildElement( "x" )->GetText());
-    configuration.y = atoi(deviceChild->FirstChildElement( "beta-grid-configuration" )->FirstChildElement( "y" )->GetText());
-    configuration.z = atoi(deviceChild->FirstChildElement( "beta-grid-configuration" )->FirstChildElement( "z" )->GetText());
+    configuration.x = atoi(deviceChild->FirstChildElement("grid-configuration")->FirstChildElement("beta-grid-configuration")->FirstChildElement("x")->GetText());
+    configuration.y = atoi(deviceChild->FirstChildElement("grid-configuration")->FirstChildElement("beta-grid-configuration")->FirstChildElement("y")->GetText());
+    configuration.z = atoi(deviceChild->FirstChildElement("grid-configuration")->FirstChildElement("beta-grid-configuration")->FirstChildElement("z")->GetText());
     threadsPerBlock.push_back(configuration);
 }
 
@@ -131,6 +146,21 @@ void CConfiguration<T>::interpretXMLDoc()
 template <class T>
 void CConfiguration<T>::checkParameters()
 {
+	assert(viscosity > (T)0);
+	assert(domainSize[0] > 0 && domainSize[1] > 0 && domainSize[2] > 0);
+	assert(domainLength[0] > (T)0 && domainLength[1] > (T)0 && domainLength[2] > (T)0);
+	assert(numOfSubdomains[0] > 0 && numOfSubdomains[1] > 0 && numOfSubdomains[2] > 0);
+	assert(CPUSubdomainRatio[0] >= (T)0 && CPUSubdomainRatio[1] >= (T)0 && CPUSubdomainRatio[2] >= (T)0);
+	assert(CPUSubdomainRatio[0] <= (T)1 && CPUSubdomainRatio[1] <= (T)1 && CPUSubdomainRatio[2] <= (T)1);
+	assert(loops == -1 || loops > 0);
+	assert(loops == (T)-1 || loops > (T)0);
+	assert(threadsPerBlock[0].x > 0 && threadsPerBlock[0].y > 0 && threadsPerBlock[0].z > 0);
+	assert(threadsPerBlock[1].x > 0 && threadsPerBlock[1].y > 0 && threadsPerBlock[1].z > 0);
+	assert(threadsPerBlock[2].x > 0 && threadsPerBlock[2].y > 0 && threadsPerBlock[2].z > 0);
+	assert(threadsPerBlock[0].x * threadsPerBlock[0].y * threadsPerBlock[0].z <= 1024);
+	assert(threadsPerBlock[1].x * threadsPerBlock[1].y * threadsPerBlock[1].z <= 1024);
+	assert(threadsPerBlock[2].x * threadsPerBlock[2].y * threadsPerBlock[2].z <= 1024);
+	assert(domainSize[0] % numOfSubdomains[0] == 0 && domainSize[1] % numOfSubdomains[1] == 0 && domainSize[2] % numOfSubdomains[2] == 0);
 }
 
 template <class T>
