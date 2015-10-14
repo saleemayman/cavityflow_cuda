@@ -41,6 +41,7 @@ CController<T>::CController(
         communication(communication),
         simulationStepCounter(0)
 {
+	/*
     solverGPU = new CLbmSolverGPU<T>(
     		this->id,
     		this->configuration->threadsPerBlock,
@@ -56,6 +57,8 @@ CController<T>::CController(
     		this->configuration->doValidation || this->configuration->doVisualization,
     		this->configuration->doValidation || this->configuration->doVisualization,
     		this->configuration->doLogging);
+    */
+    /*
     solverCPU = new CLbmSolverCPU<T>(
     		this->id,
     		this->domain,
@@ -71,8 +74,7 @@ CController<T>::CController(
     		this->configuration->doValidation || this->configuration->doVisualization,
     		this->configuration->doValidation || this->configuration->doVisualization,
     		this->configuration->doLogging);
-
-    setDrivenCavitySzenario();
+    */
 
     if(this->configuration->doVisualization) {
     	cLbmVisualization = new CLbmVisualizationVTK<T>(this->id, this->configuration->visualizationOutputDir);
@@ -265,7 +267,7 @@ void CController<T>::setDrivenCavitySzenario()
         src[i] = VELOCITY_INJECTION;
     }
 
-    solverGPU->setFlags(origin, size, src);
+    // solverGPU->setFlags(origin, size, src);
 
     delete[] src;
 }

@@ -56,16 +56,16 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
     {
 		std::cout << "----- CManager<T>::CManager() -----" << std::endl;
 		std::cout << "id:                     " << rank << std::endl;
-		std::cout << "---------------------------------------" << std::endl;
+		std::cout << "-----------------------------------" << std::endl;
 		std::cout << "domain size:            " << domain.getSize() << std::endl;
 		std::cout << "domain length:          " << domain.getLength() << std::endl;
 		std::cout << "domain origin:          " << domain.getOrigin() << std::endl;
-		std::cout << "---------------------------------------" << std::endl;
+		std::cout << "-----------------------------------" << std::endl;
 		std::cout << "subdomain coordinates:  [" << subdomainX << ", " << subdomainY << ", " << subdomainZ << "]" << std::endl;
 		std::cout << "subdomain size:         " << subdomainSize << std::endl;
 		std::cout << "subdomain length:       " << subdomainLength << std::endl;
 		std::cout << "subdomain origin:       " << subdomainOrigin << std::endl;
-		std::cout << "---------------------------------------" << std::endl;
+		std::cout << "-----------------------------------" << std::endl;
     }
 
     /*
@@ -88,13 +88,13 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
 
     if (configuration->doLogging)
     {
-		std::cout << "boundaryConditions[0]:  " << boundaryConditions[0] << std::endl;
-		std::cout << "boundaryConditions[1]:  " << boundaryConditions[1] << std::endl;
-		std::cout << "boundaryConditions[2]:  " << boundaryConditions[2] << std::endl;
-		std::cout << "boundaryConditions[3]:  " << boundaryConditions[3] << std::endl;
-		std::cout << "boundaryConditions[4]:  " << boundaryConditions[4] << std::endl;
-		std::cout << "boundaryConditions[5]:  " << boundaryConditions[5] << std::endl;
-		std::cout << "---------------------------------------" << std::endl;
+		std::cout << "boundaryConditions[0 = LEFT]:   " << boundaryConditions[0] << std::endl;
+		std::cout << "boundaryConditions[1 = RIGHT]:  " << boundaryConditions[1] << std::endl;
+		std::cout << "boundaryConditions[2 = BOTTOM]: " << boundaryConditions[2] << std::endl;
+		std::cout << "boundaryConditions[3 = TOP]:    " << boundaryConditions[3] << std::endl;
+		std::cout << "boundaryConditions[4 = BACK]:   " << boundaryConditions[4] << std::endl;
+		std::cout << "boundaryConditions[5 = FRONT]:  " << boundaryConditions[5] << std::endl;
+		std::cout << "-----------------------------------" << std::endl;
     }
 
     /*
@@ -104,12 +104,12 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
     std::vector<CComm<T> > communication;
 
     if (boundaryConditions[0] == GHOST_LAYER) {
-        int commDestination = id - 1;
+        int commDestination = rank - 1;
         CVector<3, int> sendSize(1, subdomainSize[1], subdomainSize[2]);
         CVector<3, int> recvSize(1, subdomainSize[1], subdomainSize[2]);
         CVector<3, int> sendOrigin(1, 0, 0);
         CVector<3, int> recvOrigin(0, 0, 0);
-        CVector<3, int> commDirection(1, 0, 0);
+        CVector<3, int> commDirection(-1, 0, 0);
 
         CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, commDirection);
 
@@ -121,7 +121,7 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
         CVector<3, int> recvSize(1, subdomainSize[1], subdomainSize[2]);
         CVector<3, int> sendOrigin(subdomainSize[0] - 2, 0, 0);
         CVector<3, int> recvOrigin(subdomainSize[0] - 1, 0, 0);
-        CVector<3, int> commDirection(-1, 0, 0);
+        CVector<3, int> commDirection(1, 0, 0);
 
         CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, commDirection);
 
@@ -133,7 +133,7 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
         CVector<3, int> recvSize(subdomainSize[0], 1, subdomainSize[2]);
         CVector<3, int> sendOrigin(0, 1, 0);
         CVector<3, int> recvOrigin(0, 0, 0);
-        CVector<3, int> commDirection(0, 1, 0);
+        CVector<3, int> commDirection(0, -1, 0);
 
         CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, commDirection);
 
@@ -142,10 +142,10 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
     if (boundaryConditions[3] == GHOST_LAYER) {
         int commDestination = rank + configuration->numOfSubdomains[0];
         CVector<3, int> sendSize(subdomainSize[0], 1, subdomainSize[2]);
-        CVector<3, int> recvSize(subdomainSize[0], 1,  subdomainSize[2]);
+        CVector<3, int> recvSize(subdomainSize[0], 1, subdomainSize[2]);
         CVector<3, int> sendOrigin(0, subdomainSize[1] - 2, 0);
         CVector<3, int> recvOrigin(0, subdomainSize[1] - 1, 0);
-        CVector<3, int> commDirection(0, -1, 0);
+        CVector<3, int> commDirection(0, 1, 0);
 
         CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, commDirection);
 
@@ -157,7 +157,7 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
         CVector<3, int> recvSize(subdomainSize[0], subdomainSize[1], 1);
         CVector<3, int> sendOrigin(0, 0, 1);
         CVector<3, int> recvOrigin(0, 0, 0);
-        CVector<3, int> commDirection(0, 0, 1);
+        CVector<3, int> commDirection(0, 0, -1);
 
         CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, commDirection);
 
@@ -169,14 +169,14 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
         CVector<3, int> recvSize(subdomainSize[0], subdomainSize[1], 1);
         CVector<3, int> sendOrigin(0, 0, subdomainSize[2] - 2);
         CVector<3, int> recvOrigin(0, 0, subdomainSize[2] - 1);
-        CVector<3, int> commDirection(0, 0, -1);
+        CVector<3, int> commDirection(0, 0, 1);
 
         CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, commDirection);
 
         communication.push_back(comm);
     }
 
-    controller = new CController<T>(id, *subdomain, boundaryConditions, communication, configuration);
+    controller = new CController<T>(rank, *subdomain, boundaryConditions, communication, configuration);
 
     if (subdomainY == configuration->numOfSubdomains[1] - 1) {
         controller->setDrivenCavitySzenario();
@@ -186,7 +186,7 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
 template <class T>
 CManager<T>::~CManager()
 {
-    delete controller;
+    // delete controller;
 }
 
 template <class T>

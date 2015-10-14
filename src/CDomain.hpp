@@ -39,7 +39,7 @@ private:
 
 public:
     CDomain(int id, CVector<3, int> size);
-    CDomain(int id, CVector<3, int> size, CVector<3, int> originCell, CVector<3, T> length);
+    CDomain(int id, CVector<3, int> size, CVector<3, int> origin, CVector<3, T> length);
     ~CDomain();
 
     int getId() const;

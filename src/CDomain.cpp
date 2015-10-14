@@ -28,7 +28,7 @@ CDomain<T>::CDomain(int id, CVector<3, int> size) :
 }
 
 template <class T>
-CDomain<T>::CDomain(int id, CVector<3, int> size, CVector<3, int> originCell, CVector<3, T> length) :
+CDomain<T>::CDomain(int id, CVector<3, int> size, CVector<3, int> origin, CVector<3, T> length) :
         id(id), size(size), origin(origin), length(length)
 {
 }

@@ -66,12 +66,12 @@ enum Flag
 
 enum Direction
 {
-    RIGHT  = 0,
-    LEFT   = 1,
-    TOP    = 2,
-    BOTTOM = 3,
-    FRONT  = 4,
-    BACK   = 5
+    LEFT   = 0,
+    RIGHT  = 1,
+    BOTTOM = 2,
+    TOP    = 3,
+    BACK   = 4,
+    FRONT  = 5
 };
 
 #define GPU_ERROR_CHECK(code) \

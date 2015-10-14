@@ -53,9 +53,10 @@ int main(int argc, char** argv)
 
 	CConfiguration<TYPE>* configuration = new CConfiguration<TYPE>(argv[1]);
 
-#if DEBUG
-    configuration->print();
-#endif
+	if (configuration->doLogging)
+	{
+		configuration->print();
+	}
 
     /*
      * Setup MPI environment
@@ -69,15 +70,16 @@ int main(int argc, char** argv)
 	MPI_Get_processor_name(nodeName, &nodeNameLength);
 
 
-#if DEBUG
-	std::cout << "----- main() -----" << std::endl;
-	std::cout << "MPI has been successfully initialized." << std::endl;
-	std::cout << "------------------" << std::endl;
-	std::cout << "local rank number:     " << rank << std::endl;
-	std::cout << "total number of ranks: " << numOfRanks << std::endl;
-	std::cout << "local node name:       " << nodeName << std::endl;
-	std::cout << "------------------" << std::endl;
-#endif
+	if (configuration->doLogging)
+	{
+		std::cout << "----- main() -----" << std::endl;
+		std::cout << "MPI has been successfully initialized." << std::endl;
+		std::cout << "------------------" << std::endl;
+		std::cout << "local rank number:     " << rank << std::endl;
+		std::cout << "total number of ranks: " << numOfRanks << std::endl;
+		std::cout << "local node name:       " << nodeName << std::endl;
+		std::cout << "------------------" << std::endl;
+	}
 
     /*
      * Make sure there's a dedicated MPI rank/process for every subdomain.
@@ -94,7 +96,7 @@ int main(int argc, char** argv)
 		exit (EXIT_FAILURE);
     }
 
-    // CManager<TYPE> *manager = new CManager<TYPE>(rank, configuration);
+    CManager<TYPE> *manager = new CManager<TYPE>(rank, configuration);
 
     if (configuration->doValidation)
     {
@@ -102,7 +104,7 @@ int main(int argc, char** argv)
         // manager->run();
     }
 
-    // delete manager;
+    delete manager;
 
     /*
 	 * Tear down MPI environment
