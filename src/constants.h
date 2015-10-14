@@ -20,6 +20,17 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#define TYPE double
+#define TYPE                       double
+
+#define NUM_OF_LOOPS               100
+
+#define MASS_EXCHANGE_FACTOR       (1.0)
+#define MAX_SIM_GRAVITATION_LENGTH (0.0001)
+#define NUM_LATTICE_VECTORS        19
+#define TAU                        (0.953575)
+
+#define STORE_VELOCITIES           (true)
+#define STORE_DENSITIES            (true)
+#define DO_LOGGING                 (false)
 
 #endif

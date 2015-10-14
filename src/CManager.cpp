@@ -23,12 +23,12 @@
 
 template <class T>
 CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
-		domain(rank, configuration->domainSize, CVector<3, int>(0), configuration->domainLength)
+        domain(rank, configuration->domainSize, CVector<3, int>(0), configuration->domainLength)
 {
     /*
-	 * Determine parameters for subdomain managed by this class.
-	 */
-	int id = rank;
+     * Determine parameters for subdomain managed by this class.
+     */
+    int id = rank;
     int subdomainX, subdomainY, subdomainZ;
 
     subdomainX = id % configuration->numOfSubdomains[0];
@@ -37,64 +37,66 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
     id /= configuration->numOfSubdomains[1];
     subdomainZ = id;
 
-    // create the subdomains instances for the whole domain
+    /*
+     * Create the subdomain instances for the whole domain
+     */
     CVector<3, int> subdomainSize(
-    		configuration->domainSize[0] / configuration->numOfSubdomains[0],
-    		configuration->domainSize[1] / configuration->numOfSubdomains[1],
-    		configuration->domainSize[2] / configuration->numOfSubdomains[2]);
+            configuration->domainSize[0] / configuration->numOfSubdomains[0],
+            configuration->domainSize[1] / configuration->numOfSubdomains[1],
+            configuration->domainSize[2] / configuration->numOfSubdomains[2]);
     CVector<3, int> subdomainOrigin(
-    		subdomainX * subdomainSize[0],
-    		subdomainY * subdomainSize[1],
-    		subdomainZ * subdomainSize[2]);
+            subdomainX * subdomainSize[0],
+            subdomainY * subdomainSize[1],
+            subdomainZ * subdomainSize[2]);
     CVector<3, T> subdomainLength(
-    		configuration->domainLength[0] / (T)configuration->numOfSubdomains[0],
-    		configuration->domainLength[1] / (T)configuration->numOfSubdomains[1],
-    		configuration->domainLength[2] / (T)configuration->numOfSubdomains[2]);
+            configuration->domainLength[0] / (T)configuration->numOfSubdomains[0],
+            configuration->domainLength[1] / (T)configuration->numOfSubdomains[1],
+            configuration->domainLength[2] / (T)configuration->numOfSubdomains[2]);
     CDomain<T> *subdomain = new CDomain<T>(rank, subdomainSize, subdomainOrigin, subdomainLength);
 
     if (configuration->doLogging)
     {
-		std::cout << "----- CManager<T>::CManager() -----" << std::endl;
-		std::cout << "id:                     " << rank << std::endl;
-		std::cout << "-----------------------------------" << std::endl;
-		std::cout << "domain size:            " << domain.getSize() << std::endl;
-		std::cout << "domain length:          " << domain.getLength() << std::endl;
-		std::cout << "domain origin:          " << domain.getOrigin() << std::endl;
-		std::cout << "-----------------------------------" << std::endl;
-		std::cout << "subdomain coordinates:  [" << subdomainX << ", " << subdomainY << ", " << subdomainZ << "]" << std::endl;
-		std::cout << "subdomain size:         " << subdomainSize << std::endl;
-		std::cout << "subdomain length:       " << subdomainLength << std::endl;
-		std::cout << "subdomain origin:       " << subdomainOrigin << std::endl;
-		std::cout << "-----------------------------------" << std::endl;
+        std::cout << "----- CManager<T>::CManager() -----" << std::endl;
+        std::cout << "id:                     " << rank << std::endl;
+        std::cout << "-----------------------------------" << std::endl;
+        std::cout << "domain size:            " << domain.getSize() << std::endl;
+        std::cout << "domain length:          " << domain.getLength() << std::endl;
+        std::cout << "domain origin:          " << domain.getOrigin() << std::endl;
+        std::cout << "-----------------------------------" << std::endl;
+        std::cout << "subdomain coordinates:  [" << subdomainX << ", " << subdomainY << ", " << subdomainZ << "]" << std::endl;
+        std::cout << "subdomain size:         " << subdomainSize << std::endl;
+        std::cout << "subdomain length:       " << subdomainLength << std::endl;
+        std::cout << "subdomain origin:       " << subdomainOrigin << std::endl;
+        std::cout << "-----------------------------------" << std::endl;
     }
 
     /*
      * Setting the boundary conditions for the current Controller
      */
-	std::vector<Flag> boundaryConditions(6, GHOST_LAYER);
+    std::vector<Flag> boundaryConditions(6, GHOST_LAYER);
 
     if (subdomainX == 0)
-    	boundaryConditions[0] = OBSTACLE;
+        boundaryConditions[0] = OBSTACLE;
     if (subdomainX == (configuration->numOfSubdomains[0] - 1))
-    	boundaryConditions[1] = OBSTACLE;
+        boundaryConditions[1] = OBSTACLE;
     if (subdomainY == 0)
-    	boundaryConditions[2] = OBSTACLE;
+        boundaryConditions[2] = OBSTACLE;
     if (subdomainY == (configuration->numOfSubdomains[1] - 1))
-    	boundaryConditions[3] = OBSTACLE;
+        boundaryConditions[3] = OBSTACLE;
     if (subdomainZ == 0)
-    	boundaryConditions[4] = OBSTACLE;
+        boundaryConditions[4] = OBSTACLE;
     if (subdomainZ == (configuration->numOfSubdomains[2] - 1))
-    	boundaryConditions[5] = OBSTACLE;
+        boundaryConditions[5] = OBSTACLE;
 
     if (configuration->doLogging)
     {
-		std::cout << "boundaryConditions[0 = LEFT]:   " << boundaryConditions[0] << std::endl;
-		std::cout << "boundaryConditions[1 = RIGHT]:  " << boundaryConditions[1] << std::endl;
-		std::cout << "boundaryConditions[2 = BOTTOM]: " << boundaryConditions[2] << std::endl;
-		std::cout << "boundaryConditions[3 = TOP]:    " << boundaryConditions[3] << std::endl;
-		std::cout << "boundaryConditions[4 = BACK]:   " << boundaryConditions[4] << std::endl;
-		std::cout << "boundaryConditions[5 = FRONT]:  " << boundaryConditions[5] << std::endl;
-		std::cout << "-----------------------------------" << std::endl;
+        std::cout << "boundaryConditions[0 = LEFT]:   " << boundaryConditions[0] << std::endl;
+        std::cout << "boundaryConditions[1 = RIGHT]:  " << boundaryConditions[1] << std::endl;
+        std::cout << "boundaryConditions[2 = BOTTOM]: " << boundaryConditions[2] << std::endl;
+        std::cout << "boundaryConditions[3 = TOP]:    " << boundaryConditions[3] << std::endl;
+        std::cout << "boundaryConditions[4 = BACK]:   " << boundaryConditions[4] << std::endl;
+        std::cout << "boundaryConditions[5 = FRONT]:  " << boundaryConditions[5] << std::endl;
+        std::cout << "-----------------------------------" << std::endl;
     }
 
     /*
@@ -186,7 +188,7 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
 template <class T>
 CManager<T>::~CManager()
 {
-    // delete controller;
+    delete controller;
 }
 
 template <class T>

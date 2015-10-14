@@ -29,11 +29,11 @@
 
 template <class T>
 CController<T>::CController(
-		int id,
-		CDomain<T> domain,
-		std::vector<Flag> boundaryConditions,
-	    std::vector<CComm<T> > communication,
-	    CConfiguration<T>* configuration) :
+        int id,
+        CDomain<T> domain,
+        std::vector<Flag> boundaryConditions,
+        std::vector<CComm<T> > communication,
+        CConfiguration<T>* configuration) :
         id(id),
         configuration(configuration),
         domain(domain),
@@ -41,43 +41,43 @@ CController<T>::CController(
         communication(communication),
         simulationStepCounter(0)
 {
-	/*
+    /*
     solverGPU = new CLbmSolverGPU<T>(
-    		this->id,
-    		this->configuration->threadsPerBlock,
-    		this->domain,
-    		this->boundaryConditions,
-    		this->configuration->timestep,
-    		this->configuration->gravitation,
-    		this->configuration->cavityVelocity,
-    		this->configuration->viscosity,
-    		MASS_EXCHANGE_FACTOR,
-    		MAX_SIM_GRAVITATION_LENGTH,
-    		TAU,
-    		this->configuration->doValidation || this->configuration->doVisualization,
-    		this->configuration->doValidation || this->configuration->doVisualization,
-    		this->configuration->doLogging);
+            this->id,
+            this->configuration->threadsPerBlock,
+            this->domain,
+            this->boundaryConditions,
+            this->configuration->timestep,
+            this->configuration->gravitation,
+            this->configuration->cavityVelocity,
+            this->configuration->viscosity,
+            MASS_EXCHANGE_FACTOR,
+            MAX_SIM_GRAVITATION_LENGTH,
+            TAU,
+            this->configuration->doValidation || this->configuration->doVisualization,
+            this->configuration->doValidation || this->configuration->doVisualization,
+            this->configuration->doLogging);
     */
     /*
     solverCPU = new CLbmSolverCPU<T>(
-    		this->id,
-    		this->domain,
-    		this->boundaryConditions,
-    		this->configuration->timestep,
-    		this->configuration->gravitation,
-    		this->configuration->cavityVelocity,
-    		this->configuration->viscosity,
-    		solverGPU,
-    		MASS_EXCHANGE_FACTOR,
-    		MAX_SIM_GRAVITATION_LENGTH,
-    		TAU,
-    		this->configuration->doValidation || this->configuration->doVisualization,
-    		this->configuration->doValidation || this->configuration->doVisualization,
-    		this->configuration->doLogging);
+            this->id,
+            this->domain,
+            this->boundaryConditions,
+            this->configuration->timestep,
+            this->configuration->gravitation,
+            this->configuration->cavityVelocity,
+            this->configuration->viscosity,
+            solverGPU,
+            MASS_EXCHANGE_FACTOR,
+            MAX_SIM_GRAVITATION_LENGTH,
+            TAU,
+            this->configuration->doValidation || this->configuration->doVisualization,
+            this->configuration->doValidation || this->configuration->doVisualization,
+            this->configuration->doLogging);
     */
 
     if(this->configuration->doVisualization) {
-    	cLbmVisualization = new CLbmVisualizationVTK<T>(this->id, this->configuration->visualizationOutputDir);
+        cLbmVisualization = new CLbmVisualizationVTK<T>(this->id, this->configuration->visualizationOutputDir);
     }
 }
 
@@ -85,7 +85,7 @@ template <class T>
 CController<T>::~CController()
 {
     if(this->configuration->doVisualization)
-    	delete cLbmVisualization;
+        delete cLbmVisualization;
 
     // delete solverCPU;
     delete solverGPU;
@@ -94,10 +94,10 @@ CController<T>::~CController()
 template <class T>
 void CController<T>::syncAlpha()
 {
-	/*
-	 * TODO
-	 * Rework this function.
-	 */
+    /*
+     * TODO
+     * Rework this function.
+     */
 #if DEBUG
     // std::cout << "--> Sync alpha" << std::endl;
 #endif
@@ -159,10 +159,10 @@ void CController<T>::syncAlpha()
 template <class T>
 void CController<T>::syncBeta()
 {
-	/*
-	 * TODO
-	 * Rework this function.
-	 */
+    /*
+     * TODO
+     * Rework this function.
+     */
 #if DEBUG
     // std::cout << "--> Sync beta" << std::endl;
 #endif
@@ -229,11 +229,11 @@ template <class T>
 void CController<T>::computeNextStep()
 {
     if (simulationStepCounter & 1) {
-    	solverGPU->simulationStepAlpha();
-        syncBeta();
+        // solverGPU->simulationStepAlpha();
+        // syncBeta();
     } else {
-    	solverGPU->simulationStepAlpha();
-        syncAlpha();
+        // solverGPU->simulationStepAlpha();
+        // syncAlpha();
     }
     simulationStepCounter++;
 }
@@ -241,23 +241,23 @@ void CController<T>::computeNextStep()
 template <class T>
 void CController<T>::setDrivenCavitySzenario()
 {
-	if (configuration->doLogging)
-	{
-	    std::cout << "----- CController<T>::setDrivenCavitySzenario() -----" << std::endl;
-	    std::cout << "Cells where velocity injection takes place due to driven cavity scenario are marked accordingly." << std::endl;
-	    std::cout << "-----------------------------------------------------" << std::endl;
-	    std::cout << "id:     " << id << std::endl;
-	    std::cout << "-----------------------------------------------------" << std::endl;
-	}
+    if (configuration->doLogging)
+    {
+        std::cout << "----- CController<T>::setDrivenCavitySzenario() -----" << std::endl;
+        std::cout << "Cells where velocity injection takes place due to driven cavity scenario are marked accordingly." << std::endl;
+        std::cout << "-----------------------------------------------------" << std::endl;
+        std::cout << "id:     " << id << std::endl;
+        std::cout << "-----------------------------------------------------" << std::endl;
+    }
 
     CVector<3, int> origin(1, domain.getSize()[1] - 2, 1);
     CVector<3, int> size(domain.getSize()[0] - 2, 1, domain.getSize()[2] - 2);
 
     if (configuration->doLogging)
     {
-		std::cout << "origin: " << origin << std::endl;
-		std::cout << "size:   " << size << std::endl;
-		std::cout << "-----------------------------------------------------" << std::endl;
+        std::cout << "origin: " << origin << std::endl;
+        std::cout << "size:   " << size << std::endl;
+        std::cout << "-----------------------------------------------------" << std::endl;
     }
 
     Flag* src = new Flag[size.elements()];
@@ -279,125 +279,69 @@ void CController<T>::setDrivenCavitySzenario()
 template <class T>
 int CController<T>::run()
 {
-	/*
-	 * TODO
-	 * Rework this function.
-	 */
-    CVector<3, int> domain_size = domain.getSize();
-    int loops = configuration->loops;
-    if (loops < 0)
-        loops = 100;
-
-    vector_checksum = 0;
-
-    // approximate bandwidth
-    double floats_per_cell = 0.0;
-
-    // 19 density distribution which are read and written
-    floats_per_cell += 19.0 * 2.0;
-
-    // flag (obstacle, injection and fluid) is read
-    floats_per_cell += 1.0;
-
-    // velocity vector is also stored
-    if (configuration->doVisualization
-            /*|| configuration->debug_mode*/)
-        floats_per_cell += 3;
+    int usedDataSize;
     CStopwatch cStopwatch;
 
-    // setting up the visualization
-    std::string outputfilename = "OUTPUT";
-    std::stringstream ss_file;
-    ss_file << "./" << configuration->visualizationOutputDir << "/" << outputfilename;
-    std::string outputfile = ss_file.str();
-    if (configuration->doVisualization) {
-        cLbmVisualization = new CLbmVisualizationVTK<T>(id, outputfile);
+    if (configuration->doBenchmark)
+    {
+        /*
+         * Density distributions are read and written
+         */
+        usedDataSize = NUM_LATTICE_VECTORS * 2 * sizeof(T);
+        /*
+         * Flag is read
+         */
+        usedDataSize += 1 * sizeof(Flag);
+
+
+        if (configuration->doVisualization || configuration->doValidation)
+            /*
+             * Velocity (3) and density (1) are written
+             */
+            usedDataSize += 4 * sizeof(T);
+    }
+
+    if (configuration->doVisualization)
+    {
+        cLbmVisualization = new CLbmVisualizationVTK<T>(id, configuration->visualizationOutputDir);
         cLbmVisualization->setup(solverGPU);
     }
 
-    cStopwatch.start();
-    for (int i = 0; i < loops; i++) {
+    if (configuration->doBenchmark)
+        cStopwatch.start();
+
+    for (int i = 0; i < configuration->loops; i++) {
         computeNextStep();
-        //simulation
-        if (configuration->doVisualization // && (i %  100 == 0)
-            )
+
+        if (configuration->doVisualization)
             cLbmVisualization->render(i);
     }
-    /*
-     * TODO
-     * Check if this comment out affects the correctness of the code
-     */
-    // cLbmPtr->wait();
-    cStopwatch.stop();
-#if DEBUG
-    /*
-    if (domain_size.elements() <= 512) {
-        solverGPU->debug_print();
-    }
-    */
-#endif
 
-#if BENCHMARK
-    double ltime = cStopwatch.time;
-    double gtime;
-    //int MPI_Reduce(void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm)
-    MPI_Reduce(&ltime, &gtime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-    if (id == 0) {
-        double gfps = (((double)loops) / gtime);
-        double gmlups = ((double)gfps*(double)configuration->domain_size.elements())*(double)0.000001;
-        double gbandwidth = (gmlups*floats_per_cell*(double)sizeof(T));
-        std::stringstream benchmark_file_name;
-        benchmark_file_name << "./" << BENCHMARK_OUTPUT_DIR << "/" <<
-        "benchmark_" << configuration->subdomain_num.elements() //<< "_" << id
-        << ".ini";
-        const std::string& tmp = benchmark_file_name.str();
-        const char* cstr = tmp.c_str();
-        std::ofstream benchmark_file (cstr, std::ios::out | std::ios::app );
-        if (benchmark_file.is_open())
+    if (configuration->doBenchmark)
+    {
+        cStopwatch.stop();
+
+        T iterationsPerSecond = (T)configuration->loops / (T)cStopwatch.time;
+        T glups = iterationsPerSecond * (T)configuration->domainSize.elements() * (T)0.000000001;
+        T gbandwidth = glups * (T)usedDataSize;
+
+        std::stringstream benchmarkFileName;
+        benchmarkFileName << configuration->benchmarkOutputDir << "/benchmark_" << id << ".txt";
+        std::ofstream benchmarkFile(benchmarkFileName.str().c_str(), std::ios::out);
+        if (benchmarkFile.is_open())
         {
-            //benchmark_file << "[RESULTS]" << std::endl;
-            benchmark_file << "CUBE_X : " << configuration->domain_size[0] << std::endl;
-            benchmark_file << "CUBE_Y : " << configuration->domain_size[1] << std::endl;
-            benchmark_file << "CUBE_Z : " << configuration->domain_size[2] << std::endl;
-            benchmark_file << "SECONDS : " << gtime << std::endl;
-            benchmark_file << "FPS : " << gfps << std::endl;
-            benchmark_file << "MLUPS : " << gmlups << std::endl;
-            benchmark_file << "BANDWIDTH : " << gbandwidth// << " MB/s (RW, bidirectional)"
-            << std::endl;
-            benchmark_file << std::endl;
-
+            benchmarkFile << "loops :          " << configuration->loops << std::endl;
+            benchmarkFile << "time:            " << cStopwatch.time << "s" << std::endl;
+            benchmarkFile << "iterations:      " << iterationsPerSecond << "s^-1" << std::endl;
+            benchmarkFile << "lattice updates: " << glups << "GLUPS" << std::endl;
+            benchmarkFile << "bandwidth:       " << gbandwidth << "GB/s" << std::endl;
+        } else {
+            /*
+             * TODO
+             */
         }
-        else std::cout << "Unable to open file";
     }
-#endif // end of BENCHMARK
-    std::cout << std::endl;
-    std::cout << "Cube: " << domain_size << std::endl;
-    std::cout << "Seconds: " << cStopwatch.time << std::endl;
-    double fps = (((double) loops) / cStopwatch.time);
-    std::cout << "FPS: " << fps << std::endl;
-    double mlups =
-            ((double) fps * (double) domain.getNumOfCells())
-                    * (double) 0.000001;
-    std::cout << "MLUPS: " << mlups << std::endl;
-    std::cout << "Bandwidth: "
-            << (mlups * floats_per_cell * (double) sizeof(T))
-            << " MB/s (RW, bidirectional)" << std::endl;
-    std::streamsize ss = std::cout.precision();
-    std::cout.precision(8);
-    std::cout.setf(std::ios::fixed, std::ios::floatfield);
-#if 1
-    // The velocity checksum is only stored in debug mode!
-    /*
-     * TODO
-     * Alternative to getVelocityChecksum() with equivalent behavior has to be coded in CLbmSolver
-     */
-    // vector_checksum = cLbmPtr->getVelocityChecksum();
-    std::cout << "Checksum: " << (vector_checksum*1000.0f) << std::endl;
-#endif // end of DEBUG
-    std::cout.precision(ss);
-    std::cout << std::resetiosflags(std::ios::fixed);
 
-    std::cout << "done." << std::endl;
     return EXIT_SUCCESS;
 }
 

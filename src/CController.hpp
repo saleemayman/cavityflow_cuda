@@ -50,8 +50,6 @@ private:
     std::vector<CComm<T> > communication;
     int simulationStepCounter;
 
-    T vector_checksum;
-
     void computeNextStep();
     void syncAlpha();
     void syncBeta();

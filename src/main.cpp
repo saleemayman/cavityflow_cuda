@@ -17,10 +17,8 @@
  * limitations under the License.
  */
 
-// MPI
 #include <mpi.h>
 
-// internals
 #include "CConfiguration.hpp"
 #include "CManager.hpp"
 
@@ -69,7 +67,6 @@ int main(int argc, char** argv)
     MPI_Comm_size(MPI_COMM_WORLD, &numOfRanks);
 	MPI_Get_processor_name(nodeName, &nodeNameLength);
 
-
 	if (configuration->doLogging)
 	{
 		std::cout << "----- main() -----" << std::endl;
@@ -101,7 +98,7 @@ int main(int argc, char** argv)
     if (configuration->doValidation)
     {
     } else {
-        // manager->run();
+        manager->run();
     }
 
     delete manager;

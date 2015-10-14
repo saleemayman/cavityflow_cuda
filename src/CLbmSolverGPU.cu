@@ -41,7 +41,7 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
         T tau,
         bool storeDensities,
         bool storeVelocities,
-		bool doLogging) :
+        bool doLogging) :
         CLbmSolver<T>(id, domain,
                 boundaryConditions, timestepSize,
                 gravitation, drivenCavityVelocity, viscocity,
@@ -50,20 +50,20 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
                 doLogging),
         threadsPerBlock(threadsPerBlock)
 {
-	int numOfGPUsPerNode;
+    int numOfGPUsPerNode;
 
-	GPU_ERROR_CHECK(cudaGetDeviceCount(&numOfGPUsPerNode))
-	GPU_ERROR_CHECK(cudaSetDevice(this->id % numOfGPUsPerNode))
+    GPU_ERROR_CHECK(cudaGetDeviceCount(&numOfGPUsPerNode))
+    GPU_ERROR_CHECK(cudaSetDevice(this->id % numOfGPUsPerNode))
 
-	if (doLogging)
-	{
-		std::cout << "----- CLbmSolverGPU<T>::CLbmSolverGPU() -----" << std::endl;
-		std::cout << "id:                      " << this->id << std::endl;
-		std::cout << "---------------------------------------------" << std::endl;
-		std::cout << "number of GPUs per node: " << numOfGPUsPerNode << std::endl;
-		std::cout << "number of selected GPU:  " << (this->id % numOfGPUsPerNode) << std::endl;
-		std::cout << "---------------------------------------------" << std::endl;
-	}
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverGPU<T>::CLbmSolverGPU() -----" << std::endl;
+        std::cout << "id:                      " << this->id << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+        std::cout << "number of GPUs per node: " << numOfGPUsPerNode << std::endl;
+        std::cout << "number of selected GPU:  " << (this->id % numOfGPUsPerNode) << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+    }
 
     GPU_ERROR_CHECK(cudaMalloc(&densityDistributions, this->domain.getNumOfCells() * NUM_LATTICE_VECTORS * sizeof(T)))
     GPU_ERROR_CHECK(cudaMalloc(&flags, this->domain.getNumOfCells() * sizeof(Flag)))
@@ -73,13 +73,13 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
         GPU_ERROR_CHECK(cudaMalloc(&velocities, this->domain.getNumOfCells() * 3 * sizeof(T)))
 
     if (doLogging) {
-		std::cout << "size of allocated memory for density distributions: " << (this->domain.getNumOfCells() * NUM_LATTICE_VECTORS * sizeof(T)) << "Bytes" << std::endl;
-		std::cout << "size of allocated memory for flags:                 " << (this->domain.getNumOfCells() * sizeof(Flag)) << "Bytes" << std::endl;
-		if(this->storeDensities)
-			std::cout << "size of allocated memory for velocities:            " << (this->domain.getNumOfCells() * 3 * sizeof(T)) << "Bytes" << std::endl;
-		if(this->storeVelocities)
-			std::cout << "size of allocated memory for densities:             " << (this->domain.getNumOfCells() * sizeof(T)) << "Bytes" << std::endl;
-		std::cout << "---------------------------------------------" << std::endl;
+        std::cout << "size of allocated memory for density distributions: " << (this->domain.getNumOfCells() * NUM_LATTICE_VECTORS * sizeof(T)) << "Bytes" << std::endl;
+        std::cout << "size of allocated memory for flags:                 " << (this->domain.getNumOfCells() * sizeof(Flag)) << "Bytes" << std::endl;
+        if(this->storeDensities)
+            std::cout << "size of allocated memory for velocities:            " << (this->domain.getNumOfCells() * 3 * sizeof(T)) << "Bytes" << std::endl;
+        if(this->storeVelocities)
+            std::cout << "size of allocated memory for densities:             " << (this->domain.getNumOfCells() * sizeof(T)) << "Bytes" << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
     }
 
     GPU_ERROR_CHECK(cudaMalloc<T>(&(getDensityDistributionsHalo[0]), this->domain.getNumOfXFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
@@ -140,64 +140,64 @@ CLbmSolverGPU<T>::~CLbmSolverGPU()
 template <class T>
 void CLbmSolverGPU<T>::simulationStepAlpha()
 {
-	lbm_kernel_alpha<T><<<getBlocksPerGrid(3, domain.getSize(), threadsPerBlock[1]), threadsPerBlock[1]>>>(
-			densityDistributions,
-			flags,
-			velocities,
-			densities,
-			tauInv,
-			gravitation[0],
-			gravitation[1],
-			gravitation[2],
-			drivenCavityVelocity[0],
-			domain.getSize()[0],
-			domain.getSize()[1],
-			domain.getSize()[2]);
+    lbm_kernel_alpha<T><<<getBlocksPerGrid(3, domain.getSize(), threadsPerBlock[1]), threadsPerBlock[1]>>>(
+            densityDistributions,
+            flags,
+            velocities,
+            densities,
+            tauInv,
+            gravitation[0],
+            gravitation[1],
+            gravitation[2],
+            drivenCavityVelocity[0],
+            domain.getSize()[0],
+            domain.getSize()[1],
+            domain.getSize()[2]);
 }
 
 template <class T>
 void CLbmSolverGPU<T>::simulationStepAlphaRect(CVector<3, int> origin, CVector<3, int> size)
 {
-	/*
-	 * TODO
-	 */
+    /*
+     * TODO
+     */
 }
 
 template <class T>
 void CLbmSolverGPU<T>::simulationStepBeta()
 {
-	lbm_kernel_beta<T><<<getBlocksPerGrid(3, domain.getSize(), threadsPerBlock[2]), threadsPerBlock[2]>>>(
-			densityDistributions,
-			flags,
-			velocities,
-			densities,
-			tauInv,
-			gravitation[0],
-			gravitation[1],
-			gravitation[2],
-			drivenCavityVelocity[0],
-			domain.getSize()[0],
-			domain.getSize()[1],
-			domain.getSize()[2],
-			threadsPerBlock[2].x * threadsPerBlock[2].y * threadsPerBlock[2].z,
-			isPowerOfTwo(domain.getNumOfCells()),
-			isPowerOfTwo(threadsPerBlock[2].x * threadsPerBlock[2].y * threadsPerBlock[2].z));
+    lbm_kernel_beta<T><<<getBlocksPerGrid(3, domain.getSize(), threadsPerBlock[2]), threadsPerBlock[2]>>>(
+            densityDistributions,
+            flags,
+            velocities,
+            densities,
+            tauInv,
+            gravitation[0],
+            gravitation[1],
+            gravitation[2],
+            drivenCavityVelocity[0],
+            domain.getSize()[0],
+            domain.getSize()[1],
+            domain.getSize()[2],
+            threadsPerBlock[2].x * threadsPerBlock[2].y * threadsPerBlock[2].z,
+            isPowerOfTwo(domain.getNumOfCells()),
+            isPowerOfTwo(threadsPerBlock[2].x * threadsPerBlock[2].y * threadsPerBlock[2].z));
 }
 
 template <class T>
 void CLbmSolverGPU<T>::simulationStepBetaRect(CVector<3, int> origin, CVector<3, int> size)
 {
-	/*
-	 * TODO
-	 */
+    /*
+     * TODO
+     */
 }
 
 template <class T>
 void CLbmSolverGPU<T>::reset()
 {
-	/*
-	 * TODO
-	 */
+    /*
+     * TODO
+     */
 }
 
 template <class T>
@@ -274,19 +274,19 @@ void CLbmSolverGPU<T>::getDensityDistributions(Direction direction, T* hDensityD
 
     if (doLogging)
     {
-		std::cout << "----- CLbmSolverGPU<T>::getDensityDistributions() -----" << std::endl;
-		std::cout << "A copy operation from device to host for lattice vectors in direction " << direction << " was performed." << std::endl;
-		std::cout << "No additional buffer memory was allocated. Instead, getDensityDistributionsHalo was used." << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
-		std::cout << "id:            " << id << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
-		std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-		std::cout << "domain size:   " << domain.getSize() << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
-		std::cout << "cuboid origin: " << origin << std::endl;
-		std::cout << "cuboid size:   " << size << std::endl;
-		std::cout << "direction:     " << norm << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "----- CLbmSolverGPU<T>::getDensityDistributions() -----" << std::endl;
+        std::cout << "A copy operation from device to host for lattice vectors in direction " << direction << " was performed." << std::endl;
+        std::cout << "No additional buffer memory was allocated. Instead, getDensityDistributionsHalo was used." << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "id:            " << id << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:   " << domain.getSize() << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "cuboid origin: " << origin << std::endl;
+        std::cout << "cuboid size:   " << size << std::endl;
+        std::cout << "direction:     " << norm << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
     }
 }
 
@@ -336,18 +336,18 @@ void CLbmSolverGPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<
 
     if (doLogging)
     {
-		std::cout << "----- CLbmSolverGPU<T>::getDensityDistributions() -----" << std::endl;
-		std::cout << "A copy operation from device to host was performed." << std::endl;
-		std::cout << "Additional buffer memory was allocated and freed." << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
-		std::cout << "id:            " << id << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
-		std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-		std::cout << "domain size:   " << domain.getSize() << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
-		std::cout << "cuboid origin: " << origin << std::endl;
-		std::cout << "cuboid size:   " << size << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "----- CLbmSolverGPU<T>::getDensityDistributions() -----" << std::endl;
+        std::cout << "A copy operation from device to host was performed." << std::endl;
+        std::cout << "Additional buffer memory was allocated and freed." << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "id:            " << id << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:   " << domain.getSize() << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "cuboid origin: " << origin << std::endl;
+        std::cout << "cuboid size:   " << size << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
     }
 }
 
@@ -433,19 +433,19 @@ void CLbmSolverGPU<T>::setDensityDistributions(Direction direction, T* hDensityD
     }
 
     if (doLogging) {
-		std::cout << "----- CLbmSolverGPU<T>::setDensityDistributions() -----" << std::endl;
-		std::cout << "A copy operation from host to device for lattice vectors in direction " << direction << " was performed." << std::endl;
-		std::cout << "No additional buffer memory was allocated. Instead, setDensityDistributionsHalo was used." << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
-		std::cout << "id:            " << id << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
-		std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-		std::cout << "domain size:   " << domain.getSize() << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
-		std::cout << "cuboid origin: " << origin << std::endl;
-		std::cout << "cuboid size:   " << size << std::endl;
-		std::cout << "direction:     " << norm << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "----- CLbmSolverGPU<T>::setDensityDistributions() -----" << std::endl;
+        std::cout << "A copy operation from host to device for lattice vectors in direction " << direction << " was performed." << std::endl;
+        std::cout << "No additional buffer memory was allocated. Instead, setDensityDistributionsHalo was used." << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "id:            " << id << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:   " << domain.getSize() << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "cuboid origin: " << origin << std::endl;
+        std::cout << "cuboid size:   " << size << std::endl;
+        std::cout << "direction:     " << norm << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
     }
 }
 
@@ -495,18 +495,18 @@ void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
 
     if (doLogging)
     {
-		std::cout << "----- CLbmSolverGPU<T>::setDensityDistributions() -----" << std::endl;
-		std::cout << "A copy operation from host to device was performed." << std::endl;
-		std::cout << "Additional buffer memory was allocated and freed." << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
-		std::cout << "id:            " << id << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
-		std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-		std::cout << "domain size:   " << domain.getSize() << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
-		std::cout << "cuboid origin: " << origin << std::endl;
-		std::cout << "cuboid size:   " << size << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "----- CLbmSolverGPU<T>::setDensityDistributions() -----" << std::endl;
+        std::cout << "A copy operation from host to device was performed." << std::endl;
+        std::cout << "Additional buffer memory was allocated and freed." << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "id:            " << id << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:   " << domain.getSize() << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "cuboid origin: " << origin << std::endl;
+        std::cout << "cuboid size:   " << size << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
     }
 }
 
@@ -562,18 +562,18 @@ void CLbmSolverGPU<T>::getFlags(CVector<3, int> &origin, CVector<3, int> &size, 
 
     if (doLogging)
     {
-		std::cout << "----- CLbmSolverGPU<T>::getFlags() -----" << std::endl;
-		std::cout << "A copy operation from device to host was performed." << std::endl;
-		std::cout << "Additional buffer memory was allocated and freed." << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
-		std::cout << "id:            " << id << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
-		std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-		std::cout << "domain size:   " << domain.getSize() << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
-		std::cout << "cuboid origin: " << origin << std::endl;
-		std::cout << "cuboid size:   " << size << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "----- CLbmSolverGPU<T>::getFlags() -----" << std::endl;
+        std::cout << "A copy operation from device to host was performed." << std::endl;
+        std::cout << "Additional buffer memory was allocated and freed." << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "id:            " << id << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:   " << domain.getSize() << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "cuboid origin: " << origin << std::endl;
+        std::cout << "cuboid size:   " << size << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
     }
 }
 
@@ -629,18 +629,18 @@ void CLbmSolverGPU<T>::setFlags(CVector<3, int> &origin, CVector<3, int> &size, 
 
     if (doLogging)
     {
-		std::cout << "----- CLbmSolverGPU<T>::setFlags() -----" << std::endl;
-		std::cout << "A copy operation from host to device was performed." << std::endl;
-		std::cout << "Additional buffer memory was allocated and freed." << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
-		std::cout << "id:            " << id << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
-		std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-		std::cout << "domain size:   " << domain.getSize() << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
-		std::cout << "cuboid origin: " << origin << std::endl;
-		std::cout << "cuboid size:   " << size << std::endl;
-		std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "----- CLbmSolverGPU<T>::setFlags() -----" << std::endl;
+        std::cout << "A copy operation from host to device was performed." << std::endl;
+        std::cout << "Additional buffer memory was allocated and freed." << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "id:            " << id << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:   " << domain.getSize() << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "cuboid origin: " << origin << std::endl;
+        std::cout << "cuboid size:   " << size << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
     }
 }
 
@@ -699,18 +699,18 @@ void CLbmSolverGPU<T>::getVelocities(CVector<3, int> &origin, CVector<3, int> &s
 
     if (doLogging)
     {
-		std::cout << "----- CLbmSolverGPU<T>::getVelocities() -----" << std::endl;
-		std::cout << "A copy operation from device to host was performed." << std::endl;
-		std::cout << "Additional buffer memory was allocated and freed." << std::endl;
-		std::cout << "---------------------------------------------" << std::endl;
-		std::cout << "id:            " << id << std::endl;
-		std::cout << "---------------------------------------------" << std::endl;
-		std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-		std::cout << "domain size:   " << domain.getSize() << std::endl;
-		std::cout << "---------------------------------------------" << std::endl;
-		std::cout << "cuboid origin: " << origin << std::endl;
-		std::cout << "cuboid size:   " << size << std::endl;
-		std::cout << "---------------------------------------------" << std::endl;
+        std::cout << "----- CLbmSolverGPU<T>::getVelocities() -----" << std::endl;
+        std::cout << "A copy operation from device to host was performed." << std::endl;
+        std::cout << "Additional buffer memory was allocated and freed." << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+        std::cout << "id:            " << id << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:   " << domain.getSize() << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+        std::cout << "cuboid origin: " << origin << std::endl;
+        std::cout << "cuboid size:   " << size << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
     }
 }
 
@@ -769,18 +769,18 @@ void CLbmSolverGPU<T>::setVelocities(CVector<3, int> &origin, CVector<3, int> &s
 
     if (doLogging)
     {
-		std::cout << "----- CLbmSolverGPU<T>::setVelocities() -----" << std::endl;
-		std::cout << "A copy operation from host to device was performed." << std::endl;
-		std::cout << "Additional buffer memory was allocated and freed." << std::endl;
-		std::cout << "---------------------------------------------" << std::endl;
-		std::cout << "id:            " << id << std::endl;
-		std::cout << "---------------------------------------------" << std::endl;
-		std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-		std::cout << "domain size:   " << domain.getSize() << std::endl;
-		std::cout << "---------------------------------------------" << std::endl;
-		std::cout << "cuboid origin: " << origin << std::endl;
-		std::cout << "cuboid size:   " << size << std::endl;
-		std::cout << "---------------------------------------------" << std::endl;
+        std::cout << "----- CLbmSolverGPU<T>::setVelocities() -----" << std::endl;
+        std::cout << "A copy operation from host to device was performed." << std::endl;
+        std::cout << "Additional buffer memory was allocated and freed." << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+        std::cout << "id:            " << id << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:   " << domain.getSize() << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+        std::cout << "cuboid origin: " << origin << std::endl;
+        std::cout << "cuboid size:   " << size << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
     }
 }
 
@@ -836,18 +836,18 @@ void CLbmSolverGPU<T>::getDensities(CVector<3, int> &origin, CVector<3, int> &si
 
     if (doLogging)
     {
-		std::cout << "----- CLbmSolverGPU<T>::getDensities() -----" << std::endl;
-		std::cout << "A copy operation from device to host was performed." << std::endl;
-		std::cout << "Additional buffer memory was allocated and freed." << std::endl;
-		std::cout << "--------------------------------------------" << std::endl;
-		std::cout << "id:            " << id << std::endl;
-		std::cout << "--------------------------------------------" << std::endl;
-		std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-		std::cout << "domain size:   " << domain.getSize() << std::endl;
-		std::cout << "--------------------------------------------" << std::endl;
-		std::cout << "cuboid origin: " << origin << std::endl;
-		std::cout << "cuboid size:   " << size << std::endl;
-		std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "----- CLbmSolverGPU<T>::getDensities() -----" << std::endl;
+        std::cout << "A copy operation from device to host was performed." << std::endl;
+        std::cout << "Additional buffer memory was allocated and freed." << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "id:            " << id << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:   " << domain.getSize() << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "cuboid origin: " << origin << std::endl;
+        std::cout << "cuboid size:   " << size << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
     }
 }
 
@@ -903,18 +903,18 @@ void CLbmSolverGPU<T>::setDensities(CVector<3, int> &origin, CVector<3, int> &si
 
     if (doLogging)
     {
-		std::cout << "----- CLbmSolverGPU<T>::setDensities() -----" << std::endl;
-		std::cout << "A copy operation from host to device was performed." << std::endl;
-		std::cout << "Additional buffer memory was allocated and freed." << std::endl;
-		std::cout << "--------------------------------------------" << std::endl;
-		std::cout << "id:            " << id << std::endl;
-		std::cout << "--------------------------------------------" << std::endl;
-		std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-		std::cout << "domain size:   " << domain.getSize() << std::endl;
-		std::cout << "--------------------------------------------" << std::endl;
-		std::cout << "cuboid origin: " << origin << std::endl;
-		std::cout << "cuboid size:   " << size << std::endl;
-		std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "----- CLbmSolverGPU<T>::setDensities() -----" << std::endl;
+        std::cout << "A copy operation from host to device was performed." << std::endl;
+        std::cout << "Additional buffer memory was allocated and freed." << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "id:            " << id << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:   " << domain.getSize() << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "cuboid origin: " << origin << std::endl;
+        std::cout << "cuboid size:   " << size << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
     }
 }
 

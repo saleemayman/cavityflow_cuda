@@ -45,14 +45,14 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>100</loops>
+    <loops>10000</loops>
     <!-- timestep default: -1 for automatic detection -->
     <timestep>-1.0</timestep>
     <!--  -->
-    <do-benchmark>0</do-benchmark>
-    <benchmark-output-dir>benchmark/</benchmark-output-dir>
+    <do-benchmark>1</do-benchmark>
+    <benchmark-output-dir>benchmark</benchmark-output-dir>
     <!--  -->
-    <do-logging>1</do-logging>
+    <do-logging>0</do-logging>
     <!--  -->
     <do-validation>0</do-validation>
     <validation-output-dir>validation/</validation-output-dir>
