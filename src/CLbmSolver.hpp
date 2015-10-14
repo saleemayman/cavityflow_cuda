@@ -33,6 +33,7 @@
 
 #define STORE_VELOCITIES           (true)
 #define STORE_DENSITIES            (true)
+#define DO_LOGGING                 (false)
 
 template<typename T>
 class CLbmSolver
@@ -43,12 +44,12 @@ protected:
 	
 	/*
 	 * Vector for the boundary conditions of the six faces of a cuboid.
-	 * boundaryConditions[0]: boundary condition for right face (smallest x-coordinate)
-	 * boundaryConditions[1]: boundary condition for left face (largest x-coordinate)
-	 * boundaryConditions[2]: boundary condition for top face (smallest y-coordinate)
-	 * boundaryConditions[3]: boundary condition for bottom face (largest y-coordinate)
-	 * boundaryConditions[4]: boundary condition for front face (smallest z-coordinate)
-	 * boundaryConditions[5]: boundary condition for back face (largest z-coordinate)
+	 * boundaryConditions[0]: boundary condition for left face (smallest x-coordinate)
+	 * boundaryConditions[1]: boundary condition for right face (largest x-coordinate)
+	 * boundaryConditions[2]: boundary condition for bottom face (smallest y-coordinate)
+	 * boundaryConditions[3]: boundary condition for top face (largest y-coordinate)
+	 * boundaryConditions[4]: boundary condition for back face (smallest z-coordinate)
+	 * boundaryConditions[5]: boundary condition for front face (largest z-coordinate)
 	 */
 	std::vector<Flag> boundaryConditions;
 	T timestepSize;
@@ -62,6 +63,7 @@ protected:
 
 	bool storeDensities;
 	bool storeVelocities;
+	bool doLogging;
 
 	T reynolds, tauInv, tauInvTrt;
 
@@ -78,8 +80,9 @@ public:
 			T massExchangeFactor = MASS_EXCHANGE_FACTOR,
 			T maxSimGravitationLength = MAX_SIM_GRAVITATION_LENGTH,
 			T tau = TAU,
-			bool storeDensities = false,
-			bool storeVelocities = false);
+			bool storeDensities = STORE_DENSITIES,
+			bool storeVelocities = STORE_VELOCITIES,
+			bool doLogging = DO_LOGGING);
 	virtual ~CLbmSolver() {}
 	
 	virtual void simulationStepAlpha() {}

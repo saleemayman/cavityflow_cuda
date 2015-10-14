@@ -35,11 +35,11 @@ NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 # compiler arguments and flags
 ################################################################################
 
-CCFLAGS				:=	-D DEBUG \
-						-O3 \
+CCFLAGS				:=	-O3 \
+#						-D DEBUG \
 #						-std=c11
-CXXFLAGS			:=	-D DEBUG \
-						-O3 \
+CXXFLAGS			:=	-O3 \
+#						-D DEBUG \
 #						-std=c++11
 
 # arch: specifies the compatibility from source code to PTX stage. Can be a
@@ -49,9 +49,9 @@ CXXFLAGS			:=	-D DEBUG \
 # -rdc: -rdc is short for --relocatable-device-code which generates relocatable
 #       device code. This is necessary to generate multiple CUDA object files
 #       which can then be linked together.
-NVCCFLAGS			:=	-D DEBUG \
-						-O3 \
+NVCCFLAGS			:=	-O3 \
 						-gencode arch=compute_$(COMPUTE_CAPABILITY),code=sm_$(COMPUTE_CAPABILITY) \
+#						-D DEBUG \
 #						-Xcompiler "-std=c++11"
 
 ################################################################################

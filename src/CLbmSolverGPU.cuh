@@ -30,6 +30,7 @@ private:
     using CLbmSolver<T>::domain;
     using CLbmSolver<T>::storeDensities;
     using CLbmSolver<T>::storeVelocities;
+    using CLbmSolver<T>::doLogging;
 
     T* densityDistributions;
     Flag* flags;
@@ -70,8 +71,9 @@ public:
             T massExchangeFactor = MASS_EXCHANGE_FACTOR,
             T maxSimGravitationLength = MAX_SIM_GRAVITATION_LENGTH,
             T tau = TAU,
-            bool storeDensities = false,
-            bool storeVelocities = false);
+			bool storeDensities = STORE_DENSITIES,
+			bool storeVelocities = STORE_VELOCITIES,
+			bool doLogging = DO_LOGGING);
     ~CLbmSolverGPU();
 
     void simulationStepAlpha();

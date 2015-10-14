@@ -64,8 +64,9 @@ public:
 			T massExchangeFactor = MASS_EXCHANGE_FACTOR,
 			T maxSimGravitationLength = MAX_SIM_GRAVITATION_LENGTH,
 			T tau = TAU,
-			bool storeDensities = false,
-			bool storeVelocities = false);
+			bool storeDensities = STORE_DENSITIES,
+			bool storeVelocities = STORE_VELOCITIES,
+			bool doLogging = DO_LOGGING);
 	~CLbmSolverCPU();
 
 	void simulationStepAlpha();

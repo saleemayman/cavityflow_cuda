@@ -32,12 +32,14 @@ CLbmSolver<T>::CLbmSolver(
 		T maxSimGravitationLength,
 		T tau,
 		bool storeDensities,
-		bool storeVelocities) :
+		bool storeVelocities,
+		bool doLogging) :
 		id(id), domain(domain),
 		boundaryConditions(boundaryConditions), timestepSize(timestepSize),
 		gravitation(gravitation), drivenCavityVelocity(drivenCavityVelocity), viscocity(viscocity),
 		massExchangeFactor(massExchangeFactor), maxSimGravitationLength(maxSimGravitationLength), tau(tau),
-		storeDensities(storeDensities), storeVelocities(storeVelocities)
+		storeDensities(storeDensities), storeVelocities(storeVelocities),
+		doLogging(doLogging)
 {
 	/*
 	 * TODO
@@ -48,30 +50,31 @@ CLbmSolver<T>::CLbmSolver(
 	tauInv = (T)1 / tau;
 	tauInvTrt = (T)1 / ((T)0.5 + (T)3 / ((T)16 * tau - (T)8));
 
-#if DEBUG
-	std::cout << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
-	std::cout << "id:                         " << this->id << std::endl;
-	std::cout << "---------------------------------------" << std::endl;
-	std::cout << "domain size:                " << this->domain.getSize() << std::endl;
-	std::cout << "domain length:              " << this->domain.getLength() << std::endl;
-	std::cout << "domain origin:              " << this->domain.getOrigin() << std::endl;
-	std::cout << "---------------------------------------" << std::endl;
-	std::cout << "timestep size:              " << this->timestepSize << std::endl;
-	std::cout << "---------------------------------------" << std::endl;
-	std::cout << "gravitation:                " << this->gravitation << std::endl;
-	std::cout << "driven cavity velocity:     " << this->drivenCavityVelocity << std::endl;
-	std::cout << "viscocity:                  " << this->viscocity << std::endl;
-	std::cout << "---------------------------------------" << std::endl;
-	std::cout << "mass exchange factor:       " << this->massExchangeFactor << std::endl;
-	std::cout << "max sim gravitation length: " << this->maxSimGravitationLength << std::endl;
-	std::cout << "tau:                        " << this->tau << std::endl;
-	std::cout << "inv tau:                    " << this->tauInv << std::endl;
-	std::cout << "inv trt tau:                " << this->tauInvTrt << std::endl;
-	std::cout << "---------------------------------------" << std::endl;
-	std::cout << "store densities:            " << this->massExchangeFactor << std::endl;
-	std::cout << "store velocities:           " << this->maxSimGravitationLength << std::endl;
-	std::cout << "---------------------------------------" << std::endl;
-#endif
+	if (this->doLogging)
+	{
+		std::cout << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
+		std::cout << "id:                         " << this->id << std::endl;
+		std::cout << "---------------------------------------" << std::endl;
+		std::cout << "domain size:                " << this->domain.getSize() << std::endl;
+		std::cout << "domain length:              " << this->domain.getLength() << std::endl;
+		std::cout << "domain origin:              " << this->domain.getOrigin() << std::endl;
+		std::cout << "---------------------------------------" << std::endl;
+		std::cout << "timestep size:              " << this->timestepSize << std::endl;
+		std::cout << "---------------------------------------" << std::endl;
+		std::cout << "gravitation:                " << this->gravitation << std::endl;
+		std::cout << "driven cavity velocity:     " << this->drivenCavityVelocity << std::endl;
+		std::cout << "viscocity:                  " << this->viscocity << std::endl;
+		std::cout << "---------------------------------------" << std::endl;
+		std::cout << "mass exchange factor:       " << this->massExchangeFactor << std::endl;
+		std::cout << "max sim gravitation length: " << this->maxSimGravitationLength << std::endl;
+		std::cout << "tau:                        " << this->tau << std::endl;
+		std::cout << "inv tau:                    " << this->tauInv << std::endl;
+		std::cout << "inv trt tau:                " << this->tauInvTrt << std::endl;
+		std::cout << "---------------------------------------" << std::endl;
+		std::cout << "store densities:            " << this->massExchangeFactor << std::endl;
+		std::cout << "store velocities:           " << this->maxSimGravitationLength << std::endl;
+		std::cout << "---------------------------------------" << std::endl;
+	}
 }
 
 template <class T>

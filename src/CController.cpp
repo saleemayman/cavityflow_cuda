@@ -49,17 +49,28 @@ CController<T>::CController(
     		this->configuration->timestep,
     		this->configuration->gravitation,
     		this->configuration->cavityVelocity,
-    		this->configuration->viscosity);
-    /*
+    		this->configuration->viscosity,
+    		MASS_EXCHANGE_FACTOR,
+    		MAX_SIM_GRAVITATION_LENGTH,
+    		TAU,
+    		this->configuration->doValidation || this->configuration->doVisualization,
+    		this->configuration->doValidation || this->configuration->doVisualization,
+    		this->configuration->doLogging);
     solverCPU = new CLbmSolverCPU<T>(
     		this->id,
     		this->domain,
     		this->boundaryConditions,
     		this->configuration->timestep,
     		this->configuration->gravitation,
-    		this->configuration->drivenCavityVelocity,
-    		this->configuration->viscosity);
-    */
+    		this->configuration->cavityVelocity,
+    		this->configuration->viscosity,
+    		solverGPU,
+    		MASS_EXCHANGE_FACTOR,
+    		MAX_SIM_GRAVITATION_LENGTH,
+    		TAU,
+    		this->configuration->doValidation || this->configuration->doVisualization,
+    		this->configuration->doValidation || this->configuration->doVisualization,
+    		this->configuration->doLogging);
 
     setDrivenCavitySzenario();
 

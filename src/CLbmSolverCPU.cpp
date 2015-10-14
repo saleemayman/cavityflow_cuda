@@ -33,12 +33,14 @@ CLbmSolverCPU<T>::CLbmSolverCPU(
 		T maxSimGravitationLength,
 		T tau,
 		bool storeDensities,
-		bool storeVelocities) :
+		bool storeVelocities,
+		bool doLogging) :
 		CLbmSolver<T>(id, domain,
 				boundaryConditions, timestepSize,
 				gravitation, drivenCavityVelocity, viscocity,
 				massExchangeFactor, maxSimGravitationLength, tau,
-				storeDensities, storeVelocities)
+				storeDensities, storeVelocities,
+				doLogging)
 {
 }
 

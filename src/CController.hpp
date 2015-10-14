@@ -43,7 +43,7 @@ private:
     int id;
     CConfiguration<T>* configuration;
     CDomain<T> domain;
-    // CLbmSolverCPU<T> *solverCPU;
+    CLbmSolverCPU<T> *solverCPU;
     CLbmSolverGPU<T> *solverGPU;
     ILbmVisualization<T>* cLbmVisualization;
     std::vector<Flag> boundaryConditions;
@@ -51,15 +51,6 @@ private:
     int simulationStepCounter;
 
     T vector_checksum;
-
-    /*
-    CCL::CPlatforms* cPlatforms;
-    CCL::CPlatform* cPlatform;
-    CCL::CContext* cContext;
-    CCL::CDevices* cDevices;
-    CCL::CDevice* cDevice;
-    CCL::CCommandQueue* cCommandQueue;
-    */
 
     void computeNextStep();
     void syncAlpha();
