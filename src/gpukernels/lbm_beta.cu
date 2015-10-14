@@ -38,7 +38,7 @@ __device__ size_t LOCAL_WORK_GROUP_WRAP(size_t A, size_t LOCAL_WORK_GROUP_SIZE, 
 template<typename T>
 __global__ void lbm_kernel_beta(
         T *global_dd,                 // density distributions
-        const int *flag_array,        // flags
+        const Flag *flag_array,        // flags
         T *velocity,                  // velocities
         T *density,                   // densities
         const T inv_tau,
@@ -50,8 +50,8 @@ __global__ void lbm_kernel_beta(
         const int domainCells_y,
         const int domainCells_z,
         const size_t localWorkGroup,
-        bool isDomainPowOfTwo,
-        bool isLocalPowOfTwo)
+        const bool isDomainPowOfTwo,
+        const bool isLocalPowOfTwo)
 {
     //const size_t gid = get_global_id(0);
     const int DOMAIN_CELLS_X = domainCells_x;
@@ -929,7 +929,7 @@ __global__ void lbm_kernel_beta(
 
 template __global__ void lbm_kernel_beta<float>(
         float *global_dd,
-        const int *flag_array,
+        const Flag *flag_array,
         float *velocity,
         float *density,
         const float inv_tau,
@@ -941,11 +941,11 @@ template __global__ void lbm_kernel_beta<float>(
         const int domainCells_y,
         const int domainCells_z,
         const size_t localWorkGroup,
-        bool isDomainPowOfTwo,
-        bool isLocalPowOfTwo);
+        const bool isDomainPowOfTwo,
+        const bool isLocalPowOfTwo);
 template __global__ void lbm_kernel_beta<double>(
         double *global_dd,
-        const int *flag_array,
+        const Flag *flag_array,
         double *velocity,
         double *density,
         const double inv_tau,
@@ -957,5 +957,5 @@ template __global__ void lbm_kernel_beta<double>(
         const int domainCells_y,
         const int domainCells_z,
         const size_t localWorkGroup,
-        bool isDomainPowOfTwo,
-        bool isLocalPowOfTwo);
+        const bool isDomainPowOfTwo,
+        const bool isLocalPowOfTwo);

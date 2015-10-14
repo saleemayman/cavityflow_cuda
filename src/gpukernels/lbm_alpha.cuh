@@ -26,10 +26,10 @@
 
 template<typename T>
 __global__ void lbm_kernel_alpha(
-        T *global_dd,                 // density distributions
-        const int *flag_array,        // flags
-        T *velocity,                  // velocities
-        T *density,                   // densities
+        T* global_dd,                 // density distributions
+        const Flag* flag_array,        // flags
+        T* velocity,                  // velocities
+        T* density,                   // densities
         const T inv_tau,
         const T gravitation_x,
         const T gravitation_y,

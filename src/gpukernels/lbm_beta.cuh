@@ -26,7 +26,7 @@
 template<typename T>
 __global__ void lbm_kernel_beta(
         T *global_dd,                 // density distributions
-        const int *flag_array,        // flags
+        const Flag *flag_array,        // flags
         T *velocity,                  // velocities
         T *density,                   // densities
         const T inv_tau,
@@ -38,7 +38,7 @@ __global__ void lbm_kernel_beta(
         const int domainCells_y,
         const int domainCells_z,
         const size_t localWorkGroup,
-        bool isDomainPowOfTwo,
-        bool isLocalPowOfTwo);
+        const bool isDomainPowOfTwo,
+        const bool isLocalPowOfTwo);
 
 #endif

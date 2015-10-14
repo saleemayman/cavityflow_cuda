@@ -28,9 +28,12 @@ class CLbmSolverGPU : public CLbmSolver<T>
 private:
     using CLbmSolver<T>::id;
     using CLbmSolver<T>::domain;
+    using CLbmSolver<T>::gravitation;
+    using CLbmSolver<T>::drivenCavityVelocity;
     using CLbmSolver<T>::storeDensities;
     using CLbmSolver<T>::storeVelocities;
     using CLbmSolver<T>::doLogging;
+    using CLbmSolver<T>::tauInv;
 
     T* densityDistributions;
     Flag* flags;

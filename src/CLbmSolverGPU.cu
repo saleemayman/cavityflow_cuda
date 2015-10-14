@@ -68,9 +68,9 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
     GPU_ERROR_CHECK(cudaMalloc(&densityDistributions, this->domain.getNumOfCells() * NUM_LATTICE_VECTORS * sizeof(T)))
     GPU_ERROR_CHECK(cudaMalloc(&flags, this->domain.getNumOfCells() * sizeof(Flag)))
     if(this->storeDensities)
-        GPU_ERROR_CHECK(cudaMalloc(&densities, this->domain.getNumOfCells() * 3 * sizeof(T)))
+        GPU_ERROR_CHECK(cudaMalloc(&densities, this->domain.getNumOfCells() * sizeof(T)))
     if(this->storeVelocities)
-        GPU_ERROR_CHECK(cudaMalloc(&velocities, this->domain.getNumOfCells() * sizeof(T)))
+        GPU_ERROR_CHECK(cudaMalloc(&velocities, this->domain.getNumOfCells() * 3 * sizeof(T)))
 
     if (doLogging) {
 		std::cout << "size of allocated memory for density distributions: " << (this->domain.getNumOfCells() * NUM_LATTICE_VECTORS * sizeof(T)) << "Bytes" << std::endl;
@@ -140,9 +140,19 @@ CLbmSolverGPU<T>::~CLbmSolverGPU()
 template <class T>
 void CLbmSolverGPU<T>::simulationStepAlpha()
 {
-	/*
-	 * TODO
-	 */
+	lbm_kernel_alpha<T><<<getBlocksPerGrid(3, domain.getSize(), threadsPerBlock[1]), threadsPerBlock[1]>>>(
+			densityDistributions,
+			flags,
+			velocities,
+			densities,
+			tauInv,
+			gravitation[0],
+			gravitation[1],
+			gravitation[2],
+			drivenCavityVelocity[0],
+			domain.getSize()[0],
+			domain.getSize()[1],
+			domain.getSize()[2]);
 }
 
 template <class T>
@@ -156,9 +166,22 @@ void CLbmSolverGPU<T>::simulationStepAlphaRect(CVector<3, int> origin, CVector<3
 template <class T>
 void CLbmSolverGPU<T>::simulationStepBeta()
 {
-	/*
-	 * TODO
-	 */
+	lbm_kernel_beta<T><<<getBlocksPerGrid(3, domain.getSize(), threadsPerBlock[2]), threadsPerBlock[2]>>>(
+			densityDistributions,
+			flags,
+			velocities,
+			densities,
+			tauInv,
+			gravitation[0],
+			gravitation[1],
+			gravitation[2],
+			drivenCavityVelocity[0],
+			domain.getSize()[0],
+			domain.getSize()[1],
+			domain.getSize()[2],
+			threadsPerBlock[2].x * threadsPerBlock[2].y * threadsPerBlock[2].z,
+			isPowerOfTwo(domain.getNumOfCells()),
+			isPowerOfTwo(threadsPerBlock[2].x * threadsPerBlock[2].y * threadsPerBlock[2].z));
 }
 
 template <class T>
@@ -188,33 +211,33 @@ void CLbmSolverGPU<T>::getDensityDistributions(Direction direction, T* hDensityD
 
     switch(direction)
     {
-    case RIGHT:
-        size[1] = domain.getSize()[1];
-        size[2] = domain.getSize()[2];
-        norm[0] = 1;
     case LEFT:
         size[1] = domain.getSize()[1];
         size[2] = domain.getSize()[2];
-        origin[0] = domain.getSize()[0] - 1;
         norm[0] = -1;
-    case TOP:
-        size[0] = domain.getSize()[0];
+    case RIGHT:
+        size[1] = domain.getSize()[1];
         size[2] = domain.getSize()[2];
-        norm[1] = 1;
+        origin[0] = domain.getSize()[0] - 1;
+        norm[0] = 1;
     case BOTTOM:
         size[0] = domain.getSize()[0];
         size[2] = domain.getSize()[2];
-        origin[0] = domain.getSize()[1] - 1;
         norm[1] = -1;
-    case FRONT:
+    case TOP:
         size[0] = domain.getSize()[0];
-        size[1] = domain.getSize()[1];
-        norm[2] = 1;
+        size[2] = domain.getSize()[2];
+        origin[0] = domain.getSize()[1] - 1;
+        norm[1] = 1;
     case BACK:
         size[0] = domain.getSize()[0];
         size[1] = domain.getSize()[1];
-        origin[0] = domain.getSize()[2] - 1;
         norm[2] = -1;
+    case FRONT:
+        size[0] = domain.getSize()[0];
+        size[1] = domain.getSize()[1];
+        origin[0] = domain.getSize()[2] - 1;
+        norm[2] = 1;
     }
 
     dim3 threadsPerBlock(size[1], size[2], 1);
@@ -348,33 +371,33 @@ void CLbmSolverGPU<T>::setDensityDistributions(Direction direction, T* hDensityD
 
     switch(direction)
     {
-    case RIGHT:
-        size[1] = domain.getSize()[1];
-        size[2] = domain.getSize()[2];
-        norm[0] = 1;
     case LEFT:
         size[1] = domain.getSize()[1];
         size[2] = domain.getSize()[2];
-        origin[0] = domain.getSize()[0] - 1;
         norm[0] = -1;
-    case TOP:
-        size[0] = domain.getSize()[0];
+    case RIGHT:
+        size[1] = domain.getSize()[1];
         size[2] = domain.getSize()[2];
-        norm[1] = 1;
+        origin[0] = domain.getSize()[0] - 1;
+        norm[0] = 1;
     case BOTTOM:
         size[0] = domain.getSize()[0];
         size[2] = domain.getSize()[2];
-        origin[0] = domain.getSize()[1] - 1;
         norm[1] = -1;
-    case FRONT:
+    case TOP:
         size[0] = domain.getSize()[0];
-        size[1] = domain.getSize()[1];
-        norm[2] = 1;
+        size[2] = domain.getSize()[2];
+        origin[0] = domain.getSize()[1] - 1;
+        norm[1] = 1;
     case BACK:
         size[0] = domain.getSize()[0];
         size[1] = domain.getSize()[1];
-        origin[0] = domain.getSize()[2] - 1;
         norm[2] = -1;
+    case FRONT:
+        size[0] = domain.getSize()[0];
+        size[1] = domain.getSize()[1];
+        origin[0] = domain.getSize()[2] - 1;
+        norm[2] = 1;
     }
 
     dim3 threadsPerBlock(size[1], size[2], 1);

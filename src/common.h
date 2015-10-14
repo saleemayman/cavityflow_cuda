@@ -79,6 +79,10 @@ enum Direction
     gpuErrorCheck((code), __FILE__, __LINE__); \
 }
 
+inline int isPowerOfTwo(int x) {
+	return (!(x == 0) && !(x & (x - 1)));
+}
+
 inline void gpuErrorCheck(cudaError_t code, std::string file, int line, bool abort = true) {
     if (code != cudaSuccess) {
         std::cerr << "----- !!! The following CUDA API error occurred !!! -----" << std::endl;
@@ -120,57 +124,6 @@ inline dim3 getBlocksPerGrid(int dim, CVector<3,int> size, dim3 threadsPerBlock)
     }
 
     return blocksPerGrid;
-}
-
-typedef enum {
-    MPI_COMM_DIRECTION_UNKNOWN = 0,
-    MPI_COMM_DIRECTION_X,
-    MPI_COMM_DIRECTION_X_0,
-    MPI_COMM_DIRECTION_X_1,
-    MPI_COMM_DIRECTION_Y,
-    MPI_COMM_DIRECTION_Y_0,
-    MPI_COMM_DIRECTION_Y_1,
-    MPI_COMM_DIRECTION_Z,
-    MPI_COMM_DIRECTION_Z_0,
-    MPI_COMM_DIRECTION_Z_1,
-    MPI_COMM_DIRECTION_ALL,
-} MPI_COMM_DIRECTION;
-
-inline const char* get_string_direction(MPI_COMM_DIRECTION direction) {
-    std::string dir;
-    switch (direction) {
-    case MPI_COMM_DIRECTION_X:
-        dir = "X";
-        break;
-    case MPI_COMM_DIRECTION_X_0:
-        dir = "X0";
-        break;
-    case MPI_COMM_DIRECTION_X_1:
-        dir = "X1";
-        break;
-    case MPI_COMM_DIRECTION_Y:
-        dir = "Y";
-        break;
-    case MPI_COMM_DIRECTION_Y_0:
-        dir = "Y0";
-        break;
-    case MPI_COMM_DIRECTION_Y_1:
-        dir = "Y1";
-        break;
-    case MPI_COMM_DIRECTION_Z:
-        dir = "Z";
-        break;
-    case MPI_COMM_DIRECTION_Z_0:
-        dir = "Z0";
-        break;
-    case MPI_COMM_DIRECTION_Z_1:
-        dir = "Z1";
-        break;
-    default:
-        dir = "UNKNOWN";
-        break;
-    }
-    return dir.c_str();
 }
 
 /*
