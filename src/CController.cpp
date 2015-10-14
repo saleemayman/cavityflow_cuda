@@ -81,6 +81,10 @@ CController<T>::~CController()
 template <class T>
 void CController<T>::syncAlpha()
 {
+	/*
+	 * TODO
+	 * Rework this function.
+	 */
 #if DEBUG
     // std::cout << "--> Sync alpha" << std::endl;
 #endif
@@ -142,6 +146,10 @@ void CController<T>::syncAlpha()
 template <class T>
 void CController<T>::syncBeta()
 {
+	/*
+	 * TODO
+	 * Rework this function.
+	 */
 #if DEBUG
     // std::cout << "--> Sync beta" << std::endl;
 #endif
@@ -220,22 +228,24 @@ void CController<T>::computeNextStep()
 template <class T>
 void CController<T>::setDrivenCavitySzenario()
 {
-#if DEBUG
-    std::cout << "----- CController<T>::setDrivenCavitySzenario() -----" << std::endl;
-    std::cout << "Cells where velocity injection takes place due to driven cavity scenario are marked accordingly." << std::endl;
-    std::cout << "-----------------------------------------------------" << std::endl;
-    std::cout << "id:     " << id << std::endl;
-    std::cout << "-----------------------------------------------------" << std::endl;
-#endif
+	if (configuration->doLogging)
+	{
+	    std::cout << "----- CController<T>::setDrivenCavitySzenario() -----" << std::endl;
+	    std::cout << "Cells where velocity injection takes place due to driven cavity scenario are marked accordingly." << std::endl;
+	    std::cout << "-----------------------------------------------------" << std::endl;
+	    std::cout << "id:     " << id << std::endl;
+	    std::cout << "-----------------------------------------------------" << std::endl;
+	}
 
     CVector<3, int> origin(1, domain.getSize()[1] - 2, 1);
     CVector<3, int> size(domain.getSize()[0] - 2, 1, domain.getSize()[2] - 2);
 
-#if DEBUG
-    std::cout << "origin: " << origin << std::endl;
-    std::cout << "size:   " << size << std::endl;
-    std::cout << "-----------------------------------------------------" << std::endl;
-#endif
+    if (configuration->doLogging)
+    {
+		std::cout << "origin: " << origin << std::endl;
+		std::cout << "size:   " << size << std::endl;
+		std::cout << "-----------------------------------------------------" << std::endl;
+    }
 
     Flag* src = new Flag[size.elements()];
 
@@ -256,6 +266,10 @@ void CController<T>::setDrivenCavitySzenario()
 template <class T>
 int CController<T>::run()
 {
+	/*
+	 * TODO
+	 * Rework this function.
+	 */
     CVector<3, int> domain_size = domain.getSize();
     int loops = configuration->loops;
     if (loops < 0)
@@ -374,27 +388,6 @@ int CController<T>::run()
     return EXIT_SUCCESS;
 }
 
-/*
-template <class T>
-void CController<T>::addCommunication(CComm<T>* comm)
-{
-    communication.push_back(comm);
-}
-*/
-
-/*
- * TODO
- * This piece of code should be obsolete since the ghost layer sizes are now
- * set implicitly by CLbmSolver depending on the domain size.
- */
-/*
-template <class T>
-void CController<T>::addCommToSolver()
-{
-    cLbmPtr->setGhostLayerBuffers(_comm_container);
-}
-*/
-
 template <class T>
 int CController<T>::getId() {
     return id;
@@ -409,29 +402,6 @@ template <class T>
 CLbmSolver<T>* CController<T>::getSolver() {
     return solverGPU;
 }
-
-/*
-template <class T>
-CLbmSolver<T>* CController<T>::getSolver() const {
-    return cLbmPtr;
-}
-
-template <class T>
-void CController<T>::setSolver(CLbmSolverGPU<T>* lbmPtr)
-{
-    cLbmPtr = lbmPtr;
-}
-
-template <class T>
-CDomain<T> CController<T>::getDomain() const {
-    return _domain;
-}
-
-template <class T>
-int CController<T>::getUid() const {
-    return _UID;
-}
-*/
 
 template class CController<double>;
 template class CController<float>;

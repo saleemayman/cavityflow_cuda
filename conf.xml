@@ -52,6 +52,8 @@
     <do-benchmark>0</do-benchmark>
     <benchmark-output-dir>benchmark/</benchmark-output-dir>
     <!--  -->
+    <do-logging>1</do-logging>
+    <!--  -->
     <do-validation>0</do-validation>
     <validation-output-dir>validation/</validation-output-dir>
     <!--  -->

@@ -52,20 +52,21 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
     		configuration->domainLength[2] / (T)configuration->numOfSubdomains[2]);
     CDomain<T> *subdomain = new CDomain<T>(rank, subdomainSize, subdomainOrigin, subdomainLength);
 
-#if DEBUG
-	std::cout << "----- CManager<T>::CManager() -----" << std::endl;
-	std::cout << "id:                     " << rank << std::endl;
-	std::cout << "---------------------------------------" << std::endl;
-	std::cout << "domain size:            " << domain.getSize() << std::endl;
-	std::cout << "domain length:          " << domain.getLength() << std::endl;
-	std::cout << "domain origin:          " << domain.getOrigin() << std::endl;
-	std::cout << "---------------------------------------" << std::endl;
-	std::cout << "subdomain coordinates:  [" << subdomainX << ", " << subdomainY << ", " << subdomainZ << "]" << std::endl;
-	std::cout << "subdomain size:         " << subdomainSize << std::endl;
-	std::cout << "subdomain length:       " << subdomainLength << std::endl;
-	std::cout << "subdomain origin:       " << subdomainOrigin << std::endl;
-	std::cout << "---------------------------------------" << std::endl;
-#endif
+    if (configuration->doLogging)
+    {
+		std::cout << "----- CManager<T>::CManager() -----" << std::endl;
+		std::cout << "id:                     " << rank << std::endl;
+		std::cout << "---------------------------------------" << std::endl;
+		std::cout << "domain size:            " << domain.getSize() << std::endl;
+		std::cout << "domain length:          " << domain.getLength() << std::endl;
+		std::cout << "domain origin:          " << domain.getOrigin() << std::endl;
+		std::cout << "---------------------------------------" << std::endl;
+		std::cout << "subdomain coordinates:  [" << subdomainX << ", " << subdomainY << ", " << subdomainZ << "]" << std::endl;
+		std::cout << "subdomain size:         " << subdomainSize << std::endl;
+		std::cout << "subdomain length:       " << subdomainLength << std::endl;
+		std::cout << "subdomain origin:       " << subdomainOrigin << std::endl;
+		std::cout << "---------------------------------------" << std::endl;
+    }
 
     /*
      * Setting the boundary conditions for the current Controller
@@ -85,15 +86,16 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
     if (subdomainZ == (configuration->numOfSubdomains[2] - 1))
     	boundaryConditions[5] = OBSTACLE;
 
-#if DEBUG
-	std::cout << "boundaryConditions[0]:  " << boundaryConditions[0] << std::endl;
-	std::cout << "boundaryConditions[1]:  " << boundaryConditions[1] << std::endl;
-	std::cout << "boundaryConditions[2]:  " << boundaryConditions[2] << std::endl;
-	std::cout << "boundaryConditions[3]:  " << boundaryConditions[3] << std::endl;
-	std::cout << "boundaryConditions[4]:  " << boundaryConditions[4] << std::endl;
-	std::cout << "boundaryConditions[5]:  " << boundaryConditions[5] << std::endl;
-	std::cout << "---------------------------------------" << std::endl;
-#endif
+    if (configuration->doLogging)
+    {
+		std::cout << "boundaryConditions[0]:  " << boundaryConditions[0] << std::endl;
+		std::cout << "boundaryConditions[1]:  " << boundaryConditions[1] << std::endl;
+		std::cout << "boundaryConditions[2]:  " << boundaryConditions[2] << std::endl;
+		std::cout << "boundaryConditions[3]:  " << boundaryConditions[3] << std::endl;
+		std::cout << "boundaryConditions[4]:  " << boundaryConditions[4] << std::endl;
+		std::cout << "boundaryConditions[5]:  " << boundaryConditions[5] << std::endl;
+		std::cout << "---------------------------------------" << std::endl;
+    }
 
     /*
      * Initializing the Controller's communication classes based on the already

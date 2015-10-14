@@ -20,7 +20,6 @@
 #ifndef CCONFIGURATION_HPP
 #define CCONFIGURATION_HPP
 
-#include <cstdlib>
 #include <iostream>
 #include <vector>
 
@@ -44,20 +43,20 @@ template <typename T>
 class CConfiguration
 {
 private:
-	tinyxml2::XMLDocument doc;
+    tinyxml2::XMLDocument doc;
 
     void interpretPhysiscsData(const tinyxml2::XMLNode* root);
     void interpretGridData(const tinyxml2::XMLNode* root);
     void interpretSimulationData(const tinyxml2::XMLNode* root);
     void interpretDeviceData(const tinyxml2::XMLNode* root);
     void interpretXMLDoc();
-	void checkParameters();
+    void checkParameters();
 
 public:
-	/*
+    /*
      * physics configuration data
      */
-	T viscosity;
+    T viscosity;
     CVector<3, T> gravitation;
     CVector<4, T> cavityVelocity;
 
@@ -75,10 +74,11 @@ public:
     int loops;
     T timestep;
     bool doBenchmark;
-    std::string benchmarkOutputDir;
+    bool doLogging;
     bool doValidation;
-    std::string validationOutputDir;
     bool doVisualization;
+    std::string benchmarkOutputDir;
+    std::string validationOutputDir;
     std::string visualizationOutputDir;
 
     /*

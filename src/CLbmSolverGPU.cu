@@ -137,26 +137,41 @@ CLbmSolverGPU<T>::~CLbmSolverGPU()
 template <class T>
 void CLbmSolverGPU<T>::simulationStepAlpha()
 {
+	/*
+	 * TODO
+	 */
 }
 
 template <class T>
 void CLbmSolverGPU<T>::simulationStepAlphaRect(CVector<3, int> origin, CVector<3, int> size)
 {
+	/*
+	 * TODO
+	 */
 }
 
 template <class T>
 void CLbmSolverGPU<T>::simulationStepBeta()
 {
+	/*
+	 * TODO
+	 */
 }
 
 template <class T>
 void CLbmSolverGPU<T>::simulationStepBetaRect(CVector<3, int> origin, CVector<3, int> size)
 {
+	/*
+	 * TODO
+	 */
 }
 
 template <class T>
 void CLbmSolverGPU<T>::reset()
 {
+	/*
+	 * TODO
+	 */
 }
 
 template <class T>

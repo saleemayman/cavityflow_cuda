@@ -24,8 +24,6 @@
 #include "CConfiguration.hpp"
 #include "CManager.hpp"
 
-#define VALIDATION_RANK 0
-
 CVector<3,int> lbm_units[] = {
 		E0, E1, E2, E3,
         E4, E5, E6, E7,
@@ -36,7 +34,10 @@ CVector<3,int> lbm_units[] = {
 
 int main(int argc, char** argv)
 {
-	if (argc != 1)
+	/*
+	 * TODO
+	 */
+	if (argc != 2)
 	{
 		std::cerr << "----- main() -----" << std::endl;
 		std::cerr << "Exactly one parameter has to be passed to this executable which specifies the location of the XML configuration file." << std::endl;
@@ -50,7 +51,7 @@ int main(int argc, char** argv)
 		exit (EXIT_FAILURE);
 	}
 
-	CConfiguration<TYPE>* configuration = new CConfiguration<TYPE>(argv[0]);
+	CConfiguration<TYPE>* configuration = new CConfiguration<TYPE>(argv[1]);
 
 #if DEBUG
     configuration->print();
@@ -93,15 +94,15 @@ int main(int argc, char** argv)
 		exit (EXIT_FAILURE);
     }
 
-    CManager<TYPE> *manager = new CManager<TYPE>(rank, configuration);
+    // CManager<TYPE> *manager = new CManager<TYPE>(rank, configuration);
 
     if (configuration->doValidation)
     {
     } else {
-        manager->run();
+        // manager->run();
     }
 
-    delete manager;
+    // delete manager;
 
     /*
 	 * Tear down MPI environment
