@@ -83,7 +83,6 @@ public:
     void simulationStepAlphaRect(CVector<3, int> origin, CVector<3, int> size);
     void simulationStepBeta();
     void simulationStepBetaRect(CVector<3, int> origin, CVector<3, int> size);
-    void reset();
     void getDensityDistributions(Direction direction, T* hDensityDistributions);
     void getDensityDistributions(CVector<3, int>& origin, CVector<3, int>& size, T* hDensityDistributions);
     void getDensityDistributions(T* hDensityDistributions);

@@ -70,11 +70,6 @@ void CLbmSolverCPU<T>::simulationStepBetaRect(CVector<3, int> origin, CVector<3,
 }
 
 template <class T>
-void CLbmSolverCPU<T>::reset()
-{
-}
-
-template <class T>
 void CLbmSolverCPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* src)
 {
 }
