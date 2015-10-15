@@ -17,34 +17,25 @@
  * limitations under the License.
  */
 
-#ifndef CLBMVISUALIZATIONVTK_HPP
-#define CLBMVISUALIZATIONVTK_HPP
-
-#include <fstream>
-#include <sstream>
+#ifndef CLBMVISUALIZATIONNETCDF_HPP
+#define CLBMVISUALIZATIONNETCDF_HPP
 
 #include "CLbmVisualization.hpp"
 
 template <typename T>
-class CLbmVisualizationVTK : public virtual CLbmVisualization<T>
+class CLbmVisualizationNetCDF : public virtual CLbmVisualization<T>
 {
 private:
     using CLbmVisualization<T>::id;
     using CLbmVisualization<T>::solver;
 
-    std::string filePath;
-    std::ofstream file;
+	std::string filePath;
 
-    void openFile(int iteration);
+	void openFile(int iteration);
     void closeFile();
-	void writeHeader();
-	void writeDataset();
-	void writeFlags();
-	void writeDensities();
-	void writeVelocities();
 
 public:
-	CLbmVisualizationVTK(int id, CLbmSolver<T>* solver, std::string filePath);
+	CLbmVisualizationNetCDF(int id, CLbmSolver<T>* solver, std::string filePath);
 
 	void render(int iteration);
 };

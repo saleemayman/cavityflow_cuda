@@ -17,36 +17,38 @@
  * limitations under the License.
  */
 
-#ifndef CLBMVISUALIZATIONVTK_HPP
-#define CLBMVISUALIZATIONVTK_HPP
+#ifndef CLBMVISUALIZATION_HPP
+#define CLBMVISUALIZATION_HPP
 
-#include <fstream>
-#include <sstream>
-
-#include "CLbmVisualization.hpp"
+#include "../CLbmSolver.hpp"
 
 template <typename T>
-class CLbmVisualizationVTK : public virtual CLbmVisualization<T>
+class CLbmVisualization
 {
-private:
-    using CLbmVisualization<T>::id;
-    using CLbmVisualization<T>::solver;
-
-    std::string filePath;
-    std::ofstream file;
-
-    void openFile(int iteration);
-    void closeFile();
-	void writeHeader();
-	void writeDataset();
-	void writeFlags();
-	void writeDensities();
-	void writeVelocities();
+protected:
+	int id;
+	Flag* flags;
+	T* densities;
+	T* velocities;
+	CLbmSolver<T>* solver;
 
 public:
-	CLbmVisualizationVTK(int id, CLbmSolver<T>* solver, std::string filePath);
+	CLbmVisualization(int id, CLbmSolver<T>* solver) :
+		id(id), solver(solver)
+	{
+		flags = new Flag[this->solver->getDomain()->getNumOfCells()];
+		densities = new T[this->solver->getDomain()->getNumOfCells()];
+		velocities = new T[3 * this->solver->getDomain()->getNumOfCells()];
+	}
 
-	void render(int iteration);
+    virtual ~CLbmVisualization()
+    {
+		delete[] velocities;
+		delete[] densities;
+		delete[] flags;
+    };
+
+	virtual void render(int iteration = -1) = 0;
 };
 
 #endif

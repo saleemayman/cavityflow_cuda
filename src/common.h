@@ -20,15 +20,8 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include <cstdio>
-#include <fstream>
-#include <sstream>
-#include <string>
-
 #include <cuda.h>
 #include <cuda_runtime.h>
-
-#include <mpi.h>
 
 #include "libmath/CVector.hpp"
 #include "constants.h"

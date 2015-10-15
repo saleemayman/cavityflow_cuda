@@ -22,8 +22,7 @@
 
 #include <vector>
 
-#include "libvis/ILbmVisualization.hpp"
-#include "CComm.hpp"
+#include "libvis/CLbmVisualization.hpp"
 #include "CConfiguration.hpp"
 #include "CDomain.hpp"
 #include "CLbmSolverCPU.hpp"
@@ -45,7 +44,7 @@ private:
     CDomain<T> domain;
     // CLbmSolverCPU<T> *solverCPU;
     CLbmSolverGPU<T> *solverGPU;
-    ILbmVisualization<T>* cLbmVisualization;
+    CLbmVisualization<T>* visualization;
     std::vector<Flag> boundaryConditions;
     std::vector<CComm<T> > communication;
     int simulationStepCounter;

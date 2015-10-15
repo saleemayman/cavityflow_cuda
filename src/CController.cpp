@@ -19,7 +19,8 @@
 
 #include "CController.hpp"
 
-#include <iomanip>
+#include <fstream>
+#include <sstream>
 #include <typeinfo>
 
 #include <mpi.h>
@@ -76,19 +77,18 @@ CController<T>::CController(
             this->configuration->doLogging);
     */
 
-    if(this->configuration->doVisualization) {
-        cLbmVisualization = new CLbmVisualizationVTK<T>(this->id, this->configuration->visualizationOutputDir);
-    }
+	if (this->configuration->doVisualization)
+        visualization = new CLbmVisualizationVTK<T>(id, getSolver(), this->configuration->visualizationOutputDir);
 }
 
 template <class T>
 CController<T>::~CController()
 {
-    if(this->configuration->doVisualization)
-        delete cLbmVisualization;
+    if (this->configuration->doVisualization)
+        delete visualization;
 
     // delete solverCPU;
-    delete solverGPU;
+    // delete solverGPU;
 }
 
 template <class T>
@@ -282,12 +282,14 @@ int CController<T>::run()
     int usedDataSize;
     CStopwatch cStopwatch;
 
+    usedDataSize = 0;
+
     if (configuration->doBenchmark)
     {
         /*
          * Density distributions are read and written
          */
-        usedDataSize = NUM_LATTICE_VECTORS * 2 * sizeof(T);
+        usedDataSize += NUM_LATTICE_VECTORS * 2 * sizeof(T);
         /*
          * Flag is read
          */
@@ -301,12 +303,6 @@ int CController<T>::run()
             usedDataSize += 4 * sizeof(T);
     }
 
-    if (configuration->doVisualization)
-    {
-        cLbmVisualization = new CLbmVisualizationVTK<T>(id, configuration->visualizationOutputDir);
-        cLbmVisualization->setup(solverGPU);
-    }
-
     if (configuration->doBenchmark)
         cStopwatch.start();
 
@@ -314,7 +310,7 @@ int CController<T>::run()
         computeNextStep();
 
         if (configuration->doVisualization)
-            cLbmVisualization->render(i);
+            visualization->render(i);
     }
 
     if (configuration->doBenchmark)
@@ -335,6 +331,7 @@ int CController<T>::run()
             benchmarkFile << "iterations:      " << iterationsPerSecond << "s^-1" << std::endl;
             benchmarkFile << "lattice updates: " << glups << "GLUPS" << std::endl;
             benchmarkFile << "bandwidth:       " << gbandwidth << "GB/s" << std::endl;
+            benchmarkFile.close();
         } else {
             /*
              * TODO

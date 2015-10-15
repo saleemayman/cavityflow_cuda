@@ -40,7 +40,8 @@ CXXFILES		:=	src/libmath/CMath.cpp \
 					src/libmath/CVector2.cpp \
 					src/libmath/CVector3.cpp \
 					src/libmath/CVector4.cpp \
-					src/libvis/VTK_Common.cpp \
+					src/libvis/CLbmVisualizationNetCDF.cpp \
+					src/libvis/CLbmVisualizationVTK.cpp \
 					src/CConfiguration.cpp \
 					src/CComm.cpp \
 					src/CController.cpp \
@@ -51,11 +52,11 @@ CXXFILES		:=	src/libmath/CMath.cpp \
 					src/main.cpp
 
 # cuda source files (compiled with $(NVCC))
-CUDAFILES		:=	src/gpukernels/copy_buffer_rect.cu \
+CUDAFILES		:=	src/CLbmSolverGPU.cu \
+					src/gpukernels/copy_buffer_rect.cu \
 					src/gpukernels/lbm_alpha.cu \
 					src/gpukernels/lbm_beta.cu \
-					src/gpukernels/lbm_init.cu \
-					src/CLbmSolverGPU.cu
+					src/gpukernels/lbm_init.cu
 
 ################################################################################
 # compiler arguments and flags

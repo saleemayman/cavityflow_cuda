@@ -19,8 +19,6 @@
 
 #include "lbm_alpha.cuh"
 
-#define GRAVITATION 0
-
 template<typename T>
 __global__ void lbm_kernel_alpha(
         T* global_dd,                 // density distributions

@@ -22,8 +22,6 @@
 
 #include "CLbmSolver.hpp"
 
-#include <vector>
-
 // #include "gpukernels/copy_buffer_rect.cuh"
 #include "CComm.hpp"
 #include "CLbmSolverGPU.cuh"

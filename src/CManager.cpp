@@ -19,6 +19,8 @@
 
 #include "CManager.hpp"
 
+#include <iostream>
+
 #include "libmath/CVector.hpp"
 
 template <class T>

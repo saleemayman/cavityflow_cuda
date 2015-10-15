@@ -17,36 +17,34 @@
  * limitations under the License.
  */
 
-#ifndef CLBMVISUALIZATIONVTK_HPP
-#define CLBMVISUALIZATIONVTK_HPP
+#include "CLbmVisualizationNetCDF.hpp"
 
-#include <fstream>
-#include <sstream>
-
-#include "CLbmVisualization.hpp"
-
-template <typename T>
-class CLbmVisualizationVTK : public virtual CLbmVisualization<T>
+template <class T>
+CLbmVisualizationNetCDF<T>::CLbmVisualizationNetCDF(
+		int id,
+		CLbmSolver<T>* solver,
+		std::string filePath) :
+		CLbmVisualization<T>(id, solver),
+		filePath(filePath)
 {
-private:
-    using CLbmVisualization<T>::id;
-    using CLbmVisualization<T>::solver;
+}
 
-    std::string filePath;
-    std::ofstream file;
+template <class T>
+void CLbmVisualizationNetCDF<T>::openFile(int iteration)
+{
+}
 
-    void openFile(int iteration);
-    void closeFile();
-	void writeHeader();
-	void writeDataset();
-	void writeFlags();
-	void writeDensities();
-	void writeVelocities();
+template <class T>
+void CLbmVisualizationNetCDF<T>::closeFile()
+{
+}
 
-public:
-	CLbmVisualizationVTK(int id, CLbmSolver<T>* solver, std::string filePath);
+template <class T>
+void CLbmVisualizationNetCDF<T>::render(int iteration)
+{
+	openFile(iteration);
+	closeFile();
+}
 
-	void render(int iteration);
-};
-
-#endif
+template class CLbmVisualizationNetCDF<double>;
+template class CLbmVisualizationNetCDF<float>;
