@@ -17,7 +17,7 @@ CUDAINCLUDES		:=	-I/usr/include \
 
 CCLIB				:=	
 CXXLIB				:=	
-CUDALIB				:=	-lcuda \
+CUDALIB				:=	
 
 COMPUTE_CAPABILITY	:=	20
 
