@@ -52,19 +52,19 @@ void CConfiguration<T>::interpretPhysiscsData(const tinyxml2::XMLNode* root)
 {
     const tinyxml2::XMLNode* physicsChild = root->FirstChildElement(TAG_NAME_CHILD_PHYSICS);
 
-    // viscosity
-    viscosity = atof(physicsChild->FirstChildElement("viscosity")->GetText());
-
-    // gravitation
     gravitation[0] = atof(physicsChild->FirstChildElement("gravitation")->FirstChildElement("x")->GetText());
     gravitation[1] = atof(physicsChild->FirstChildElement("gravitation")->FirstChildElement("y")->GetText());
     gravitation[2] = atof(physicsChild->FirstChildElement("gravitation")->FirstChildElement("z")->GetText());
 
-    // cavity velocity
     cavityVelocity[0] = atof(physicsChild->FirstChildElement("cavity-velocity")->FirstChildElement("x")->GetText());
     cavityVelocity[1] = atof(physicsChild->FirstChildElement("cavity-velocity")->FirstChildElement("y")->GetText());
     cavityVelocity[2] = atof(physicsChild->FirstChildElement("cavity-velocity")->FirstChildElement("z")->GetText());
     cavityVelocity[3] = atof(physicsChild->FirstChildElement("cavity-velocity")->FirstChildElement("w")->GetText());
+
+    viscosity = atof(physicsChild->FirstChildElement("viscosity")->GetText());
+    tau = atof(physicsChild->FirstChildElement("tau")->GetText());
+    massExchangeFactor = atof(physicsChild->FirstChildElement("mass-exchange-factor")->GetText());
+    maxGravitationDimLess = atof(physicsChild->FirstChildElement("max-gravitation")->GetText());
 }
 
 template <class T>

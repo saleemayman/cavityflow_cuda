@@ -43,20 +43,20 @@ protected:
 	 * boundaryConditions[5]: boundary condition for front face (largest z-coordinate)
 	 */
 	std::vector<Flag> boundaryConditions;
+
 	T timestepSize;
-	
-	CVector<3, T> gravitation;
-	CVector<4, T> drivenCavityVelocity;
+	CVector<3, T> gravitation, gravitationDimLess;
+	CVector<4, T> drivenCavityVelocity, drivenCavityVelocityDimLess;
 	T viscocity;
-	T massExchangeFactor;
-	T maxSimGravitationLength;
 	T tau;
+	T massExchangeFactor;
+	T maxGravitationDimLess;
 
 	bool storeDensities;
 	bool storeVelocities;
 	bool doLogging;
 
-	T reynolds, tauInv, tauInvTrt;
+	T tauInv, tauInvTrt;
 
 public:
 	CLbmSolver();
@@ -68,12 +68,12 @@ public:
 			CVector<3, T> &gravitation,
 			CVector<4, T> &drivenCavityVelocity,
 			T viscocity,
-			T massExchangeFactor = MASS_EXCHANGE_FACTOR,
-			T maxSimGravitationLength = MAX_SIM_GRAVITATION_LENGTH,
-			T tau = TAU,
-			bool storeDensities = STORE_DENSITIES,
-			bool storeVelocities = STORE_VELOCITIES,
-			bool doLogging = DO_LOGGING);
+			T tau,
+			T massExchangeFactor,
+			T maxGravitationDimLess,
+			bool storeDensities,
+			bool storeVelocities,
+			bool doLogging);
 	virtual ~CLbmSolver() {}
 	
 	virtual void simulationStepAlpha() {}

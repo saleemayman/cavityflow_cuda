@@ -24,23 +24,23 @@ CLbmSolverCPU<T>::CLbmSolverCPU(
 		int id,
 		CDomain<T> &domain,
 		std::vector<Flag> boundaryConditions,
+		CLbmSolverGPU<T>* solverGPU,
 		T timestepSize,
-		CVector<3, T> &gravitation,
-		CVector<4, T> &drivenCavityVelocity,
+		CVector<3, T>& gravitation,
+		CVector<4, T>& drivenCavityVelocity,
 		T viscocity,
-		CLbmSolverGPU<T> *solverGPU,
-		T massExchangeFactor,
-		T maxSimGravitationLength,
 		T tau,
+		T massExchangeFactor,
+		T maxGravitationDimLess,
 		bool storeDensities,
 		bool storeVelocities,
 		bool doLogging) :
 		CLbmSolver<T>(id, domain,
-				boundaryConditions, timestepSize,
-				gravitation, drivenCavityVelocity, viscocity,
-				massExchangeFactor, maxSimGravitationLength, tau,
-				storeDensities, storeVelocities,
-				doLogging)
+                boundaryConditions,
+                timestepSize, gravitation, drivenCavityVelocity,
+                viscocity, tau, massExchangeFactor, maxGravitationDimLess,
+                storeDensities, storeVelocities, doLogging),
+        solverGPU(solverGPU)
 {
 }
 

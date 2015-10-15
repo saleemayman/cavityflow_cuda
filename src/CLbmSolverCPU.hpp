@@ -30,7 +30,7 @@ template<typename T>
 class CLbmSolverCPU : public CLbmSolver<T>
 {
 private:
-//	CLbmSolverGPU<T>* solverGPU;
+	CLbmSolverGPU<T>* solverGPU;
 
 	std::vector<T*> densityDistributions;
 	std::vector<Flag*> flags;
@@ -54,17 +54,17 @@ public:
 			int id,
 			CDomain<T> &domain,
 			std::vector<Flag> boundaryConditions,
+			CLbmSolverGPU<T>* solverGPU,
 			T timestepSize,
-			CVector<3, T> &gravitation,
-			CVector<4, T> &drivenCavityVelocity,
+			CVector<3, T>& gravitation,
+			CVector<4, T>& drivenCavityVelocity,
 			T viscocity,
-			CLbmSolverGPU<T> *solverGPU,
-			T massExchangeFactor = MASS_EXCHANGE_FACTOR,
-			T maxSimGravitationLength = MAX_SIM_GRAVITATION_LENGTH,
-			T tau = TAU,
-			bool storeDensities = STORE_DENSITIES,
-			bool storeVelocities = STORE_VELOCITIES,
-			bool doLogging = DO_LOGGING);
+			T tau,
+			T massExchangeFactor,
+			T maxGravitationDimLess,
+			bool storeDensities,
+			bool storeVelocities,
+			bool doLogging);
 	~CLbmSolverCPU();
 
 	void simulationStepAlpha();

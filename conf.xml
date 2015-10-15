@@ -2,8 +2,6 @@
 <lbm-configuration>
   <!-- configuration data related to physcis of the simulation -->
   <physics>
-    <viscosity>0.001308</viscosity>
-    <!-- <viscosity>0.001</viscosity> -->
     <gravitation>
       <x>0</x>
       <y>-9.81</y>
@@ -15,6 +13,10 @@
       <z>0</z>
       <w>1</w>
     </cavity-velocity>
+    <viscosity>0.001308</viscosity>
+    <tau>0.953575</tau>
+    <mass-exchange-factor>1.0</mass-exchange-factor>
+    <max-gravitation>0.0001</max-gravitation>
   </physics>
   <!-- configuration data related to simulation grid -->
   <grid>
@@ -45,7 +47,7 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>100</loops>
+    <loops>1</loops>
     <!-- timestep default: -1 for automatic detection -->
     <timestep>-1.0</timestep>
     <!--  -->

@@ -42,7 +42,6 @@ CController<T>::CController(
         communication(communication),
         simulationStepCounter(0)
 {
-    /*
     solverGPU = new CLbmSolverGPU<T>(
             this->id,
             this->configuration->threadsPerBlock,
@@ -52,26 +51,25 @@ CController<T>::CController(
             this->configuration->gravitation,
             this->configuration->cavityVelocity,
             this->configuration->viscosity,
-            MASS_EXCHANGE_FACTOR,
-            MAX_SIM_GRAVITATION_LENGTH,
-            TAU,
+            this->configuration->tau,
+            this->configuration->massExchangeFactor,
+            this->configuration->maxGravitationDimLess,
             this->configuration->doValidation || this->configuration->doVisualization,
             this->configuration->doValidation || this->configuration->doVisualization,
             this->configuration->doLogging);
-    */
     /*
     solverCPU = new CLbmSolverCPU<T>(
             this->id,
             this->domain,
             this->boundaryConditions,
+            solverGPU,
             this->configuration->timestep,
             this->configuration->gravitation,
             this->configuration->cavityVelocity,
             this->configuration->viscosity,
-            solverGPU,
-            MASS_EXCHANGE_FACTOR,
-            MAX_SIM_GRAVITATION_LENGTH,
-            TAU,
+            this->configuration->tau,
+            this->configuration->massExchangeFactor,
+            this->configuration->maxGravitationDimLess,
             this->configuration->doValidation || this->configuration->doVisualization,
             this->configuration->doValidation || this->configuration->doVisualization,
             this->configuration->doLogging);
@@ -88,7 +86,7 @@ CController<T>::~CController()
         delete visualization;
 
     // delete solverCPU;
-    // delete solverGPU;
+    delete solverGPU;
 }
 
 template <class T>
@@ -229,10 +227,10 @@ template <class T>
 void CController<T>::computeNextStep()
 {
     if (simulationStepCounter & 1) {
-        // solverGPU->simulationStepAlpha();
+        solverGPU->simulationStepBeta();
         // syncBeta();
     } else {
-        // solverGPU->simulationStepAlpha();
+        solverGPU->simulationStepAlpha();
         // syncAlpha();
     }
     simulationStepCounter++;

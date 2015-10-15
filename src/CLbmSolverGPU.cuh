@@ -29,7 +29,9 @@ private:
     using CLbmSolver<T>::id;
     using CLbmSolver<T>::domain;
     using CLbmSolver<T>::gravitation;
+    using CLbmSolver<T>::gravitationDimLess;
     using CLbmSolver<T>::drivenCavityVelocity;
+    using CLbmSolver<T>::drivenCavityVelocityDimLess;
     using CLbmSolver<T>::storeDensities;
     using CLbmSolver<T>::storeVelocities;
     using CLbmSolver<T>::doLogging;
@@ -42,12 +44,12 @@ private:
 
     /*
      * Six slots for the halo layers of the six faces of a cuboid.
-     * [g/s]etDensityDistributionsHalo[0]: halo layer for right face
-     * [g/s]etDensityDistributionsHalo[1]: halo layer for left face
-     * [g/s]etDensityDistributionsHalo[2]: halo layer for top face
-     * [g/s]etDensityDistributionsHalo[3]: halo layer for bottom face
-     * [g/s]etDensityDistributionsHalo[4]: halo layer for front face
-     * [g/s]etDensityDistributionsHalo[5]: halo layer for back face
+     * [g/s]etDensityDistributionsHalo[0]: halo layer for left face
+     * [g/s]etDensityDistributionsHalo[1]: halo layer for right face
+     * [g/s]etDensityDistributionsHalo[2]: halo layer for bottom face
+     * [g/s]etDensityDistributionsHalo[3]: halo layer for tom face
+     * [g/s]etDensityDistributionsHalo[4]: halo layer for back face
+     * [g/s]etDensityDistributionsHalo[5]: halo layer for front face
      */
     std::vector<T*> getDensityDistributionsHalo;
     std::vector<T*> setDensityDistributionsHalo;
@@ -65,18 +67,18 @@ public:
     CLbmSolverGPU(
             int id,
             std::vector<dim3> threadsPerBlock,
-            CDomain<T>& domain,
-            std::vector<Flag> boundaryConditions,
-            T timestepSize,
-            CVector<3, T>& gravitation,
-            CVector<4, T>& drivenCavityVelocity,
-            T viscocity,
-            T massExchangeFactor = MASS_EXCHANGE_FACTOR,
-            T maxSimGravitationLength = MAX_SIM_GRAVITATION_LENGTH,
-            T tau = TAU,
-			bool storeDensities = STORE_DENSITIES,
-			bool storeVelocities = STORE_VELOCITIES,
-			bool doLogging = DO_LOGGING);
+			CDomain<T> &domain,
+			std::vector<Flag> boundaryConditions,
+			T timestepSize,
+			CVector<3, T> &gravitation,
+			CVector<4, T> &drivenCavityVelocity,
+			T viscocity,
+			T tau,
+			T massExchangeFactor,
+			T maxGravitationDimLess,
+			bool storeDensities,
+			bool storeVelocities,
+			bool doLogging);
     ~CLbmSolverGPU();
 
     void simulationStepAlpha();
