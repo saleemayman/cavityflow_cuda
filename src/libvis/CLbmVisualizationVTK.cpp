@@ -19,6 +19,8 @@
 
 #include "CLbmVisualizationVTK.hpp"
 
+#include <typeinfo>
+
 template <class T>
 CLbmVisualizationVTK<T>::CLbmVisualizationVTK(
 		int id,
@@ -77,6 +79,19 @@ void CLbmVisualizationVTK<T>::writeDataset()
 {
 	if (file.is_open())
 	{
+		file << "DATASET STRUCTURED_GRID\n";
+		file << "DIMENSIONS " << (solver->getDomain()->getSize()[0] + 1) << " " << (solver->getDomain()->getSize()[1] + 1) << " " << (solver->getDomain()->getSize()[2] + 1) << "\n";
+		file << "POINTS " << ((solver->getDomain()->getSize()[0] + 1) * (solver->getDomain()->getSize()[1] + 1) * (solver->getDomain()->getSize()[2] + 1)) << " " << ((typeid(T) == typeid(float)) ? "float" : "double") << "\n";
+
+		for (int k = 0; k < solver->getDomain()->getSize()[2] + 1; k++) {
+			for (int j = 0; j < solver->getDomain()->getSize()[1] + 1; j++) {
+				for (int i = 0; i < solver->getDomain()->getSize()[0] + 1; i++) {
+					file << ((T)(solver->getDomain()->getOrigin()[0] + i) * solver->getDomain()->getLength()[0]) << " " <<
+							((T)(solver->getDomain()->getOrigin()[1] + j) * solver->getDomain()->getLength()[1]) << " " <<
+							((T)(solver->getDomain()->getOrigin()[2] + k) * solver->getDomain()->getLength()[2]) <<"\n";
+				}
+			}
+		}
 	} else {
 		/*
 		 * TODO
@@ -89,6 +104,15 @@ void CLbmVisualizationVTK<T>::writeFlags()
 {
 	if (file.is_open())
 	{
+		solver->getFlags(flags);
+
+		file << "SCALARS flags INT 1\n";
+		file << "LOOKUP_TABLE default\n";
+
+		for (int i = 0; i < solver->getDomain()->getNumOfCells(); i++)
+		{
+			file << flags[i] << "\n";
+		}
 	} else {
 		/*
 		 * TODO
@@ -101,6 +125,15 @@ void CLbmVisualizationVTK<T>::writeDensities()
 {
 	if (file.is_open())
 	{
+		solver->getDensities(densities);
+
+		file << "SCALARS densities " << ((typeid(T) == typeid(float)) ? "float" : "double") << " 1\n";
+		file << "LOOKUP_TABLE default\n";
+
+		for (int i = 0; i < solver->getDomain()->getNumOfCells(); i++)
+		{
+			file << densities[i] << "\n";
+		}
 	} else {
 		/*
 		 * TODO
@@ -113,6 +146,18 @@ void CLbmVisualizationVTK<T>::writeVelocities()
 {
 	if (file.is_open())
 	{
+		solver->getVelocities(velocities);
+
+		T* velocitiesX = velocities;
+		T* velocitiesY = velocities + solver->getDomain()->getNumOfCells();
+		T* velocitiesZ = velocities + 2 * solver->getDomain()->getNumOfCells();
+
+		file << "VECTORS velocities " << ((typeid(T) == typeid(float)) ? "float" : "double") << "\n";
+
+		for (int i = 0; i < solver->getDomain()->getNumOfCells(); i++)
+		{
+			file << velocitiesX[i] << "" << velocitiesY[i] << "" << velocitiesZ[i] << "" << "\n";
+		}
 	} else {
 		/*
 		 * TODO
@@ -126,6 +171,7 @@ void CLbmVisualizationVTK<T>::render(int iteration)
 	openFile(iteration);
 	writeHeader();
 	writeDataset();
+	file << "CELL_DATA " << solver->getDomain()->getNumOfCells() << "\n";
 	writeFlags();
 	writeDensities();
 	writeVelocities();

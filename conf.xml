@@ -20,9 +20,9 @@
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-      <x>128</x>
-      <y>128</y>
-      <z>32</z>
+      <x>100</x>
+      <y>100</y>
+      <z>100</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
@@ -32,8 +32,8 @@
     </domian-length>
     <!-- number of subdomains in x, y and z direction -->
     <subdomain-num>
-      <x>2</x>
-      <y>2</y>
+      <x>1</x>
+      <y>1</y>
       <z>1</z>
     </subdomain-num>
     <!-- ratio in x, y and z direction of subdomain cells which are processed by the CPU ([0.0, 1.0]) (unit: scalar factor) -->
@@ -45,7 +45,7 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>10000</loops>
+    <loops>100</loops>
     <!-- timestep default: -1 for automatic detection -->
     <timestep>-1.0</timestep>
     <!--  -->
@@ -66,21 +66,21 @@
     <grid-configuration>
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_init() -->
       <init-grid-configuration>
-        <x>1024</x>
+        <x>32</x>
         <y>1</y>
         <z>1</z>
       </init-grid-configuration>
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_alpha() -->
       <alpha-grid-configuration>
         <x>32</x>
-        <y>16</y>
-        <z>2</z>
+        <y>1</y>
+        <z>1</z>
       </alpha-grid-configuration>
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_beta() -->
       <beta-grid-configuration>
-        <x>8</x>
-        <y>8</y>
-        <z>16</z>
+        <x>32</x>
+        <y>1</y>
+        <z>1</z>
       </beta-grid-configuration>
     </grid-configuration>
   </device>
