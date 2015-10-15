@@ -19,7 +19,7 @@ CCLIB				:=
 CXXLIB				:=	
 CUDALIB				:=	
 
-COMPUTE_CAPABILITY	:=	20
+COMPUTE_CAPABILITY	:=	50
 
 ################################################################################
 # compilers and linkers
