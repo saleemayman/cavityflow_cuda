@@ -21,6 +21,8 @@
 
 #include <cassert>
 
+#include "constants.h"
+
 template <class T>
 CConfiguration<T>::CConfiguration(std::string fileName)
 {
@@ -149,7 +151,7 @@ void CConfiguration<T>::checkParameters()
     assert(viscosity > (T)0);
     assert(tau >= (T)TAU_LOWER_LIMIT || tau <= (T)TAU_UPPER_LIMIT);
     assert(massExchangeFactor > (T)0);
-    assert(maxGravitationDimLess > (T)0)
+    assert(maxGravitationDimLess > (T)0);
     assert(domainSize[0] > 0 && domainSize[1] > 0 && domainSize[2] > 0);
     assert(domainLength[0] > (T)0 && domainLength[1] > (T)0 && domainLength[2] > (T)0);
     assert(numOfSubdomains[0] > 0 && numOfSubdomains[1] > 0 && numOfSubdomains[2] > 0);

@@ -59,7 +59,7 @@
     <do-validation>0</do-validation>
     <validation-output-dir>validation/</validation-output-dir>
     <!--  -->
-    <do-visualization>0</do-visualization>
+    <do-visualization>1</do-visualization>
     <visualization-output-dir>visualization/</visualization-output-dir>
   </simulation>
   <!-- configuration data related to computing device (e.g. GPU) -->
