@@ -80,7 +80,7 @@ __global__ void copy_buffer_rect(
 
     for (x_idx = 0; x_idx < block_size_x; x_idx++)
     {
-        dst[ dst_origin_idx + x_idx] = src[src_origin_idx + x_idx];
+        dst[dst_origin_idx + x_idx] = src[src_origin_idx + x_idx];
     }
 }
 

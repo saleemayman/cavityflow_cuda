@@ -265,7 +265,7 @@ void CController<T>::setDrivenCavitySzenario()
         src[i] = VELOCITY_INJECTION;
     }
 
-    // solverGPU->setFlags(origin, size, src);
+    solverGPU->setFlags(origin, size, src);
 
     delete[] src;
 }
@@ -310,6 +310,9 @@ int CController<T>::run()
         if (configuration->doVisualization)
             visualization->render(i);
     }
+
+    if (configuration->doVisualization)
+        visualization->render(0);
 
     if (configuration->doBenchmark)
     {

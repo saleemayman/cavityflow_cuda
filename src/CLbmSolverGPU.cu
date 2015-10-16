@@ -57,10 +57,10 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
     if (doLogging)
     {
         std::cout << "----- CLbmSolverGPU<T>::CLbmSolverGPU() -----" << std::endl;
-        std::cout << "id:                      " << this->id << std::endl;
+        std::cout << "id:                                                 " << this->id << std::endl;
         std::cout << "---------------------------------------------" << std::endl;
-        std::cout << "number of GPUs per node: " << numOfGPUsPerNode << std::endl;
-        std::cout << "number of selected GPU:  " << (this->id % numOfGPUsPerNode) << std::endl;
+        std::cout << "number of GPUs per node:                            " << numOfGPUsPerNode << std::endl;
+        std::cout << "number of selected GPU:                             " << (this->id % numOfGPUsPerNode) << std::endl;
         std::cout << "---------------------------------------------" << std::endl;
     }
 
@@ -72,29 +72,46 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
         GPU_ERROR_CHECK(cudaMalloc(&velocities, this->domain.getNumOfCells() * 3 * sizeof(T)))
 
     if (doLogging) {
-        std::cout << "size of allocated memory for density distributions: " << (this->domain.getNumOfCells() * NUM_LATTICE_VECTORS * sizeof(T)) << "Bytes" << std::endl;
-        std::cout << "size of allocated memory for flags:                 " << (this->domain.getNumOfCells() * sizeof(Flag)) << "Bytes" << std::endl;
+        std::cout << "size of allocated memory for density distributions: " << ((T)(this->domain.getNumOfCells() * NUM_LATTICE_VECTORS * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+        std::cout << "size of allocated memory for flags:                 " << ((T)(this->domain.getNumOfCells() * sizeof(Flag)) / (T)(1<<20)) << " MBytes" << std::endl;
         if(this->storeDensities)
-            std::cout << "size of allocated memory for velocities:            " << (this->domain.getNumOfCells() * 3 * sizeof(T)) << "Bytes" << std::endl;
+            std::cout << "size of allocated memory for velocities:            " << ((T)(this->domain.getNumOfCells() * 3 * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
         if(this->storeVelocities)
-            std::cout << "size of allocated memory for densities:             " << (this->domain.getNumOfCells() * sizeof(T)) << "Bytes" << std::endl;
+            std::cout << "size of allocated memory for densities:             " << ((T)(this->domain.getNumOfCells() * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+    }
+
+	getDensityDistributionsHalo.resize(6);
+	setDensityDistributionsHalo.resize(6);
+
+    GPU_ERROR_CHECK(cudaMalloc(&(getDensityDistributionsHalo[0]), this->domain.getNumOfXFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
+    GPU_ERROR_CHECK(cudaMalloc(&(setDensityDistributionsHalo[0]), this->domain.getNumOfXFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
+    GPU_ERROR_CHECK(cudaMalloc(&(getDensityDistributionsHalo[1]), this->domain.getNumOfXFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
+    GPU_ERROR_CHECK(cudaMalloc(&(setDensityDistributionsHalo[1]), this->domain.getNumOfXFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
+    GPU_ERROR_CHECK(cudaMalloc(&(getDensityDistributionsHalo[2]), this->domain.getNumOfYFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
+    GPU_ERROR_CHECK(cudaMalloc(&(setDensityDistributionsHalo[2]), this->domain.getNumOfYFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
+    GPU_ERROR_CHECK(cudaMalloc(&(getDensityDistributionsHalo[3]), this->domain.getNumOfYFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
+    GPU_ERROR_CHECK(cudaMalloc(&(setDensityDistributionsHalo[3]), this->domain.getNumOfYFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
+    GPU_ERROR_CHECK(cudaMalloc(&(getDensityDistributionsHalo[4]), this->domain.getNumOfZFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
+    GPU_ERROR_CHECK(cudaMalloc(&(setDensityDistributionsHalo[4]), this->domain.getNumOfZFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
+    GPU_ERROR_CHECK(cudaMalloc(&(getDensityDistributionsHalo[5]), this->domain.getNumOfZFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
+    GPU_ERROR_CHECK(cudaMalloc(&(setDensityDistributionsHalo[5]), this->domain.getNumOfZFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
+
+    if (doLogging) {
+        std::cout << "size of allocated memory for LEFT/RIGHT halos:      " << ((T)(4 * this->domain.getNumOfXFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+        std::cout << "size of allocated memory for BOTTOM/TOP halos:      " << ((T)(4 * this->domain.getNumOfYFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+        std::cout << "size of allocated memory for BACK/FRONT halos:      " << ((T)(4 * this->domain.getNumOfZFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
         std::cout << "---------------------------------------------" << std::endl;
     }
 
-    GPU_ERROR_CHECK(cudaMalloc<T>(&(getDensityDistributionsHalo[0]), this->domain.getNumOfXFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
-    GPU_ERROR_CHECK(cudaMalloc<T>(&(setDensityDistributionsHalo[0]), this->domain.getNumOfXFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
-    GPU_ERROR_CHECK(cudaMalloc<T>(&(getDensityDistributionsHalo[1]), this->domain.getNumOfXFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
-    GPU_ERROR_CHECK(cudaMalloc<T>(&(setDensityDistributionsHalo[1]), this->domain.getNumOfXFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
-    GPU_ERROR_CHECK(cudaMalloc<T>(&(getDensityDistributionsHalo[2]), this->domain.getNumOfYFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
-    GPU_ERROR_CHECK(cudaMalloc<T>(&(setDensityDistributionsHalo[2]), this->domain.getNumOfYFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
-    GPU_ERROR_CHECK(cudaMalloc<T>(&(getDensityDistributionsHalo[3]), this->domain.getNumOfYFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
-    GPU_ERROR_CHECK(cudaMalloc<T>(&(setDensityDistributionsHalo[3]), this->domain.getNumOfYFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
-    GPU_ERROR_CHECK(cudaMalloc<T>(&(getDensityDistributionsHalo[4]), this->domain.getNumOfZFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
-    GPU_ERROR_CHECK(cudaMalloc<T>(&(setDensityDistributionsHalo[4]), this->domain.getNumOfZFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
-    GPU_ERROR_CHECK(cudaMalloc<T>(&(getDensityDistributionsHalo[5]), this->domain.getNumOfZFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
-    GPU_ERROR_CHECK(cudaMalloc<T>(&(setDensityDistributionsHalo[5]), this->domain.getNumOfZFaceCells() * NUM_LATTICE_VECTORS * sizeof(T)))
+    dim3 blocksPerGrid = getBlocksPerGrid(3, this->domain.getSize(), this->threadsPerBlock[0]);
 
-    lbm_init<T><<<getBlocksPerGrid(3, this->domain.getSize(), this->threadsPerBlock[0]), this->threadsPerBlock[0]>>>(
+    if (doLogging) {
+        std::cout << "threads per block:                                  [" << this->threadsPerBlock[0].x << ", " << this->threadsPerBlock[0].y << ", " << this->threadsPerBlock[0].z << "]" << std::endl;
+        std::cout << "blocks per grid:                                    [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
+
+    lbm_init<T><<<blocksPerGrid, this->threadsPerBlock[0]>>>(
         densityDistributions,
         flags,
         velocities,
@@ -110,6 +127,11 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
         domain.getSize()[1],
         domain.getSize()[2]);
     GPU_ERROR_CHECK(cudaPeekAtLastError())
+    
+    if (doLogging) {
+        std::cout << "Domain successfully initialized." << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+    }
 }
 
 template <class T>
@@ -232,12 +254,40 @@ void CLbmSolverGPU<T>::getDensityDistributions(Direction direction, T* hDensityD
     }
 
     dim3 threadsPerBlock(size[1], size[2], 1);
+    if(size[1] > 1024)
+    {
+    	threadsPerBlock.x = 1024;
+    	threadsPerBlock.y = 1;
+    }
+    if(size[1] * size[2] > 1024)
+    	threadsPerBlock.y = 1024 / size[1];
+    dim3 blocksPerGrid = getBlocksPerGrid(2, CVector<3, int>(size[1], size[2], 0), threadsPerBlock);
+
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverGPU<T>::getDensityDistributions() -----" << std::endl;
+        std::cout << "A copy operation from device to host for lattice vectors in direction " << direction << " was performed." << std::endl;
+        std::cout << "No additional buffer memory was allocated. Instead, getDensityDistributionsHalo was used." << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "id:                " << id << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:       " << domain.getSize() << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "cuboid origin:     " << origin << std::endl;
+        std::cout << "cuboid size:       " << size << std::endl;
+        std::cout << "direction:         " << norm << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "threads per block: [" << threadsPerBlock.x << ", " << threadsPerBlock.y << ", " << threadsPerBlock.z << "]" << std::endl;
+        std::cout << "blocks per grid:   [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
 
     for (int latticeVector = 0; latticeVector < NUM_LATTICE_VECTORS; latticeVector++)
     {
         if(norm.dotProd(lbm_units[latticeVector]) > 0)
         {
-            copy_buffer_rect<T><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
+            copy_buffer_rect<T><<<blocksPerGrid, threadsPerBlock>>>(
                     densityDistributions,
                     latticeVector * domain.getNumOfCells(),
                     origin[0],
@@ -265,18 +315,8 @@ void CLbmSolverGPU<T>::getDensityDistributions(Direction direction, T* hDensityD
 
     if (doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::getDensityDistributions() -----" << std::endl;
         std::cout << "A copy operation from device to host for lattice vectors in direction " << direction << " was performed." << std::endl;
         std::cout << "No additional buffer memory was allocated. Instead, getDensityDistributionsHalo was used." << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "id:            " << id << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:   " << domain.getSize() << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "cuboid origin: " << origin << std::endl;
-        std::cout << "cuboid size:   " << size << std::endl;
-        std::cout << "direction:     " << norm << std::endl;
         std::cout << "-------------------------------------------------------" << std::endl;
     }
 }
@@ -286,19 +326,46 @@ void CLbmSolverGPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<
 {
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
-    assert(origin[0] + size[0] <= domain.getSize()[0] - 1);
-    assert(origin[1] + size[1] <= domain.getSize()[1] - 1);
-    assert(origin[2] + size[2] <= domain.getSize()[2] - 1);
+    assert(origin[0] + size[0] <= domain.getSize()[0]);
+    assert(origin[1] + size[1] <= domain.getSize()[1]);
+    assert(origin[2] + size[2] <= domain.getSize()[2]);
 
     T* dDensityDistributions;
 
     dim3 threadsPerBlock(size[1], size[2], 1);
+    if(size[1] > 1024)
+    {
+    	threadsPerBlock.x = 1024;
+    	threadsPerBlock.y = 1;
+    }
+    if(size[1] * size[2] > 1024)
+    	threadsPerBlock.y = 1024 / size[1];
+    dim3 blocksPerGrid = getBlocksPerGrid(2, CVector<3, int>(size[1], size[2], 0), threadsPerBlock);
+
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverGPU<T>::getDensityDistributions() -----" << std::endl;
+        std::cout << "A copy operation from device to host was performed." << std::endl;
+        std::cout << "Additional buffer memory was allocated and freed." << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "id:                " << id << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:       " << domain.getSize() << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "cuboid origin:     " << origin << std::endl;
+        std::cout << "cuboid size:       " << size << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "threads per block: [" << threadsPerBlock.x << ", " << threadsPerBlock.y << ", " << threadsPerBlock.z << "]" << std::endl;
+        std::cout << "blocks per grid:   [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
 
     GPU_ERROR_CHECK(cudaMalloc(&dDensityDistributions, NUM_LATTICE_VECTORS * size.elements() * sizeof(T)))
 
     for(int dim = 0; dim < NUM_LATTICE_VECTORS; dim++)
     {
-        copy_buffer_rect<T><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
+        copy_buffer_rect<T><<<blocksPerGrid, threadsPerBlock>>>(
                 densityDistributions,
                 dim * domain.getNumOfCells(),
                 origin[0],
@@ -327,17 +394,8 @@ void CLbmSolverGPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<
 
     if (doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::getDensityDistributions() -----" << std::endl;
         std::cout << "A copy operation from device to host was performed." << std::endl;
         std::cout << "Additional buffer memory was allocated and freed." << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "id:            " << id << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:   " << domain.getSize() << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "cuboid origin: " << origin << std::endl;
-        std::cout << "cuboid size:   " << size << std::endl;
         std::cout << "-------------------------------------------------------" << std::endl;
     }
 }
@@ -392,6 +450,33 @@ void CLbmSolverGPU<T>::setDensityDistributions(Direction direction, T* hDensityD
     }
 
     dim3 threadsPerBlock(size[1], size[2], 1);
+    if(size[1] > 1024)
+    {
+    	threadsPerBlock.x = 1024;
+    	threadsPerBlock.y = 1;
+    }
+    if(size[1] * size[2] > 1024)
+    	threadsPerBlock.y = 1024 / size[1];
+    dim3 blocksPerGrid = getBlocksPerGrid(2, CVector<3, int>(size[1], size[2], 0), threadsPerBlock);
+
+    if (doLogging) {
+        std::cout << "----- CLbmSolverGPU<T>::setDensityDistributions() -----" << std::endl;
+        std::cout << "A copy operation from host to device for lattice vectors in direction " << direction << " was performed." << std::endl;
+        std::cout << "No additional buffer memory was allocated. Instead, setDensityDistributionsHalo was used." << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "id:                " << id << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:       " << domain.getSize() << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "cuboid origin:     " << origin << std::endl;
+        std::cout << "cuboid size:      " << size << std::endl;
+        std::cout << "direction:         " << norm << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "threads per block: [" << threadsPerBlock.x << ", " << threadsPerBlock.y << ", " << threadsPerBlock.z << "]" << std::endl;
+        std::cout << "blocks per grid:   [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
 
     GPU_ERROR_CHECK(cudaMemcpy(getDensityDistributionsHalo[direction], hDensityDistributions, NUM_LATTICE_VECTORS * size.elements() * sizeof(T), cudaMemcpyHostToDevice))
 
@@ -399,7 +484,7 @@ void CLbmSolverGPU<T>::setDensityDistributions(Direction direction, T* hDensityD
     {
         if(norm.dotProd(lbm_units[latticeVector]) > 0)
         {
-            copy_buffer_rect<T><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
+            copy_buffer_rect<T><<<blocksPerGrid, threadsPerBlock>>>(
                     getDensityDistributionsHalo[direction],
                     latticeVector * size.elements(),
                     0,
@@ -424,18 +509,8 @@ void CLbmSolverGPU<T>::setDensityDistributions(Direction direction, T* hDensityD
     }
 
     if (doLogging) {
-        std::cout << "----- CLbmSolverGPU<T>::setDensityDistributions() -----" << std::endl;
         std::cout << "A copy operation from host to device for lattice vectors in direction " << direction << " was performed." << std::endl;
         std::cout << "No additional buffer memory was allocated. Instead, setDensityDistributionsHalo was used." << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "id:            " << id << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:   " << domain.getSize() << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "cuboid origin: " << origin << std::endl;
-        std::cout << "cuboid size:   " << size << std::endl;
-        std::cout << "direction:     " << norm << std::endl;
         std::cout << "-------------------------------------------------------" << std::endl;
     }
 }
@@ -445,13 +520,40 @@ void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
 {
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
-    assert(origin[0] + size[0] <= domain.getSize()[0] - 1);
-    assert(origin[1] + size[1] <= domain.getSize()[1] - 1);
-    assert(origin[2] + size[2] <= domain.getSize()[2] - 1);
+    assert(origin[0] + size[0] <= domain.getSize()[0]);
+    assert(origin[1] + size[1] <= domain.getSize()[1]);
+    assert(origin[2] + size[2] <= domain.getSize()[2]);
 
     T* dDensityDistributions;
 
     dim3 threadsPerBlock(size[1], size[2], 1);
+    if(size[1] > 1024)
+    {
+    	threadsPerBlock.x = 1024;
+    	threadsPerBlock.y = 1;
+    }
+    if(size[1] * size[2] > 1024)
+    	threadsPerBlock.y = 1024 / size[1];
+    dim3 blocksPerGrid = getBlocksPerGrid(2, CVector<3, int>(size[1], size[2], 0), threadsPerBlock);
+
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverGPU<T>::setDensityDistributions() -----" << std::endl;
+        std::cout << "A copy operation from host to device was performed." << std::endl;
+        std::cout << "Additional buffer memory was allocated and freed." << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "id:                " << id << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:       " << domain.getSize() << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "cuboid origin:     " << origin << std::endl;
+        std::cout << "cuboid size:       " << size << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "threads per block: [" << threadsPerBlock.x << ", " << threadsPerBlock.y << ", " << threadsPerBlock.z << "]" << std::endl;
+        std::cout << "blocks per grid:   [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
 
     GPU_ERROR_CHECK(cudaMalloc(&dDensityDistributions, NUM_LATTICE_VECTORS * size.elements() * sizeof(T)))
 
@@ -459,7 +561,7 @@ void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
 
     for (int i = 0; i < NUM_LATTICE_VECTORS; i++)
     {
-        copy_buffer_rect<T><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
+        copy_buffer_rect<T><<<blocksPerGrid, threadsPerBlock>>>(
                 dDensityDistributions,
                 i * size.elements(),
                 0,
@@ -486,17 +588,8 @@ void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
 
     if (doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::setDensityDistributions() -----" << std::endl;
         std::cout << "A copy operation from host to device was performed." << std::endl;
         std::cout << "Additional buffer memory was allocated and freed." << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "id:            " << id << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:   " << domain.getSize() << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "cuboid origin: " << origin << std::endl;
-        std::cout << "cuboid size:   " << size << std::endl;
         std::cout << "-------------------------------------------------------" << std::endl;
     }
 }
@@ -515,17 +608,41 @@ void CLbmSolverGPU<T>::getFlags(CVector<3, int> &origin, CVector<3, int> &size, 
 {
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
-    assert(origin[0] + size[0] <= domain.getSize()[0] - 1);
-    assert(origin[1] + size[1] <= domain.getSize()[1] - 1);
-    assert(origin[2] + size[2] <= domain.getSize()[2] - 1);
+    assert(origin[0] + size[0] <= domain.getSize()[0]);
+    assert(origin[1] + size[1] <= domain.getSize()[1]);
+    assert(origin[2] + size[2] <= domain.getSize()[2]);
 
     Flag* dFlags;
 
     dim3 threadsPerBlock(size[1], size[2], 1);
+    if(size[1] > 1024)
+    {
+    	threadsPerBlock.x = 1024;
+    	threadsPerBlock.y = 1;
+    }
+    if(size[1] * size[2] > 1024)
+    	threadsPerBlock.y = 1024 / size[1];
+    dim3 blocksPerGrid = getBlocksPerGrid(2, CVector<3, int>(size[1], size[2], 0), threadsPerBlock);
+
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverGPU<T>::getFlags() -----" << std::endl;
+        std::cout << "id:                " << id << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:       " << domain.getSize() << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "cuboid origin:     " << origin << std::endl;
+        std::cout << "cuboid size:       " << size << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "threads per block: [" << threadsPerBlock.x << ", " << threadsPerBlock.y << ", " << threadsPerBlock.z << "]" << std::endl;
+        std::cout << "blocks per grid:   [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
 
     GPU_ERROR_CHECK(cudaMalloc(&dFlags, size.elements() * sizeof(Flag)))
 
-    copy_buffer_rect<Flag><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
+    copy_buffer_rect<Flag><<<blocksPerGrid, threadsPerBlock>>>(
             flags,
             0,
             origin[0],
@@ -553,17 +670,7 @@ void CLbmSolverGPU<T>::getFlags(CVector<3, int> &origin, CVector<3, int> &size, 
 
     if (doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::getFlags() -----" << std::endl;
         std::cout << "A copy operation from device to host was performed." << std::endl;
-        std::cout << "Additional buffer memory was allocated and freed." << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "id:            " << id << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:   " << domain.getSize() << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "cuboid origin: " << origin << std::endl;
-        std::cout << "cuboid size:   " << size << std::endl;
         std::cout << "-------------------------------------------------------" << std::endl;
     }
 }
@@ -582,19 +689,46 @@ void CLbmSolverGPU<T>::setFlags(CVector<3, int> &origin, CVector<3, int> &size, 
 {
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
-    assert(origin[0] + size[0] <= domain.getSize()[0] - 1);
-    assert(origin[1] + size[1] <= domain.getSize()[1] - 1);
-    assert(origin[2] + size[2] <= domain.getSize()[2] - 1);
+    assert(origin[0] + size[0] <= domain.getSize()[0]);
+    assert(origin[1] + size[1] <= domain.getSize()[1]);
+    assert(origin[2] + size[2] <= domain.getSize()[2]);
 
     Flag* dFlags;
 
     dim3 threadsPerBlock(size[1], size[2], 1);
+    if(size[1] > 1024)
+    {
+    	threadsPerBlock.x = 1024;
+    	threadsPerBlock.y = 1;
+    }
+    if(size[1] * size[2] > 1024)
+    	threadsPerBlock.y = 1024 / size[1];
+    dim3 blocksPerGrid = getBlocksPerGrid(2, CVector<3, int>(size[1], size[2], 0), threadsPerBlock);
+
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverGPU<T>::setFlags() -----" << std::endl;
+        std::cout << "A copy operation from host to device was performed." << std::endl;
+        std::cout << "Additional buffer memory was allocated and freed." << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "id:                " << id << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:       " << domain.getSize() << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "cuboid origin:     " << origin << std::endl;
+        std::cout << "cuboid size:       " << size << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "threads per block: [" << threadsPerBlock.x << ", " << threadsPerBlock.y << ", " << threadsPerBlock.z << "]" << std::endl;
+        std::cout << "blocks per grid:   [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
 
     GPU_ERROR_CHECK(cudaMalloc(&dFlags, size.elements() * sizeof(Flag)))
 
     GPU_ERROR_CHECK(cudaMemcpy(dFlags, hFlags, size.elements() * sizeof(Flag), cudaMemcpyHostToDevice))
 
-    copy_buffer_rect<Flag><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
+    copy_buffer_rect<Flag><<<blocksPerGrid, threadsPerBlock>>>(
             dFlags,
             0,
             0,
@@ -620,17 +754,8 @@ void CLbmSolverGPU<T>::setFlags(CVector<3, int> &origin, CVector<3, int> &size, 
 
     if (doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::setFlags() -----" << std::endl;
         std::cout << "A copy operation from host to device was performed." << std::endl;
         std::cout << "Additional buffer memory was allocated and freed." << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "id:            " << id << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:   " << domain.getSize() << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "cuboid origin: " << origin << std::endl;
-        std::cout << "cuboid size:   " << size << std::endl;
         std::cout << "-------------------------------------------------------" << std::endl;
     }
 }
@@ -649,19 +774,46 @@ void CLbmSolverGPU<T>::getVelocities(CVector<3, int> &origin, CVector<3, int> &s
 {
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
-    assert(origin[0] + size[0] <= domain.getSize()[0] - 1);
-    assert(origin[1] + size[1] <= domain.getSize()[1] - 1);
-    assert(origin[2] + size[2] <= domain.getSize()[2] - 1);
+    assert(origin[0] + size[0] <= domain.getSize()[0]);
+    assert(origin[1] + size[1] <= domain.getSize()[1]);
+    assert(origin[2] + size[2] <= domain.getSize()[2]);
 
     T* dVelocities;
 
     dim3 threadsPerBlock(size[1], size[2], 1);
+    if(size[1] > 1024)
+    {
+    	threadsPerBlock.x = 1024;
+    	threadsPerBlock.y = 1;
+    }
+    if(size[1] * size[2] > 1024)
+    	threadsPerBlock.y = 1024 / size[1];
+    dim3 blocksPerGrid = getBlocksPerGrid(2, CVector<3, int>(size[1], size[2], 0), threadsPerBlock);
+
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverGPU<T>::getVelocities() -----" << std::endl;
+        std::cout << "A copy operation from device to host was performed." << std::endl;
+        std::cout << "Additional buffer memory was allocated and freed." << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+        std::cout << "id:                " << id << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:       " << domain.getSize() << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+        std::cout << "cuboid origin:     " << origin << std::endl;
+        std::cout << "cuboid size:       " << size << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+        std::cout << "threads per block: [" << threadsPerBlock.x << ", " << threadsPerBlock.y << ", " << threadsPerBlock.z << "]" << std::endl;
+        std::cout << "blocks per grid:   [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
 
     GPU_ERROR_CHECK(cudaMalloc(&dVelocities, 3 * size.elements() * sizeof(T)))
 
     for (int dim = 0; dim < 3; dim++)
     {
-        copy_buffer_rect<T><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
+        copy_buffer_rect<T><<<blocksPerGrid, threadsPerBlock>>>(
                 velocities,
                 dim * domain.getNumOfCells(),
                 origin[0],
@@ -690,17 +842,8 @@ void CLbmSolverGPU<T>::getVelocities(CVector<3, int> &origin, CVector<3, int> &s
 
     if (doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::getVelocities() -----" << std::endl;
         std::cout << "A copy operation from device to host was performed." << std::endl;
         std::cout << "Additional buffer memory was allocated and freed." << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
-        std::cout << "id:            " << id << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
-        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:   " << domain.getSize() << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
-        std::cout << "cuboid origin: " << origin << std::endl;
-        std::cout << "cuboid size:   " << size << std::endl;
         std::cout << "---------------------------------------------" << std::endl;
     }
 }
@@ -719,13 +862,40 @@ void CLbmSolverGPU<T>::setVelocities(CVector<3, int> &origin, CVector<3, int> &s
 {
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
-    assert(origin[0] + size[0] <= domain.getSize()[0] - 1);
-    assert(origin[1] + size[1] <= domain.getSize()[1] - 1);
-    assert(origin[2] + size[2] <= domain.getSize()[2] - 1);
+    assert(origin[0] + size[0] <= domain.getSize()[0]);
+    assert(origin[1] + size[1] <= domain.getSize()[1]);
+    assert(origin[2] + size[2] <= domain.getSize()[2]);
 
     T* dVelocities;
 
     dim3 threadsPerBlock(size[1], size[2], 1);
+    if(size[1] > 1024)
+    {
+    	threadsPerBlock.x = 1024;
+    	threadsPerBlock.y = 1;
+    }
+    if(size[1] * size[2] > 1024)
+    	threadsPerBlock.y = 1024 / size[1];
+    dim3 blocksPerGrid = getBlocksPerGrid(2, CVector<3, int>(size[1], size[2], 0), threadsPerBlock);
+
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverGPU<T>::setVelocities() -----" << std::endl;
+        std::cout << "A copy operation from host to device was performed." << std::endl;
+        std::cout << "Additional buffer memory was allocated and freed." << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+        std::cout << "id:                " << id << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:       " << domain.getSize() << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+        std::cout << "cuboid origin:     " << origin << std::endl;
+        std::cout << "cuboid size:       " << size << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+        std::cout << "threads per block: [" << threadsPerBlock.x << ", " << threadsPerBlock.y << ", " << threadsPerBlock.z << "]" << std::endl;
+        std::cout << "blocks per grid:   [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
 
     GPU_ERROR_CHECK(cudaMalloc(&dVelocities, 3 * size.elements() * sizeof(T)))
 
@@ -733,7 +903,7 @@ void CLbmSolverGPU<T>::setVelocities(CVector<3, int> &origin, CVector<3, int> &s
 
     for (int dim = 0; dim < 3; dim++)
     {
-        copy_buffer_rect<T><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
+        copy_buffer_rect<T><<<blocksPerGrid, threadsPerBlock>>>(
                 dVelocities,
                 dim * size.elements(),
                 0,
@@ -760,17 +930,8 @@ void CLbmSolverGPU<T>::setVelocities(CVector<3, int> &origin, CVector<3, int> &s
 
     if (doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::setVelocities() -----" << std::endl;
         std::cout << "A copy operation from host to device was performed." << std::endl;
         std::cout << "Additional buffer memory was allocated and freed." << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
-        std::cout << "id:            " << id << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
-        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:   " << domain.getSize() << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
-        std::cout << "cuboid origin: " << origin << std::endl;
-        std::cout << "cuboid size:   " << size << std::endl;
         std::cout << "---------------------------------------------" << std::endl;
     }
 }
@@ -789,17 +950,44 @@ void CLbmSolverGPU<T>::getDensities(CVector<3, int> &origin, CVector<3, int> &si
 {
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
-    assert(origin[0] + size[0] <= domain.getSize()[0] - 1);
-    assert(origin[1] + size[1] <= domain.getSize()[1] - 1);
-    assert(origin[2] + size[2] <= domain.getSize()[2] - 1);
+    assert(origin[0] + size[0] <= domain.getSize()[0]);
+    assert(origin[1] + size[1] <= domain.getSize()[1]);
+    assert(origin[2] + size[2] <= domain.getSize()[2]);
 
     T* dDensities;
 
     dim3 threadsPerBlock(size[1], size[2], 1);
+    if(size[1] > 1024)
+    {
+    	threadsPerBlock.x = 1024;
+    	threadsPerBlock.y = 1;
+    }
+    if(size[1] * size[2] > 1024)
+    	threadsPerBlock.y = 1024 / size[1];
+    dim3 blocksPerGrid = getBlocksPerGrid(2, CVector<3, int>(size[1], size[2], 0), threadsPerBlock);
+
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverGPU<T>::getDensities() -----" << std::endl;
+        std::cout << "A copy operation from device to host was performed." << std::endl;
+        std::cout << "Additional buffer memory was allocated and freed." << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "id:                " << id << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:       " << domain.getSize() << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "cuboid origin:     " << origin << std::endl;
+        std::cout << "cuboid size:       " << size << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "threads per block: [" << threadsPerBlock.x << ", " << threadsPerBlock.y << ", " << threadsPerBlock.z << "]" << std::endl;
+        std::cout << "blocks per grid:   [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
 
     GPU_ERROR_CHECK(cudaMalloc(&dDensities, size.elements() * sizeof(T)))
 
-    copy_buffer_rect<T><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
+    copy_buffer_rect<T><<<blocksPerGrid, threadsPerBlock>>>(
             densities,
             0,
             origin[0],
@@ -827,17 +1015,8 @@ void CLbmSolverGPU<T>::getDensities(CVector<3, int> &origin, CVector<3, int> &si
 
     if (doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::getDensities() -----" << std::endl;
         std::cout << "A copy operation from device to host was performed." << std::endl;
         std::cout << "Additional buffer memory was allocated and freed." << std::endl;
-        std::cout << "--------------------------------------------" << std::endl;
-        std::cout << "id:            " << id << std::endl;
-        std::cout << "--------------------------------------------" << std::endl;
-        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:   " << domain.getSize() << std::endl;
-        std::cout << "--------------------------------------------" << std::endl;
-        std::cout << "cuboid origin: " << origin << std::endl;
-        std::cout << "cuboid size:   " << size << std::endl;
         std::cout << "--------------------------------------------" << std::endl;
     }
 }
@@ -856,19 +1035,46 @@ void CLbmSolverGPU<T>::setDensities(CVector<3, int> &origin, CVector<3, int> &si
 {
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
-    assert(origin[0] + size[0] <= domain.getSize()[0] - 1);
-    assert(origin[1] + size[1] <= domain.getSize()[1] - 1);
-    assert(origin[2] + size[2] <= domain.getSize()[2] - 1);
+    assert(origin[0] + size[0] <= domain.getSize()[0]);
+    assert(origin[1] + size[1] <= domain.getSize()[1]);
+    assert(origin[2] + size[2] <= domain.getSize()[2]);
 
     T* dDensities;
 
     dim3 threadsPerBlock(size[1], size[2], 1);
+    if(size[1] > 1024)
+    {
+    	threadsPerBlock.x = 1024;
+    	threadsPerBlock.y = 1;
+    }
+    if(size[1] * size[2] > 1024)
+    	threadsPerBlock.y = 1024 / size[1];
+    dim3 blocksPerGrid = getBlocksPerGrid(2, CVector<3, int>(size[1], size[2], 0), threadsPerBlock);
+
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverGPU<T>::setDensities() -----" << std::endl;
+        std::cout << "A copy operation from host to device was performed." << std::endl;
+        std::cout << "Additional buffer memory was allocated and freed." << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "id:                " << id << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:       " << domain.getSize() << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "cuboid origin:     " << origin << std::endl;
+        std::cout << "cuboid size:       " << size << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "threads per block: [" << threadsPerBlock.x << ", " << threadsPerBlock.y << ", " << threadsPerBlock.z << "]" << std::endl;
+        std::cout << "blocks per grid:   [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
 
     GPU_ERROR_CHECK(cudaMalloc(&dDensities, size.elements() * sizeof(T)))
 
     GPU_ERROR_CHECK(cudaMemcpy(dDensities, hDensities, size.elements() * sizeof(T), cudaMemcpyHostToDevice))
 
-    copy_buffer_rect<T><<<getBlocksPerGrid(2, size, threadsPerBlock), threadsPerBlock>>>(
+    copy_buffer_rect<T><<<blocksPerGrid, threadsPerBlock>>>(
             dDensities,
             0,
             0,
@@ -894,17 +1100,8 @@ void CLbmSolverGPU<T>::setDensities(CVector<3, int> &origin, CVector<3, int> &si
 
     if (doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::setDensities() -----" << std::endl;
         std::cout << "A copy operation from host to device was performed." << std::endl;
         std::cout << "Additional buffer memory was allocated and freed." << std::endl;
-        std::cout << "--------------------------------------------" << std::endl;
-        std::cout << "id:            " << id << std::endl;
-        std::cout << "--------------------------------------------" << std::endl;
-        std::cout << "domain origin: " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:   " << domain.getSize() << std::endl;
-        std::cout << "--------------------------------------------" << std::endl;
-        std::cout << "cuboid origin: " << origin << std::endl;
-        std::cout << "cuboid size:   " << size << std::endl;
         std::cout << "--------------------------------------------" << std::endl;
     }
 }

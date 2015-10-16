@@ -38,11 +38,14 @@ void CLbmVisualizationVTK<T>::openFile(int iteration)
 	{
 	    std::stringstream fileName;
 	    fileName << filePath << "/visualization_" << id << "_" << iteration << ".vtk";
-	    std::ofstream benchmarkFile(fileName.str().c_str(), std::ios::out);
+	    file.open(fileName.str().c_str(), std::ios::out);
 	} else {
-		/*
-		 * TODO
-		 */
+        std::cerr << "----- CLbmVisualizationVTK<T>::openFile() -----" << std::endl;
+        std::cerr << "VTK file \"visualization_" << id << "_" << iteration << ".vtk is already open" << std::endl;
+        std::cerr << "EXECUTION WILL BE IMMEDIATELY TERMINATED" << std::endl;
+        std::cerr << "-----------------------------------------------" << std::endl;
+
+        exit (EXIT_FAILURE);
 	}
 }
 
@@ -53,9 +56,12 @@ void CLbmVisualizationVTK<T>::closeFile()
 	{
 	    file.close();
 	} else {
-		/*
-		 * TODO
-		 */
+        std::cerr << "----- CLbmVisualizationVTK<T>::closeFile() -----" << std::endl;
+        std::cerr << "There is no open VTK file to close" << std::endl;
+        std::cerr << "EXECUTION WILL BE IMMEDIATELY TERMINATED" << std::endl;
+        std::cerr << "------------------------------------------------" << std::endl;
+
+        exit (EXIT_FAILURE);
 	}
 }
 
@@ -68,9 +74,12 @@ void CLbmVisualizationVTK<T>::writeHeader()
 		file << "Heterogenous (MPI/OpenMPI) and hybrid (CPU/GPU) LBM simulation on rank " << id << "\n";
 		file << "ASCII" << std::endl;
 	} else {
-		/*
-		 * TODO
-		 */
+        std::cerr << "----- CLbmVisualizationVTK<T>::writeHeader() -----" << std::endl;
+        std::cerr << "There is no open VTK file to write header" << std::endl;
+        std::cerr << "EXECUTION WILL BE IMMEDIATELY TERMINATED" << std::endl;
+        std::cerr << "--------------------------------------------------" << std::endl;
+
+        exit (EXIT_FAILURE);
 	}
 }
 
@@ -86,16 +95,19 @@ void CLbmVisualizationVTK<T>::writeDataset()
 		for (int k = 0; k < solver->getDomain()->getSize()[2] + 1; k++) {
 			for (int j = 0; j < solver->getDomain()->getSize()[1] + 1; j++) {
 				for (int i = 0; i < solver->getDomain()->getSize()[0] + 1; i++) {
-					file << ((T)(solver->getDomain()->getOrigin()[0] + i) * solver->getDomain()->getLength()[0]) << " " <<
-							((T)(solver->getDomain()->getOrigin()[1] + j) * solver->getDomain()->getLength()[1]) << " " <<
-							((T)(solver->getDomain()->getOrigin()[2] + k) * solver->getDomain()->getLength()[2]) <<"\n";
+					file << ((T)(solver->getDomain()->getOrigin()[0] + i) * solver->getDomain()->getLength()[0] / (T)solver->getDomain()->getSize()[0]) << " " <<
+							((T)(solver->getDomain()->getOrigin()[1] + j) * solver->getDomain()->getLength()[1] / (T)solver->getDomain()->getSize()[1]) << " " <<
+							((T)(solver->getDomain()->getOrigin()[2] + k) * solver->getDomain()->getLength()[2] / (T)solver->getDomain()->getSize()[2]) <<"\n";
 				}
 			}
 		}
 	} else {
-		/*
-		 * TODO
-		 */
+        std::cerr << "----- CLbmVisualizationVTK<T>::writeDataset() -----" << std::endl;
+        std::cerr << "There is no open VTK file to write dataset" << std::endl;
+        std::cerr << "EXECUTION WILL BE IMMEDIATELY TERMINATED" << std::endl;
+        std::cerr << "---------------------------------------------------" << std::endl;
+
+        exit (EXIT_FAILURE);
 	}
 }
 
@@ -114,9 +126,12 @@ void CLbmVisualizationVTK<T>::writeFlags()
 			file << flags[i] << "\n";
 		}
 	} else {
-		/*
-		 * TODO
-		 */
+        std::cerr << "----- CLbmVisualizationVTK<T>::writeFlags() -----" << std::endl;
+        std::cerr << "There is no open VTK file to write flags" << std::endl;
+        std::cerr << "EXECUTION WILL BE IMMEDIATELY TERMINATED" << std::endl;
+        std::cerr << "-----------------------------------------------  " << std::endl;
+
+        exit (EXIT_FAILURE);
 	}
 }
 
@@ -135,9 +150,12 @@ void CLbmVisualizationVTK<T>::writeDensities()
 			file << densities[i] << "\n";
 		}
 	} else {
-		/*
-		 * TODO
-		 */
+        std::cerr << "----- CLbmVisualizationVTK<T>::writeDensities() -----" << std::endl;
+        std::cerr << "There is no open VTK file to write densities" << std::endl;
+        std::cerr << "EXECUTION WILL BE IMMEDIATELY TERMINATED" << std::endl;
+        std::cerr << "-----------------------------------------------------" << std::endl;
+
+        exit (EXIT_FAILURE);
 	}
 }
 
@@ -159,9 +177,12 @@ void CLbmVisualizationVTK<T>::writeVelocities()
 			file << velocitiesX[i] << "" << velocitiesY[i] << "" << velocitiesZ[i] << "" << "\n";
 		}
 	} else {
-		/*
-		 * TODO
-		 */
+        std::cerr << "----- CLbmVisualizationVTK<T>::writeVelocities() -----" << std::endl;
+        std::cerr << "There is no open VTK file to write velocities" << std::endl;
+        std::cerr << "EXECUTION WILL BE IMMEDIATELY TERMINATED" << std::endl;
+        std::cerr << "------------------------------------------------------" << std::endl;
+
+        exit (EXIT_FAILURE);
 	}
 }
 
@@ -173,8 +194,8 @@ void CLbmVisualizationVTK<T>::render(int iteration)
 	writeDataset();
 	file << "CELL_DATA " << solver->getDomain()->getNumOfCells() << "\n";
 	writeFlags();
-	writeDensities();
-	writeVelocities();
+	// writeDensities();
+	// writeVelocities();
 	closeFile();
 }
 
