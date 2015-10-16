@@ -304,7 +304,7 @@ int CController<T>::run()
     if (configuration->doBenchmark)
         cStopwatch.start();
 
-    for (int i = 0; i < configuration->loops; i++) {
+    for (int i = 0; i < configuration->loops || configuration->loops < 0; i++) {
         computeNextStep();
 
         if (configuration->doVisualization)

@@ -147,13 +147,14 @@ template <class T>
 void CConfiguration<T>::checkParameters()
 {
     assert(viscosity > (T)0);
+    assert(tau >= (T)TAU_LOWER_LIMIT || tau <= (T)TAU_UPPER_LIMIT);
+    assert(massExchangeFactor > (T)0);
+    assert(maxGravitationDimLess > (T)0)
     assert(domainSize[0] > 0 && domainSize[1] > 0 && domainSize[2] > 0);
     assert(domainLength[0] > (T)0 && domainLength[1] > (T)0 && domainLength[2] > (T)0);
     assert(numOfSubdomains[0] > 0 && numOfSubdomains[1] > 0 && numOfSubdomains[2] > 0);
     assert(CPUSubdomainRatio[0] >= (T)0 && CPUSubdomainRatio[1] >= (T)0 && CPUSubdomainRatio[2] >= (T)0);
     assert(CPUSubdomainRatio[0] <= (T)1 && CPUSubdomainRatio[1] <= (T)1 && CPUSubdomainRatio[2] <= (T)1);
-    assert(loops == -1 || loops > 0);
-    assert(loops == (T)-1 || loops > (T)0);
     assert(threadsPerBlock[0].x > 0 && threadsPerBlock[0].y > 0 && threadsPerBlock[0].z > 0);
     assert(threadsPerBlock[1].x > 0 && threadsPerBlock[1].y > 0 && threadsPerBlock[1].z > 0);
     assert(threadsPerBlock[2].x > 0 && threadsPerBlock[2].y > 0 && threadsPerBlock[2].z > 0);

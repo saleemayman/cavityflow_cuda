@@ -24,8 +24,6 @@
 
 #define NUM_LATTICE_VECTORS 19
 
-#define NUM_OF_LOOPS        100
-
 #define TAU_LOWER_LIMIT     (0.51)
 #define TAU_UPPER_LIMIT     (2.5)
 
