@@ -37,7 +37,7 @@ void CLbmVisualizationVTK<T>::openFile(int iteration)
 	if (!file.is_open())
 	{
 	    std::stringstream fileName;
-	    fileName << filePath << "/visualization_" << id << "_" << iteration << ".vtk";
+	    fileName << filePath << "/visualization_" << iteration << "_" << id << ".vtk";
 	    file.open(fileName.str().c_str(), std::ios::out);
 	} else {
         std::cerr << "----- CLbmVisualizationVTK<T>::openFile() -----" << std::endl;
@@ -174,7 +174,7 @@ void CLbmVisualizationVTK<T>::writeVelocities()
 
 		for (int i = 0; i < solver->getDomain()->getNumOfCells(); i++)
 		{
-			file << velocitiesX[i] << "" << velocitiesY[i] << "" << velocitiesZ[i] << "" << "\n";
+			file << velocitiesX[i] << " " << velocitiesY[i] << " " << velocitiesZ[i] << "\n";
 		}
 	} else {
         std::cerr << "----- CLbmVisualizationVTK<T>::writeVelocities() -----" << std::endl;
@@ -194,8 +194,8 @@ void CLbmVisualizationVTK<T>::render(int iteration)
 	writeDataset();
 	file << "CELL_DATA " << solver->getDomain()->getNumOfCells() << "\n";
 	writeFlags();
-	// writeDensities();
-	// writeVelocities();
+	writeDensities();
+	writeVelocities();
 	closeFile();
 }
 

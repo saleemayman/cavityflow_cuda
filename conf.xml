@@ -26,19 +26,19 @@
     <!--   <y>512</y>  -->
     <!--   <z>256</z>  -->
     <x>64</x>
-    <y>8</y>
+    <y>16</y>
     <z>8</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
       <x>0.8</x>
-      <y>0.1</y>
+      <y>0.2</y>
       <z>0.1</z>
     </domian-length>
     <!-- number of subdomains in x, y and z direction -->
     <subdomain-num>
       <x>2</x>
-      <y>1</y>
+      <y>2</y>
       <z>2</z>
     </subdomain-num>
     <!-- ratio in x, y and z direction of subdomain cells which are processed by the CPU ([0.0, 1.0]) (unit: scalar factor) -->
@@ -57,7 +57,7 @@
     <do-benchmark>1</do-benchmark>
     <benchmark-output-dir>benchmark</benchmark-output-dir>
     <!--  -->
-    <do-logging>0</do-logging>
+    <do-logging>1</do-logging>
     <!--  -->
     <do-validation>0</do-validation>
     <validation-output-dir>validation</validation-output-dir>

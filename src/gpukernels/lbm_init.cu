@@ -77,6 +77,7 @@ __global__ void lbm_init(
 
     Flag flag = FLUID;
 
+	/*
     if(pos.x == 0)
         flag = boundaryConditionRight;
     else if(pos.x == domainCells_x-1)
@@ -89,58 +90,20 @@ __global__ void lbm_init(
         flag = boundaryConditionFront;
     else if(pos.z == domainCells_z-1)
         flag = boundaryConditionBack;
+    */
 
-//  else if (pos.y == domainCells_y-2)
-//      flag = FLAG_VELOCITY_INJECTION;
-
-#if 0
-    if (    pos.x == 0 || pos.y == 0 || pos.z == 0 ||
-        pos.x == domainCells_x-1 || pos.y == domainCells_y-1 || pos.z == domainCells_z-1
-    )
-    {
-        flag = OBSTACLE;
-    }
-    else
-    {
-#if 1
-        if (pos.y == domainCells_y-2)
-            flag = VELOCITY_INJECTION;
-#endif
-#if 0
-        if (pos.y == 10)
-            flag = OBSTACLE;
-
-        if (pos.y == 2)
-            velocity_x = 10;
-        if (pos.y == 3)
-            velocity_x = 10;
-        if (pos.y == 4)
-            velocity_x = 10;
-        if (pos.y == 5)
-            velocity_x = 10;
-        if (pos.y == 6)
-            velocity_x = 10;
-#endif
-#if 0
-        if ((pos.x == domainCells_x/2 || pos.x == domainCells_x-2) && pos.y <= domainCells_y/2)
-        {
-            flag = INTERFACE;
-        }
-        else if ((pos.y == domainCells_y/2 || pos.y == 1) && pos.x >= domainCells_x/2)
-        {
-            flag = INTERFACE;
-        }
-        else if ((pos.z == domainCells_z-1 || pos.z == 1) && pos.x >= domainCells_x/2 && pos.y <= domainCells_y/2)
-        {
-            flag = INTERFACE;
-        }
-        else if (pos.x < domainCells_x/2 || pos.y > domainCells_y/2)
-        {
-            flag = GAS;
-        }
-#endif
-    }
-#endif
+    if(pos.x == 0)
+        flag = boundaryConditionRight;
+    if(pos.x == domainCells_x-1 && flag != OBSTACLE)
+        flag = boundaryConditionLeft;
+    if(pos.y == 0 && flag != OBSTACLE)
+        flag = boundaryConditionTop;
+    if(pos.y == domainCells_y-1 && flag != OBSTACLE)
+        flag = boundaryConditionBottom;
+    if(pos.z == 0 && flag != OBSTACLE)
+        flag = boundaryConditionFront;
+    if(pos.z == domainCells_z-1 && flag != OBSTACLE)
+        flag = boundaryConditionBack;
 
     // density distributions
     T dd0, dd1, dd2, dd3, dd4, dd5, dd6, dd7, dd8, dd9, dd10, dd11, dd12, dd13, dd14, dd15, dd16, dd17, dd18;
