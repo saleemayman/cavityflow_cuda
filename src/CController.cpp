@@ -26,6 +26,7 @@
 #include <mpi.h>
 
 #include "libtools/CStopwatch.hpp"
+#include "libvis/CLbmVisualizationNetCDF.hpp"
 #include "libvis/CLbmVisualizationVTK.hpp"
 
 template <class T>
@@ -76,7 +77,7 @@ CController<T>::CController(
     */
 
 	if (this->configuration->doVisualization)
-        visualization = new CLbmVisualizationVTK<T>(id, getSolver(), this->configuration->visualizationOutputDir);
+        visualization = new CLbmVisualizationNetCDF<T>(id, getSolver(), this->configuration->visualizationOutputDir);
 }
 
 template <class T>

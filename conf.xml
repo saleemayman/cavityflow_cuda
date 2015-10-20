@@ -22,12 +22,12 @@
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-    <!--   <x>92</x>   -->
-    <!--   <y>512</y>  -->
-    <!--   <z>256</z>  -->
-    <x>64</x>
-    <y>16</y>
-    <z>8</z>
+      <!-- <x>92</x>   -->
+      <!-- <y>512</y>  -->
+      <!-- <z>256</z>  -->
+      <x>64</x>
+      <y>16</y>
+      <z>8</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
@@ -37,9 +37,9 @@
     </domian-length>
     <!-- number of subdomains in x, y and z direction -->
     <subdomain-num>
-      <x>2</x>
-      <y>2</y>
-      <z>2</z>
+      <x>1</x>
+      <y>1</y>
+      <z>1</z>
     </subdomain-num>
     <!-- ratio in x, y and z direction of subdomain cells which are processed by the CPU ([0.0, 1.0]) (unit: scalar factor) -->
     <cpu-subdomain-ratio>

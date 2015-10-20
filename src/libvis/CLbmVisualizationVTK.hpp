@@ -20,10 +20,10 @@
 #ifndef CLBMVISUALIZATIONVTK_HPP
 #define CLBMVISUALIZATIONVTK_HPP
 
+#include "CLbmVisualization.hpp"
+
 #include <fstream>
 #include <sstream>
-
-#include "CLbmVisualization.hpp"
 
 template <typename T>
 class CLbmVisualizationVTK : public virtual CLbmVisualization<T>

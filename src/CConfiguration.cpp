@@ -34,7 +34,7 @@ CConfiguration<T>::CConfiguration(std::string fileName)
     {
         std::cerr << "----- CConfiguration<T>::CConfiguration() -----" << std::endl;
         std::cerr << "Loading XML configuration file \"" << fileName << "\" failed" << std::endl;
-        std::cerr << "EXECUTION WILL BE IMMEDIATELY TERMINATED" << std::endl;
+        std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
         std::cerr << "-----------------------------------------------" << std::endl;
 
         exit (EXIT_FAILURE);

@@ -90,7 +90,7 @@ CLbmSolver<T>::CLbmSolver(
 	    std::cerr << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
 	    std::cerr << "Tau " << this->tau << " not within the boundary [" << TAU_LOWER_LIMIT <<"; " << TAU_UPPER_LIMIT <<"]." << std::endl;
 	    std::cerr << "Simulation becomes unstable!" << std::endl;
-	    std::cerr << "EXECUTION WILL BE IMMEDIATELY TERMINATED" << std::endl;
+	    std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
 	    std::cerr << "---------------------------------------" << std::endl;
 
 	    exit (EXIT_FAILURE);
