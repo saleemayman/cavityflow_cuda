@@ -22,6 +22,8 @@
 #include <cstdio>
 #include <typeinfo>
 
+#include <mpi.h>
+
 template <class T>
 CLbmVisualizationNetCDF<T>::CLbmVisualizationNetCDF(
 		int id,
@@ -41,11 +43,12 @@ void CLbmVisualizationNetCDF<T>::openFile(int iteration)
 	    std::stringstream fileName;
 	    fileName << filePath << "/visualization_" << iteration << ".nc";
 	    error = nc_create(fileName.str().c_str(), NC_CLOBBER, &fileId);
+	    // error = nc_create_par(fileName.str().c_str(), NC_NETCDF4 | NC_MPIIO, MPI_COMM_WORLD, MPI_INFO_NULL, &fileId);
 
 	    if (error)
 	    {
 	        std::cerr << "----- CLbmVisualizationNetCDF<T>::openFile() -----" << std::endl;
-	        std::cerr << "An error occurred while opening netCDF file \"" << fileName.str() << "\"" << std::endl;
+	        std::cerr << "An error occurred while opening parallel netCDF file \"" << fileName.str() << "\"" << std::endl;
 	        std::cerr << nc_strerror(error) << std::endl;
 	        std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
 	        std::cerr << "--------------------------------------------------" << std::endl;
@@ -73,7 +76,7 @@ void CLbmVisualizationNetCDF<T>::closeFile()
 	    if (error)
 	    {
 	        std::cerr << "----- CLbmVisualizationNetCDF<T>::closeFile() -----" << std::endl;
-	        std::cerr << "An error occurred while closing netCDF file" << std::endl;
+	        std::cerr << "An error occurred while closing parallel netCDF file" << std::endl;
 	        std::cerr << nc_strerror(error) << std::endl;
 	        std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
 	        std::cerr << "---------------------------------------------------" << std::endl;
@@ -107,13 +110,13 @@ void CLbmVisualizationNetCDF<T>::defineData()
 		 * hand, since that's exactly the way how our data is stored, no final
 		 * matrix inversion is necessary.
 		 */
-		nc_def_dim(fileId, "x", solver->getDomain()->getSize()[2], &dimIds[0]);
+		nc_def_dim(fileId, "z", solver->getDomain()->getSize()[2], &dimIds[0]);
 		nc_def_dim(fileId, "y", solver->getDomain()->getSize()[1], &dimIds[1]);
-		nc_def_dim(fileId, "z", solver->getDomain()->getSize()[0], &dimIds[2]);
+		nc_def_dim(fileId, "x", solver->getDomain()->getSize()[0], &dimIds[2]);
 
-		nc_def_var(fileId, "x", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 1, &dimIds[0], &dimVarIds[0]);
+		nc_def_var(fileId, "z", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 1, &dimIds[0], &dimVarIds[0]);
 		nc_def_var(fileId, "y", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 1, &dimIds[1], &dimVarIds[1]);
-		nc_def_var(fileId, "z", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 1, &dimIds[2], &dimVarIds[2]);
+		nc_def_var(fileId, "x", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 1, &dimIds[2], &dimVarIds[2]);
 		nc_def_var(fileId, "flags", NC_INT, 3, dimIds, &flagsVarId);
 		nc_def_var(fileId, "densities", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 3, dimIds, &densitiesVarId);
 
@@ -181,6 +184,7 @@ void CLbmVisualizationNetCDF<T>::writeData()
 	        exit (EXIT_FAILURE);
 		}
 
+		// nc_var_par_access(fileId, flagsVarId, NC_COLLECTIVE);
 		nc_put_var_int(fileId, flagsVarId, (int*)flags);
 	} else {
         std::cerr << "----- CLbmVisualizationNetCDF<T>::writeData() -----" << std::endl;
