@@ -9,16 +9,19 @@ CXXLIBDIR			:=
 CUDALIBDIR			:=	
 
 CCINCLUDES			:=	$(MPI_INC) \
+						-I/lrz/mnt/sys.x86_64/libraries/netcdf/4.3.3/intel/impi/include \
 						-I/sccs/include \
 						-I/usr/include
 CXXINCLUDES			:=	$(MPI_INC) \
+						-I/lrz/mnt/sys.x86_64/libraries/netcdf/4.3.3/intel/impi/include \
 						-I/sccs/include \
 						-I/usr/include
-CUDAINCLUDES		:=	$(MPI_INC) \
-						-I/usr/include
+CUDAINCLUDES		:=	-I/usr/include
 
-CCLIB				:=	-L/sccs/lib64
-CXXLIB				:=	-L/sccs/lib64
+CCLIB				:=	-L/lrz/mnt/sys.x86_64/libraries/netcdf/4.3.3/intel/impi/lib \
+						-L/sccs/lib64
+CXXLIB				:=	-L/lrz/mnt/sys.x86_64/libraries/netcdf/4.3.3/intel/impi/lib \
+						-L/sccs/lib64
 CUDALIB				:=	
 
 COMPUTE_CAPABILITY	:=	20

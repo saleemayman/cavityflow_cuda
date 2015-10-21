@@ -24,7 +24,7 @@ code += "\n";
 # code += "module load cuda/6.5\n";
 # code += "module load mpi.ompi/1.6\n";
 # code += "\n";
-code += "mpirun -np " + str(int(sys.argv[1]) * int(sys.argv[2])) + " -ppn " + str(sys.argv[2]) + " ./bin/lbm conf.xml\n";
+code += "mpirun -np " + str(int(sys.argv[1]) * int(sys.argv[2])) + " -ppn " + str(sys.argv[2]) + " ./bin/lbm configurations/mac-cluster.xml\n";
 	
 jobscript = open("jobscript.sh", "w")
 jobscript.write(code)
