@@ -161,7 +161,19 @@ CLbmSolverGPU<T>::~CLbmSolverGPU()
 template <class T>
 void CLbmSolverGPU<T>::simulationStepAlpha()
 {
-    lbm_kernel_alpha<T><<<getBlocksPerGrid(3, domain.getSize(), threadsPerBlock[1]), threadsPerBlock[1]>>>(
+    dim3 blocksPerGrid = getBlocksPerGrid(3, this->domain.getSize(), this->threadsPerBlock[1]);
+
+    if (doLogging)
+    {
+		std::cout << "----- CLbmSolverGPU<T>::simulationStepAlpha() -----" << std::endl;
+		std::cout << "id:                " << id << std::endl;
+		std::cout << "---------------------------------------------------" << std::endl;
+		std::cout << "threads per block: [" << this->threadsPerBlock[1].x << ", " << this->threadsPerBlock[1].y << ", " << this->threadsPerBlock[1].z << "]" << std::endl;
+		std::cout << "blocks per grid:   [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+		std::cout << "---------------------------------------------------" << std::endl;
+    }
+
+    lbm_kernel_alpha<T><<<blocksPerGrid, this->threadsPerBlock[1]>>>(
             densityDistributions,
             flags,
             velocities,
@@ -173,7 +185,16 @@ void CLbmSolverGPU<T>::simulationStepAlpha()
             drivenCavityVelocityDimLess[0],
             domain.getSize()[0],
             domain.getSize()[1],
-            domain.getSize()[2]);
+            domain.getSize()[2],
+            storeDensities,
+            storeVelocities);
+    GPU_ERROR_CHECK(cudaPeekAtLastError())
+
+    if (doLogging)
+    {
+		std::cout << "Alpha kernel was successfully executed on the whole subdomain." << std::endl;
+		std::cout << "---------------------------------------------------" << std::endl;
+    }
 }
 
 template <class T>
@@ -187,7 +208,21 @@ void CLbmSolverGPU<T>::simulationStepAlphaRect(CVector<3, int> origin, CVector<3
 template <class T>
 void CLbmSolverGPU<T>::simulationStepBeta()
 {
-    lbm_kernel_beta<T><<<getBlocksPerGrid(3, domain.getSize(), threadsPerBlock[2]), threadsPerBlock[2]>>>(
+    dim3 blocksPerGrid = getBlocksPerGrid(3, domain.getSize(), threadsPerBlock[2]);
+    size_t sMemSize = 12 * sizeof(T) * getSize(threadsPerBlock[2]);
+
+    if (doLogging)
+    {
+		std::cout << "----- CLbmSolverGPU<T>::simulationStepBeta() -----" << std::endl;
+		std::cout << "id:                 " << id << std::endl;
+		std::cout << "--------------------------------------------------" << std::endl;
+		std::cout << "threads per block:  [" << this->threadsPerBlock[2].x << ", " << this->threadsPerBlock[2].y << ", " << this->threadsPerBlock[2].z << "]" << std::endl;
+		std::cout << "blocks per grid:    [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+		std::cout << "shared memory size: " << ((T)sMemSize / (T)(1<<10)) << " KB" << std::endl;
+		std::cout << "--------------------------------------------------" << std::endl;
+    }
+
+    lbm_kernel_beta<T><<<blocksPerGrid, threadsPerBlock[2], sMemSize>>>(
             densityDistributions,
             flags,
             velocities,
@@ -200,9 +235,18 @@ void CLbmSolverGPU<T>::simulationStepBeta()
             domain.getSize()[0],
             domain.getSize()[1],
             domain.getSize()[2],
-            threadsPerBlock[2].x * threadsPerBlock[2].y * threadsPerBlock[2].z,
+            getSize(threadsPerBlock[2]),
             isPowerOfTwo(domain.getNumOfCells()),
-            isPowerOfTwo(threadsPerBlock[2].x * threadsPerBlock[2].y * threadsPerBlock[2].z));
+            isPowerOfTwo(getSize(threadsPerBlock[2])),
+            storeDensities,
+            storeVelocities);
+    GPU_ERROR_CHECK(cudaPeekAtLastError())
+
+    if (doLogging)
+    {
+		std::cout << "Beta kernel was successfully executed on the whole subdomain." << std::endl;
+		std::cout << "--------------------------------------------------" << std::endl;
+    }
 }
 
 template <class T>
@@ -228,29 +272,35 @@ void CLbmSolverGPU<T>::getDensityDistributions(Direction direction, T* hDensityD
         size[1] = domain.getSize()[1];
         size[2] = domain.getSize()[2];
         norm[0] = -1;
+        break;
     case RIGHT:
         size[1] = domain.getSize()[1];
         size[2] = domain.getSize()[2];
         origin[0] = domain.getSize()[0] - 1;
         norm[0] = 1;
+        break;
     case BOTTOM:
         size[0] = domain.getSize()[0];
         size[2] = domain.getSize()[2];
         norm[1] = -1;
+        break;
     case TOP:
         size[0] = domain.getSize()[0];
         size[2] = domain.getSize()[2];
         origin[0] = domain.getSize()[1] - 1;
         norm[1] = 1;
+        break;
     case BACK:
         size[0] = domain.getSize()[0];
         size[1] = domain.getSize()[1];
         norm[2] = -1;
+        break;
     case FRONT:
         size[0] = domain.getSize()[0];
         size[1] = domain.getSize()[1];
         origin[0] = domain.getSize()[2] - 1;
         norm[2] = 1;
+        break;
     }
 
     dim3 threadsPerBlock(size[1], size[2], 1);
@@ -424,29 +474,35 @@ void CLbmSolverGPU<T>::setDensityDistributions(Direction direction, T* hDensityD
         size[1] = domain.getSize()[1];
         size[2] = domain.getSize()[2];
         norm[0] = -1;
+        break;
     case RIGHT:
         size[1] = domain.getSize()[1];
         size[2] = domain.getSize()[2];
         origin[0] = domain.getSize()[0] - 1;
         norm[0] = 1;
+        break;
     case BOTTOM:
         size[0] = domain.getSize()[0];
         size[2] = domain.getSize()[2];
         norm[1] = -1;
+        break;
     case TOP:
         size[0] = domain.getSize()[0];
         size[2] = domain.getSize()[2];
         origin[0] = domain.getSize()[1] - 1;
         norm[1] = 1;
+        break;
     case BACK:
         size[0] = domain.getSize()[0];
         size[1] = domain.getSize()[1];
         norm[2] = -1;
+        break;
     case FRONT:
         size[0] = domain.getSize()[0];
         size[1] = domain.getSize()[1];
         origin[0] = domain.getSize()[2] - 1;
         norm[2] = 1;
+        break;
     }
 
     dim3 threadsPerBlock(size[1], size[2], 1);

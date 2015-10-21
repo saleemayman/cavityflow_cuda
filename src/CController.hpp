@@ -63,7 +63,7 @@ public:
     ~CController();
 
     void setDrivenCavitySzenario();
-    int run();
+    void run();
 
     int getId();
     CDomain<T>* getDomain();

@@ -72,10 +72,6 @@ enum Direction
     gpuErrorCheck((code), __FILE__, __LINE__); \
 }
 
-inline int isPowerOfTwo(int x) {
-	return (!(x == 0) && !(x & (x - 1)));
-}
-
 inline void gpuErrorCheck(cudaError_t code, std::string file, int line, bool abort = true) {
     if (code != cudaSuccess) {
         std::cerr << "----- !!! The following CUDA API error occurred !!! -----" << std::endl;
@@ -115,6 +111,15 @@ inline dim3 getBlocksPerGrid(int dim, CVector<3,int> size, dim3 threadsPerBlock)
     }
 
     return blocksPerGrid;
+}
+
+inline unsigned int getSize(dim3 size)
+{
+	return (size.x * size.y * size.z);
+}
+
+inline int isPowerOfTwo(int x) {
+	return (!(x == 0) && !(x & (x - 1)));
 }
 
 /*

@@ -50,11 +50,11 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>0</loops>
+    <loops>128</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>-1.0</timestep>
     <!--  -->
-    <do-benchmark>1</do-benchmark>
+    <do-benchmark>0</do-benchmark>
     <benchmark-output-dir>benchmark</benchmark-output-dir>
     <!--  -->
     <do-logging>1</do-logging>
@@ -72,19 +72,19 @@
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_init() -->
       <init-grid-configuration>
         <x>32</x>
-        <y>1</y>
+        <y>16</y>
         <z>1</z>
       </init-grid-configuration>
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_alpha() -->
       <alpha-grid-configuration>
         <x>32</x>
-        <y>1</y>
+        <y>8</y>
         <z>1</z>
       </alpha-grid-configuration>
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_beta() -->
       <beta-grid-configuration>
         <x>32</x>
-        <y>1</y>
+        <y>8</y>
         <z>1</z>
       </beta-grid-configuration>
     </grid-configuration>

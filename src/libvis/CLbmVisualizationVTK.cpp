@@ -37,7 +37,7 @@ void CLbmVisualizationVTK<T>::openFile(int iteration)
 	if (!file.is_open())
 	{
 	    std::stringstream fileName;
-	    fileName << filePath << "/visualization_" << iteration << "_" << id << ".vtk";
+	    fileName << filePath << "/visualization_" << id << "_" << iteration << ".vtk";
 	    file.open(fileName.str().c_str(), std::ios::out);
 	} else {
         std::cerr << "----- CLbmVisualizationVTK<T>::openFile() -----" << std::endl;

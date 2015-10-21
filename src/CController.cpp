@@ -22,10 +22,10 @@
 #include <fstream>
 #include <sstream>
 #include <typeinfo>
+#include <sys/time.h>
 
 #include <mpi.h>
 
-#include "libtools/CStopwatch.hpp"
 #include "libvis/CLbmVisualizationNetCDF.hpp"
 #include "libvis/CLbmVisualizationVTK.hpp"
 
@@ -77,7 +77,7 @@ CController<T>::CController(
     */
 
 	if (this->configuration->doVisualization)
-        visualization = new CLbmVisualizationNetCDF<T>(id, getSolver(), this->configuration->visualizationOutputDir);
+        visualization = new CLbmVisualizationVTK<T>(id, getSolver(), this->configuration->visualizationOutputDir);
 }
 
 template <class T>
@@ -276,12 +276,20 @@ void CController<T>::setDrivenCavitySzenario()
  * this class.
  */
 template <class T>
-int CController<T>::run()
+void CController<T>::run()
 {
     int usedDataSize;
-    CStopwatch cStopwatch;
+    timeval start, end;
+    T elapsed;
 
     usedDataSize = 0;
+
+    if (configuration->doLogging)
+    {
+        std::cout << "----- CController<T>::run() -----" << std::endl;
+        std::cout << "id:     " << id << std::endl;
+        std::cout << "---------------------------------" << std::endl;
+    }
 
     if (configuration->doBenchmark)
     {
@@ -303,23 +311,24 @@ int CController<T>::run()
     }
 
     if (configuration->doBenchmark)
-        cStopwatch.start();
+    	gettimeofday(&start, NULL);
 
     for (int i = 0; i < configuration->loops || configuration->loops < 0; i++) {
+        if (configuration->doLogging)
+            std::cout << "Do iteration " << i << ":" << std::endl;
+
         computeNextStep();
 
         if (configuration->doVisualization)
             visualization->render(i);
     }
 
-    if (configuration->doVisualization)
-        visualization->render(0);
-
     if (configuration->doBenchmark)
     {
-        cStopwatch.stop();
+    	gettimeofday(&end, NULL);
+    	elapsed = (T)(end.tv_sec - start.tv_sec) + (T)(end.tv_usec - start.tv_usec) * (T)0.000001;
 
-        T iterationsPerSecond = (T)configuration->loops / (T)cStopwatch.time;
+        T iterationsPerSecond = (T)(configuration->loops) / elapsed;
         T glups = iterationsPerSecond * (T)configuration->domainSize.elements() * (T)0.000000001;
         T gbandwidth = glups * (T)usedDataSize;
 
@@ -328,8 +337,8 @@ int CController<T>::run()
         std::ofstream benchmarkFile(benchmarkFileName.str().c_str(), std::ios::out);
         if (benchmarkFile.is_open())
         {
-            benchmarkFile << "loops :          " << configuration->loops << std::endl;
-            benchmarkFile << "time:            " << cStopwatch.time << "s" << std::endl;
+            benchmarkFile << "loops:           " << configuration->loops << std::endl;
+            benchmarkFile << "time:            " << elapsed << "s" << std::endl;
             benchmarkFile << "iterations:      " << iterationsPerSecond << "s^-1" << std::endl;
             benchmarkFile << "lattice updates: " << glups << "GLUPS" << std::endl;
             benchmarkFile << "bandwidth:       " << gbandwidth << "GB/s" << std::endl;
@@ -341,7 +350,10 @@ int CController<T>::run()
         }
     }
 
-    return EXIT_SUCCESS;
+    if (configuration->doLogging)
+    {
+        std::cout << "---------------------------------" << std::endl;
+    }
 }
 
 template <class T>

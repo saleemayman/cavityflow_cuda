@@ -39,6 +39,8 @@ __global__ void lbm_kernel_beta(
         const int domainCells_z,
         const size_t localWorkGroup,
         const bool isDomainPowOfTwo,
-        const bool isLocalPowOfTwo);
+        const bool isLocalPowOfTwo,
+        const bool storeDensities,
+		const bool storeVelocities);
 
 #endif

@@ -32,7 +32,9 @@ __global__ void lbm_kernel_alpha(
         const T drivenCavityVelocity, // velocity parameters for modification of density distributions
         const int domainCellsX,
         const int domainCellsY,
-        const int domainCellsZ)
+        const int domainCellsZ,
+        const bool storeDensities,
+        const bool storeVelocities)
 {
     size_t DOMAIN_CELLS = domainCellsX * domainCellsY * domainCellsZ;
 
@@ -226,7 +228,7 @@ __global__ void lbm_kernel_alpha(
             vela_velb = velocity_x+velocity_y;
             vela_velb_2 = vela_velb*vela_velb;
 
-            tmp = (gravitation_x - gravitation_y)*(T)(1.0f/36.0f)*rho;
+            tmp = (gravitation_x - gravitation_y)*((T)1/(T)36)*rho;
 
             dd5 += inv_tau*(eq_dd5(vela_velb, vela_velb_2, dd_param) - dd5);
             dd5 -= tmp;
@@ -238,7 +240,7 @@ __global__ void lbm_kernel_alpha(
 
             vela_velb = velocity_x-velocity_y;
             vela_velb_2 = vela_velb*vela_velb;
-            tmp = (gravitation_x + gravitation_y)*(T)(1.0f/36.0f)*rho;
+            tmp = (gravitation_x + gravitation_y)*((T)1/(T)36)*rho;
             dd7 += inv_tau*(eq_dd5(vela_velb, vela_velb_2, dd_param) - dd7);
             dd7 -= tmp;
             *current_dds = dd7;     current_dds += DOMAIN_CELLS;
@@ -252,7 +254,7 @@ __global__ void lbm_kernel_alpha(
              ***********************/
             vela_velb = velocity_x+velocity_z;
             vela_velb_2 = vela_velb*vela_velb;
-            tmp = (gravitation_x + gravitation_z)*(T)(1.0f/36.0f)*rho;
+            tmp = (gravitation_x + gravitation_z)*((T)1/(T)36)*rho;
 
             dd9 += inv_tau*(eq_dd5(vela_velb, vela_velb_2, dd_param) - dd9);
             dd9 -= tmp;
@@ -262,7 +264,7 @@ __global__ void lbm_kernel_alpha(
             dd8 += tmp;
             *current_dds = dd8;     current_dds += DOMAIN_CELLS;
 
-            tmp = (gravitation_x - gravitation_z)*(T)(1.0f/36.0f)*rho;
+            tmp = (gravitation_x - gravitation_z)*((T)1/(T)36)*rho;
             vela_velb = velocity_x-velocity_z;
             vela_velb_2 = vela_velb*vela_velb;
             dd11 += inv_tau*(eq_dd5(vela_velb, vela_velb_2, dd_param) - dd11);
@@ -279,7 +281,7 @@ __global__ void lbm_kernel_alpha(
             vela_velb = velocity_y+velocity_z;
             vela_velb_2 = vela_velb*vela_velb;
 
-            tmp = (gravitation_z - gravitation_y)*(T)(1.0f/36.0f)*rho;
+            tmp = (gravitation_z - gravitation_y)*((T)1/(T)36)*rho;
             dd13 += inv_tau*(eq_dd5(vela_velb, vela_velb_2, dd_param) - dd13);
             dd13 -= tmp;
             *current_dds = dd13;        current_dds += DOMAIN_CELLS;
@@ -290,7 +292,7 @@ __global__ void lbm_kernel_alpha(
 
             vela_velb = velocity_y-velocity_z;
             vela_velb_2 = vela_velb*vela_velb;
-            tmp = (gravitation_z + gravitation_y)*(T)(-1.0f/36.0f)*rho;
+            tmp = (gravitation_z + gravitation_y)*((T)-1/(T)36)*rho;
 
             dd15 += inv_tau*(eq_dd5(vela_velb, vela_velb_2, dd_param) - dd15);
             dd15 -= tmp;
@@ -353,28 +355,29 @@ __global__ void lbm_kernel_alpha(
             *current_dds = dd18;
 #endif
 
-#if STORE_VELOCITY
-            velocity_x = 0.0f;
-            velocity_y = 0.0f;
-            velocity_z = 0.0f;
-#endif
+            if (storeVelocities)
+            {
+                velocity_x = (T)0;
+                velocity_y = (T)0;
+                velocity_z = (T)0;
+            }
             break;
 
         case VELOCITY_INJECTION:   // this flag specifies the injection area of the fluid
             velocity_x = drivenCavityVelocity;
-            velocity_y = 0;
-            velocity_z = 0;
+            velocity_y = (T)0;
+            velocity_z = (T)0;
 
-            rho = 1.0f;
+            rho = (T)1;
 
             vel2 = velocity_x*velocity_x + velocity_y*velocity_y + velocity_z*velocity_z;
-            dd_param = rho - (T)(3.0f/2.0f)*(vel2);
+            dd_param = rho - ((T)3/(T)2)*(vel2);
 
             /***********************
              * DD0
              ***********************/
             vela2 = velocity_x*velocity_x;
-            tmp = gravitation_x*(T)(1.0f/18.0f)*rho;
+            tmp = gravitation_x*((T)1/(T)18)*rho;
 
             dd1 = eq_dd_a1(velocity_x, vela2, dd_param);
             dd1 -= tmp;
@@ -385,7 +388,7 @@ __global__ void lbm_kernel_alpha(
             *current_dds = dd0;     current_dds += DOMAIN_CELLS;
 
             vela2 = velocity_y*velocity_y;
-            tmp = gravitation_y*(T)(-1.0f/18.0f)*rho;
+            tmp = gravitation_y*((T)-1/(T)18)*rho;
 
             dd3 = eq_dd_a1(velocity_y, vela2, dd_param);
             dd3 -= tmp;
@@ -402,7 +405,7 @@ __global__ void lbm_kernel_alpha(
              ***********************/
             vela_velb = velocity_x+velocity_y;
             vela_velb_2 = vela_velb*vela_velb;
-            tmp = (gravitation_x - gravitation_y)*(T)(1.0f/36.0f)*rho;
+            tmp = (gravitation_x - gravitation_y)*((T)1/(T)36)*rho;
 
             dd5 = eq_dd5(vela_velb, vela_velb_2, dd_param);
             dd5 -= tmp;
@@ -414,7 +417,7 @@ __global__ void lbm_kernel_alpha(
 
             vela_velb = velocity_x-velocity_y;
             vela_velb_2 = vela_velb*vela_velb;
-            tmp = (gravitation_x + gravitation_y)*(T)(1.0f/36.0f)*rho;
+            tmp = (gravitation_x + gravitation_y)*((T)1/(T)36)*rho;
 
             dd7 = eq_dd5(vela_velb, vela_velb_2, dd_param);
             dd7 -= tmp;
@@ -429,7 +432,7 @@ __global__ void lbm_kernel_alpha(
              ***********************/
             vela_velb = velocity_x+velocity_z;
             vela_velb_2 = vela_velb*vela_velb;
-            tmp = (gravitation_x + gravitation_z)*(T)(1.0f/36.0f)*rho;
+            tmp = (gravitation_x + gravitation_z)*((T)1/(T)36)*rho;
 
             dd9 = eq_dd5(vela_velb, vela_velb_2, dd_param);
             dd9 -= tmp;
@@ -441,7 +444,7 @@ __global__ void lbm_kernel_alpha(
 
             vela_velb = velocity_x-velocity_z;
             vela_velb_2 = vela_velb*vela_velb;
-            tmp = (gravitation_x - gravitation_z)*(T)(1.0f/36.0f)*rho;
+            tmp = (gravitation_x - gravitation_z)*((T)1/(T)36)*rho;
 
             dd11 = eq_dd5(vela_velb, vela_velb_2, dd_param);
             dd11 -= tmp;
@@ -456,7 +459,7 @@ __global__ void lbm_kernel_alpha(
              ***********************/
             vela_velb = velocity_y+velocity_z;
             vela_velb_2 = vela_velb*vela_velb;
-            tmp = (gravitation_z - gravitation_y)*(T)(1.0f/36.0f)*rho;
+            tmp = (gravitation_z - gravitation_y)*((T)1/(T)36)*rho;
 
             dd13 = eq_dd5(vela_velb, vela_velb_2, dd_param);
             dd13 -= tmp;
@@ -468,7 +471,7 @@ __global__ void lbm_kernel_alpha(
 
             vela_velb = velocity_y-velocity_z;
             vela_velb_2 = vela_velb*vela_velb;
-            tmp = (gravitation_z + gravitation_y)*(T)(-1.0f/36.0f)*rho;
+            tmp = (gravitation_z + gravitation_y)*((T)-1/(T)36)*rho;
 
             dd15 = eq_dd5(vela_velb, vela_velb_2, dd_param);
             dd15 -= tmp;
@@ -501,19 +504,21 @@ __global__ void lbm_kernel_alpha(
                 break;
     }
 
-#if STORE_VELOCITY
-    // store velocity
-    current_dds = &velocity[gid];
-    *current_dds = velocity_x;  current_dds += DOMAIN_CELLS;
-    *current_dds = velocity_y;  current_dds += DOMAIN_CELLS;
-    *current_dds = velocity_z;
-#endif
+    if (storeVelocities)
+    {
+        // store velocity
+        current_dds = &velocity[gid];
+        *current_dds = velocity_x;  current_dds += DOMAIN_CELLS;
+        *current_dds = velocity_y;  current_dds += DOMAIN_CELLS;
+        *current_dds = velocity_z;
+    }
 
-#if STORE_DENSITY
-    // store density (not necessary)
-    density[gid] = rho;
-    // density[gid] = flag;
-#endif
+    if (storeDensities)
+    {
+        // store density (not necessary)
+        density[gid] = rho;
+        // density[gid] = flag;
+    }
 }
 
 template __global__ void lbm_kernel_alpha<float>(
@@ -528,7 +533,9 @@ template __global__ void lbm_kernel_alpha<float>(
         const float drivenCavityVelocity,
         const int domainCellsX,
         const int domainCellsY,
-        const int domainCellsZ);
+        const int domainCellsZ,
+        const bool storeDensities,
+        const bool storeVelocities);
 template __global__ void lbm_kernel_alpha<double>(
         double *global_dd,
         const Flag *flag_array,
@@ -541,4 +548,6 @@ template __global__ void lbm_kernel_alpha<double>(
         const double drivenCavityVelocity,
         const int domainCellsX,
         const int domainCellsY,
-        const int domainCellsZ);
+        const int domainCellsZ,
+        const bool storeDensities,
+        const bool storeVelocities);
