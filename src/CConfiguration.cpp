@@ -20,8 +20,10 @@
 #include "CConfiguration.hpp"
 
 #include <cassert>
+#include <limits>
 
-#include "constants.h"
+#include "libmath/CMath.hpp"
+#include "common.h"
 
 template <class T>
 CConfiguration<T>::CConfiguration(std::string fileName)
@@ -157,13 +159,16 @@ void CConfiguration<T>::checkParameters()
     assert(numOfSubdomains[0] > 0 && numOfSubdomains[1] > 0 && numOfSubdomains[2] > 0);
     assert(CPUSubdomainRatio[0] >= (T)0 && CPUSubdomainRatio[1] >= (T)0 && CPUSubdomainRatio[2] >= (T)0);
     assert(CPUSubdomainRatio[0] <= (T)1 && CPUSubdomainRatio[1] <= (T)1 && CPUSubdomainRatio[2] <= (T)1);
+    assert(domainSize[0] % numOfSubdomains[0] == 0 && domainSize[1] % numOfSubdomains[1] == 0 && domainSize[2] % numOfSubdomains[2] == 0);
+    assert(CMath<T>::abs(domainLength[0] / (T)domainSize[0] - domainLength[1] / (T)domainSize[1]) < std::numeric_limits<T>::epsilon());
+    assert(CMath<T>::abs(domainLength[1] / (T)domainSize[1] - domainLength[2] / (T)domainSize[2]) < std::numeric_limits<T>::epsilon());
+    assert(CMath<T>::abs(domainLength[2] / (T)domainSize[2] - domainLength[0] / (T)domainSize[0]) < std::numeric_limits<T>::epsilon());
     assert(threadsPerBlock[0].x > 0 && threadsPerBlock[0].y > 0 && threadsPerBlock[0].z > 0);
     assert(threadsPerBlock[1].x > 0 && threadsPerBlock[1].y > 0 && threadsPerBlock[1].z > 0);
     assert(threadsPerBlock[2].x > 0 && threadsPerBlock[2].y > 0 && threadsPerBlock[2].z > 0);
-    assert(threadsPerBlock[0].x * threadsPerBlock[0].y * threadsPerBlock[0].z <= 1024);
-    assert(threadsPerBlock[1].x * threadsPerBlock[1].y * threadsPerBlock[1].z <= 1024);
-    assert(threadsPerBlock[2].x * threadsPerBlock[2].y * threadsPerBlock[2].z <= 1024);
-    assert(domainSize[0] % numOfSubdomains[0] == 0 && domainSize[1] % numOfSubdomains[1] == 0 && domainSize[2] % numOfSubdomains[2] == 0);
+    assert(getSize(threadsPerBlock[0]) <= 1024);
+    assert(getSize(threadsPerBlock[1]) <= 1024);
+    assert(getSize(threadsPerBlock[2]) <= 1024);
 }
 
 template <class T>
