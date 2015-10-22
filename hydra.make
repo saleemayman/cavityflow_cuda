@@ -4,27 +4,19 @@
 
 CUDAINSTALLPATH		:=	$(CUDA_HOME)
 
-CCLIBDIR			:=	-L/lrz/mnt/sys.x86_64/libraries/netcdf/4.3.3/intel/impi/lib \
-						-L/sccs/lib64
-CXXLIBDIR			:=	-L/lrz/mnt/sys.x86_64/libraries/netcdf/4.3.3/intel/impi/lib \
-						-L/sccs/lib64
+CCLIBDIR			:= -L$(NETCDF_HOME)/lib
+CXXLIBDIR			:= -L$(NETCDF_HOME)/lib
 CUDALIBDIR			:=	
 
-CCINCLUDES			:=	$(MPI_INC) \
-						-I/lrz/mnt/sys.x86_64/libraries/netcdf/4.3.3/intel/impi/include \
-						-I/sccs/include \
-						-I/usr/include
-CXXINCLUDES			:=	$(MPI_INC) \
-						-I/lrz/mnt/sys.x86_64/libraries/netcdf/4.3.3/intel/impi/include \
-						-I/sccs/include \
-						-I/usr/include
-CUDAINCLUDES		:=	-I/usr/include
+CCINCLUDES			:=	-I$(NETCDF_HOME)/include
+CXXINCLUDES			:=	-I$(NETCDF_HOME)/include
+CUDAINCLUDES		:=	
 
 CCLIB				:=	
 CXXLIB				:=	
 CUDALIB				:=	
 
-COMPUTE_CAPABILITY	:=	20
+COMPUTE_CAPABILITY	:=	35
 
 ################################################################################
 # compilers and linkers
