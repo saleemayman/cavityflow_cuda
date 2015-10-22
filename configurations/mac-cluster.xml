@@ -25,21 +25,21 @@
       <!-- <x>92</x>   -->
       <!-- <y>512</y>  -->
       <!-- <z>256</z>  -->
-      <x>128</x>
-      <y>32</y>
-      <z>16</z>
+      <x>512</x>
+      <y>16</y>
+      <z>32</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
-      <x>0.8</x>
-      <y>0.2</y>
-      <z>0.1</z>
+      <x>3.2</x>
+      <y>0.1</y>
+      <z>0.2</z>
     </domian-length>
     <!-- number of subdomains in x, y and z direction -->
     <subdomain-num>
-      <x>2</x>
+      <x>4</x>
       <y>1</y>
-      <z>1</z>
+      <z>2</z>
     </subdomain-num>
     <!-- ratio in x, y and z direction of subdomain cells which are processed by the CPU ([0.0, 1.0]) (unit: scalar factor) -->
     <cpu-subdomain-ratio>
@@ -50,7 +50,7 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>128</loops>
+    <loops>256</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>-1.0</timestep>
     <!--  -->

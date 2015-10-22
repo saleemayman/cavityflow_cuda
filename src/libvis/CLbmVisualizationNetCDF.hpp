@@ -26,6 +26,7 @@
 #include <sstream>
 
 #include <netcdf.h>
+// #include <netcdf_par.h>
 
 template <typename T>
 class CLbmVisualizationNetCDF : public virtual CLbmVisualization<T>
