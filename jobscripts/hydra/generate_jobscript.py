@@ -3,8 +3,8 @@ import sys
 
 code =  "# @ shell=/bin/bash\n";
 code += "#\n";
-code += "# @ error            = " + str(sys.argv[5]) + "/workspace/rode/results/" + str(int(sys.argv[1]) * int(sys.argv[2])) + ".e.txt\n";
-code += "# @ output           = " + str(sys.argv[5]) + "/workspace/rode/results/" + str(int(sys.argv[1]) * int(sys.argv[2])) + ".o.txt\n";
+code += "# @ error            = " + str(sys.argv[5]) + "/workspace/lbm/results/" + str(int(sys.argv[1]) * int(sys.argv[2])) + ".e.txt\n";
+code += "# @ output           = " + str(sys.argv[5]) + "/workspace/lbm/results/" + str(int(sys.argv[1]) * int(sys.argv[2])) + ".o.txt\n";
 code += "# @ job_type         = parallel\n";
 code += "# @ requirements     = (Feature==\"gpu\")\n";
 code += "# @ node_usage       = not_shared\n";
@@ -24,8 +24,9 @@ code += "# @ queue\n";
 code += "\n";
 code += "module load cuda/6.5\n";
 code += "module load mpi.ibm/1.4.0\n";
+code += "module load netcdf-mpi/4.3.3.1\n";
 code += "\n";
-code += "poe ${HOME}/workspace/rode/gpgpu-src/bin/rode\n";
+code += "poe ${HOME}/workspace/lbm/bin/lbm ${HOME}/workspace/lbm/configurations/hydra.xml\n";
 	
 jobscript = open("jobscript.sh", "w")
 jobscript.write(code)
