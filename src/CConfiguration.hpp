@@ -83,6 +83,7 @@ public:
     std::string benchmarkOutputDir;
     std::string validationOutputDir;
     std::string visualizationOutputDir;
+    int visualizationRate;
 
     /*
      * Device configuration data

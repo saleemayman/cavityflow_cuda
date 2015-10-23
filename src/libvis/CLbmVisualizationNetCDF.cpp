@@ -27,9 +27,10 @@
 template <class T>
 CLbmVisualizationNetCDF<T>::CLbmVisualizationNetCDF(
 		int id,
+		int visualizationRate,
 		CLbmSolver<T>* solver,
 		std::string filePath) :
-		CLbmVisualization<T>(id, solver),
+		CLbmVisualization<T>(id, visualizationRate, solver),
 		filePath(filePath)
 {
 }
@@ -199,10 +200,13 @@ void CLbmVisualizationNetCDF<T>::writeData()
 template <class T>
 void CLbmVisualizationNetCDF<T>::render(int iteration)
 {
-	openFile(iteration);
-	defineData();
-	writeData();
-	closeFile();
+	if(iteration % visualizationRate == 0)
+	{
+		openFile(iteration);
+		defineData();
+		writeData();
+		closeFile();
+	}
 }
 
 template class CLbmVisualizationNetCDF<double>;

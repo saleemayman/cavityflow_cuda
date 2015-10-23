@@ -27,14 +27,15 @@ class CLbmVisualization
 {
 protected:
 	int id;
+	int visualizationRate;
 	Flag* flags;
 	T* densities;
 	T* velocities;
 	CLbmSolver<T>* solver;
 
 public:
-	CLbmVisualization(int id, CLbmSolver<T>* solver) :
-		id(id), solver(solver)
+	CLbmVisualization(int id, int visualizationRate, CLbmSolver<T>* solver) :
+		id(id), visualizationRate(visualizationRate), solver(solver)
 	{
 		flags = new Flag[this->solver->getDomain()->getNumOfCells()];
 		densities = new T[this->solver->getDomain()->getNumOfCells()];

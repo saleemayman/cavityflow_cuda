@@ -54,16 +54,25 @@
     <!-- timestep size, -1 for automatic detection -->
     <timestep>-1.0</timestep>
     <!--  -->
-    <do-benchmark>1</do-benchmark>
-    <benchmark-output-dir>benchmark</benchmark-output-dir>
+    <benchmark>
+      <do>0</do>
+      <output-dir>benchmark</output-dir>
+    </benchmark>
     <!--  -->
-    <do-logging>0</do-logging>
+    <logging>
+      <do>0</do>
+    </logging>
     <!--  -->
-    <do-validation>0</do-validation>
-    <validation-output-dir>validation</validation-output-dir>
+    <validation>
+      <do>0</do>
+      <output-dir>validation</output-dir>
+    </validation>
     <!--  -->
-    <do-visualization>1</do-visualization>
-    <visualization-output-dir>visualization</visualization-output-dir>
+    <visualization>
+      <do>1</do>
+      <rate>4</rate>
+      <output-dir>visualization</output-dir>
+    </visualization>
   </simulation>
   <!-- configuration data related to computing device (e.g. GPU) -->
   <device>

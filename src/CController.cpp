@@ -76,8 +76,8 @@ CController<T>::CController(
             this->configuration->doLogging);
     */
 
-	if (this->configuration->doVisualization)
-        visualization = new CLbmVisualizationVTK<T>(id, getSolver(), this->configuration->visualizationOutputDir);
+    if (this->configuration->doVisualization)
+        visualization = new CLbmVisualizationVTK<T>(id, this->configuration->visualizationRate, getSolver(), this->configuration->visualizationOutputDir);
 }
 
 template <class T>
@@ -93,8 +93,9 @@ CController<T>::~CController()
 template <class T>
 void CController<T>::syncAlpha()
 {
-	CVector<3, int> sendSize, recvSize;
-	int dstId;
+    CVector<3, int> sendSize, recvSize;
+    CVector<3, int> sendOrigin, recvOrigin;
+    int dstId;
     MPI_Request request[2];
     MPI_Status status[2];
     int sendBufferSize, recvBufferSize;
@@ -104,59 +105,59 @@ void CController<T>::syncAlpha()
     if (configuration->doLogging)
     {
         std::cout << "----- CController<T>::syncAlpha() -----" << std::endl;
-        std::cout << "id:               " << id << std::endl;
+        std::cout << "id:                  " << id << std::endl;
         std::cout << "---------------------------------------" << std::endl;
     }
 
-	int i = 0;
-	typename std::vector<CComm<T> >::iterator it = communication.begin();
-
-    for (; it != communication.end(); it++, i++)
+    for (typename std::vector<CComm<T> >::iterator it = communication.begin(); it != communication.end(); it++)
     {
-    	sendSize = it->getSendSize();
-    	recvSize = it->getRecvSize();
-    	dstId = it->getDstId();
-    	sendBufferSize = NUM_LATTICE_VECTORS * sendSize.elements();
-    	recvBufferSize = NUM_LATTICE_VECTORS * recvSize.elements();
+        sendSize = it->getSendSize();
+        recvSize = it->getRecvSize();
+        sendOrigin = it->getSendOrigin();
+        recvOrigin = it->getRecvOrigin();
+        dstId = it->getDstId();
+        sendBufferSize = NUM_LATTICE_VECTORS * sendSize.elements();
+        recvBufferSize = NUM_LATTICE_VECTORS * recvSize.elements();
         sendBuffer = new T[sendBufferSize];
         recvBuffer = new T[recvBufferSize];
 
         if (configuration->doLogging)
         {
-        	std::cout << "direction:        " << i << std::endl;
-            std::cout << "destination rank: " << dstId << std::endl;
-            std::cout << "send size:        " << ((T)sendBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
-            std::cout << "receive size:     " << ((T)recvBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "destination rank:    " << dstId << std::endl;
+            std::cout << "send origin:         " << sendOrigin << std::endl;
+            std::cout << "receive origin:      " << recvOrigin << std::endl;
+            std::cout << "send buffer size:    " << ((T)sendBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "receive buffer size: " << ((T)recvBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
             std::cout << "---------------------------------------" << std::endl;
         }
 
-        solverGPU->getDensityDistributions(Direction(i), sendBuffer);
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffer);
 
         MPI_Isend(
-        		sendBuffer,
-        		sendBufferSize,
-        		((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
-        		dstId,
-        		MPI_TAG_ALPHA_SYNC,
+                sendBuffer,
+                sendBufferSize,
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                dstId,
+                MPI_TAG_ALPHA_SYNC,
                 MPI_COMM_WORLD,
                 &request[0]);
         MPI_Irecv(
-        		recvBuffer,
-        		recvBufferSize,
-        		((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
-        		dstId,
-        		MPI_TAG_ALPHA_SYNC,
+                recvBuffer,
+                recvBufferSize,
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                dstId,
+                MPI_TAG_ALPHA_SYNC,
                 MPI_COMM_WORLD,
                 &request[1]);
         MPI_Waitall(2, request, status);
 
         if (configuration->doLogging)
         {
-        	std::cout << "Alpha synchronization in direction " << i << " successful." << std::endl;
+            std::cout << "Alpha synchronization successful." << std::endl;
             std::cout << "---------------------------------------" << std::endl;
         }
 
-        solverGPU->setDensityDistributions(Direction(i), recvBuffer);
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffer);
 
         delete[] recvBuffer;
         delete[] sendBuffer;
@@ -166,8 +167,9 @@ void CController<T>::syncAlpha()
 template <class T>
 void CController<T>::syncBeta()
 {
-	CVector<3, int> sendSize, recvSize;
-	int dstId;
+    CVector<3, int> sendSize, recvSize;
+    CVector<3, int> sendOrigin, recvOrigin;
+    int dstId;
     MPI_Request request[2];
     MPI_Status status[2];
     int sendBufferSize, recvBufferSize;
@@ -177,59 +179,59 @@ void CController<T>::syncBeta()
     if (configuration->doLogging)
     {
         std::cout << "----- CController<T>::syncBeta() -----" << std::endl;
-        std::cout << "id:               " << id << std::endl;
+        std::cout << "id:                  " << id << std::endl;
         std::cout << "--------------------------------------" << std::endl;
     }
 
-	int i = 0;
-	typename std::vector<CComm<T> >::iterator it = communication.begin();
-
-    for (; it != communication.end(); it++, i++)
+    for (typename std::vector<CComm<T> >::iterator it = communication.begin(); it != communication.end(); it++)
     {
-    	sendSize = it->getSendSize();
-    	recvSize = it->getRecvSize();
-    	dstId = it->getDstId();
-    	sendBufferSize = NUM_LATTICE_VECTORS * sendSize.elements();
-    	recvBufferSize = NUM_LATTICE_VECTORS * recvSize.elements();
+        sendSize = it->getRecvSize();
+        recvSize = it->getSendSize();
+        sendOrigin = it->getRecvOrigin();
+        recvOrigin = it->getSendOrigin();
+        dstId = it->getDstId();
+        sendBufferSize = NUM_LATTICE_VECTORS * sendSize.elements();
+        recvBufferSize = NUM_LATTICE_VECTORS * recvSize.elements();
         sendBuffer = new T[sendBufferSize];
         recvBuffer = new T[recvBufferSize];
 
         if (configuration->doLogging)
         {
-        	std::cout << "direction:        " << i << std::endl;
-            std::cout << "destination rank: " << dstId << std::endl;
-            std::cout << "send size:        " << ((T)sendBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
-            std::cout << "receive size:     " << ((T)recvBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "destination rank:    " << dstId << std::endl;
+            std::cout << "send origin:         " << sendOrigin << std::endl;
+            std::cout << "receive origin:      " << recvOrigin << std::endl;
+            std::cout << "send buffer size:    " << ((T)sendBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "receive buffer size: " << ((T)recvBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
             std::cout << "--------------------------------------" << std::endl;
         }
 
-        solverGPU->getDensityDistributions(Direction(i), sendBuffer);
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffer);
 
         MPI_Isend(
-        		sendBuffer,
-        		sendBufferSize,
-        		((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
-        		dstId,
-        		MPI_TAG_BETA_SYNC,
+                sendBuffer,
+                sendBufferSize,
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                dstId,
+                MPI_TAG_BETA_SYNC,
                 MPI_COMM_WORLD,
                 &request[0]);
         MPI_Irecv(
-        		recvBuffer,
-        		recvBufferSize,
-        		((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
-        		dstId,
-        		MPI_TAG_BETA_SYNC,
+                recvBuffer,
+                recvBufferSize,
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                dstId,
+                MPI_TAG_BETA_SYNC,
                 MPI_COMM_WORLD,
                 &request[1]);
         MPI_Waitall(2, request, status);
 
         if (configuration->doLogging)
         {
-        	std::cout << "Beta synchronization in direction " << i << " successful." << std::endl;
+            std::cout << "Beta synchronization successful." << std::endl;
             std::cout << "--------------------------------------" << std::endl;
         }
 
-        solverGPU->setDensityDistributions(Direction(i), recvBuffer);
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, it->getDirection(), recvBuffer);
 
         delete[] recvBuffer;
         delete[] sendBuffer;
@@ -323,7 +325,7 @@ void CController<T>::run()
     }
 
     if (configuration->doBenchmark)
-    	gettimeofday(&start, NULL);
+        gettimeofday(&start, NULL);
 
     for (int i = 0; i < configuration->loops || configuration->loops < 0; i++) {
         if (configuration->doLogging)
@@ -337,8 +339,8 @@ void CController<T>::run()
 
     if (configuration->doBenchmark)
     {
-    	gettimeofday(&end, NULL);
-    	elapsed = (T)(end.tv_sec - start.tv_sec) + (T)(end.tv_usec - start.tv_usec) * (T)0.000001;
+        gettimeofday(&end, NULL);
+        elapsed = (T)(end.tv_sec - start.tv_sec) + (T)(end.tv_usec - start.tv_usec) * (T)0.000001;
 
         T iterationsPerSecond = (T)(configuration->loops) / elapsed;
         T glups = iterationsPerSecond * (T)configuration->domainSize.elements() * (T)0.000000001;

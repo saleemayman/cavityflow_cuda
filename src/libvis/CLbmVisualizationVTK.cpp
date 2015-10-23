@@ -24,9 +24,10 @@
 template <class T>
 CLbmVisualizationVTK<T>::CLbmVisualizationVTK(
 		int id,
+		int visualizationRate,
 		CLbmSolver<T>* solver,
 		std::string filePath) :
-		CLbmVisualization<T>(id, solver),
+		CLbmVisualization<T>(id, visualizationRate, solver),
 		filePath(filePath)
 {
 }
@@ -189,14 +190,18 @@ void CLbmVisualizationVTK<T>::writeVelocities()
 template <class T>
 void CLbmVisualizationVTK<T>::render(int iteration)
 {
-	openFile(iteration);
-	writeHeader();
-	writeDataset();
-	file << "CELL_DATA " << solver->getDomain()->getNumOfCells() << "\n";
-	writeFlags();
-	writeDensities();
-	writeVelocities();
-	closeFile();
+	if(iteration % visualizationRate == 0)
+	{
+		openFile(iteration);
+		writeHeader();
+		writeDataset();
+		file << "CELL_DATA " << solver->getDomain()->getNumOfCells() << "\n";
+		writeFlags();
+		writeDensities();
+		writeVelocities();
+		closeFile();
+
+	}
 }
 
 template class CLbmVisualizationVTK<double>;

@@ -101,17 +101,19 @@ void CConfiguration<T>::interpretSimulationData(const tinyxml2::XMLNode* root)
     loops = atoi(simulationChild->FirstChildElement("loops")->GetText());
     timestep = atof(simulationChild->FirstChildElement("timestep")->GetText());
 
-    doBenchmark = atoi(simulationChild->FirstChildElement("do-benchmark")->GetText());
-    doLogging = atoi(simulationChild->FirstChildElement("do-logging")->GetText());
-    doValidation = atoi(simulationChild->FirstChildElement("do-validation")->GetText());
-    doVisualization = atoi(simulationChild->FirstChildElement("do-visualization")->GetText());
+    doBenchmark = atoi(simulationChild->FirstChildElement("benchmark")->FirstChildElement("do")->GetText());
+    doLogging = atoi(simulationChild->FirstChildElement("logging")->FirstChildElement("do")->GetText());
+    doValidation = atoi(simulationChild->FirstChildElement("validation")->FirstChildElement("do")->GetText());
+    doVisualization = atoi(simulationChild->FirstChildElement("visualization")->FirstChildElement("do")->GetText());
 
-    const char* benchmarkOutputDirChar = simulationChild->FirstChildElement("benchmark-output-dir")->GetText();
-    const char* validationOutputDirChar = simulationChild->FirstChildElement("validation-output-dir")->GetText();
-    const char* visualizationOutputDirChar = simulationChild->FirstChildElement("visualization-output-dir")->GetText();
+    const char* benchmarkOutputDirChar = simulationChild->FirstChildElement("benchmark")->FirstChildElement("output-dir")->GetText();
+    const char* validationOutputDirChar = simulationChild->FirstChildElement("validation")->FirstChildElement("output-dir")->GetText();
+    const char* visualizationOutputDirChar = simulationChild->FirstChildElement("visualization")->FirstChildElement("output-dir")->GetText();
     benchmarkOutputDir.assign(benchmarkOutputDirChar);
     validationOutputDir.assign(validationOutputDirChar);
     visualizationOutputDir.assign(visualizationOutputDirChar);
+
+    visualizationRate = atoi(simulationChild->FirstChildElement("visualization")->FirstChildElement("rate")->GetText());
 }
 
 template <class T>
@@ -163,6 +165,7 @@ void CConfiguration<T>::checkParameters()
     assert(CMath<T>::abs(domainLength[0] / (T)domainSize[0] - domainLength[1] / (T)domainSize[1]) < std::numeric_limits<T>::epsilon());
     assert(CMath<T>::abs(domainLength[1] / (T)domainSize[1] - domainLength[2] / (T)domainSize[2]) < std::numeric_limits<T>::epsilon());
     assert(CMath<T>::abs(domainLength[2] / (T)domainSize[2] - domainLength[0] / (T)domainSize[0]) < std::numeric_limits<T>::epsilon());
+    assert(visualizationRate > 0);
     assert(threadsPerBlock[0].x > 0 && threadsPerBlock[0].y > 0 && threadsPerBlock[0].z > 0);
     assert(threadsPerBlock[1].x > 0 && threadsPerBlock[1].y > 0 && threadsPerBlock[1].z > 0);
     assert(threadsPerBlock[2].x > 0 && threadsPerBlock[2].y > 0 && threadsPerBlock[2].z > 0);
@@ -193,6 +196,7 @@ void CConfiguration<T>::print()
     std::cout << "benchmark directory:      " << benchmarkOutputDir << std::endl;
     std::cout << "validation directory:     " << validationOutputDir << std::endl;
     std::cout << "visualization directory:  " << visualizationOutputDir << std::endl;
+    std::cout << "visualization rate:       " << visualizationRate << std::endl;
     std::cout << "--------------------------------------" << std::endl;
     std::cout << "init grid configuration:  [" << threadsPerBlock[0].x << ", " << threadsPerBlock[0].y << ", " << threadsPerBlock[0].z << "]" << std::endl;
     std::cout << "alpha grid configuration: [" << threadsPerBlock[1].x << ", " << threadsPerBlock[1].y << ", " << threadsPerBlock[1].z << "]" << std::endl;

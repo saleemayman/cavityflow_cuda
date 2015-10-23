@@ -54,16 +54,25 @@
     <!-- timestep size, -1 for automatic detection -->
     <timestep>-1.0</timestep>
     <!--  -->
-    <do-benchmark>0</do-benchmark>
-    <benchmark-output-dir>/work_fast/riesinge/dissertation/lbm/benchmark</benchmark-output-dir>
+    <benchmark>
+      <do>0</do>
+      <output-dir>/work_fast/riesinge/dissertation/lbm/benchmark</output-dir>
+    </benchmark>
     <!--  -->
-    <do-logging>0</do-logging>
+    <logging>
+      <do>0</do>
+    </logging>
     <!--  -->
-    <do-validation>0</do-validation>
-    <validation-output-dir>/work_fast/riesinge/dissertation/lbm/validation</validation-output-dir>
+    <validation>
+      <do>0</do>
+      <output-dir>/work_fast/riesinge/dissertation/lbm/validation</output-dir>
+    </validation>
     <!--  -->
-    <do-visualization>1</do-visualization>
-    <visualization-output-dir>/work_fast/riesinge/dissertation/lbm/visualization</visualization-output-dir>
+    <visualization>
+      <do>1</do>
+      <rate>4</rate>
+      <output-dir>/work_fast/riesinge/dissertation/lbm/visualization</output-dir>
+    </visualization>
   </simulation>
   <!-- configuration data related to computing device (e.g. GPU) -->
   <device>

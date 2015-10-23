@@ -20,12 +20,16 @@
 #include "CComm.hpp"
 
 template <class T>
-CComm<T>::CComm(int dstID, CVector<3, int> send_size, CVector<3, int> recv_size,
-        CVector<3, int> send_origin, CVector<3, int> recv_origin,
-        CVector<3, int> comm_direction) :
-        _dstID(dstID), _send_size(send_size), _recv_size(recv_size), _send_origin(
-                send_origin), _recv_origin(recv_origin), _comm_direction(
-                comm_direction)
+CComm<T>::CComm(int dstId,
+		CVector<3, int> sendSize, CVector<3, int> recvSize,
+        CVector<3, int> sendOrigin, CVector<3, int> recvOrigin,
+        Direction direction/*,
+        Direction sendDirection, Direction recvDirection*/) :
+        dstId(dstId),
+        sendSize(sendSize), recvSize(recvSize),
+        sendOrigin(sendOrigin), recvOrigin(recvOrigin),
+        direction(direction)/*,
+        sendDirection(sendDirection), recvDirection(recvDirection) */
 {
 }
 
@@ -35,76 +39,102 @@ CComm<T>::~CComm()
 }
 
 template <class T>
-CVector<3,int> CComm<T>::getCommDirection() const
+int CComm<T>::getDstId()
 {
-    return _comm_direction;
-}
-
-template <class T>
-void CComm<T>::setCommDirection(CVector<3, int> normal)
-{
-    _comm_direction = normal;
-}
-
-template <class T>
-CVector<3, int> CComm<T>::getRecvOrigin() const
-{
-    return _recv_origin;
-}
-
-template <class T>
-void CComm<T>::setRecvOrigin(CVector<3, int> recvOrigin)
-{
-    _recv_origin = recvOrigin;
-}
-
-template <class T>
-CVector<3, int> CComm<T>::getRecvSize() const
-{
-    return _recv_size;
-}
-
-template <class T>
-void CComm<T>::setRecvSize(CVector<3, int> recvSize)
-{
-    _recv_size = recvSize;
-}
-
-template <class T>
-CVector<3, int> CComm<T>::getSendOrigin() const
-{
-    return _send_origin;
-}
-
-template <class T>
-void CComm<T>::setSendOrigin(CVector<3, int> sendOrigin)
-{
-    _send_origin = sendOrigin;
-}
-
-template <class T>
-CVector<3, int> CComm<T>::getSendSize() const
-{
-    return _send_size;
-}
-
-template <class T>
-void CComm<T>::setSendSize(CVector<3, int> sendSize)
-{
-    _send_size = sendSize;
-}
-
-template <class T>
-int CComm<T>::getDstId() const
-{
-    return _dstID;
+    return dstId;
 }
 
 template <class T>
 void CComm<T>::setDstId(int dstId)
 {
-    _dstID = dstId;
+    this->dstId = dstId;
 }
+
+template <class T>
+CVector<3, int> CComm<T>::getSendSize()
+{
+    return sendSize;
+}
+
+template <class T>
+void CComm<T>::setSendSize(CVector<3, int> sendSize)
+{
+    this->sendSize = sendSize;
+}
+
+template <class T>
+CVector<3, int> CComm<T>::getRecvSize()
+{
+    return recvSize;
+}
+
+template <class T>
+void CComm<T>::setRecvSize(CVector<3, int> recvSize)
+{
+    this->recvSize = recvSize;
+}
+
+template <class T>
+CVector<3, int> CComm<T>::getSendOrigin()
+{
+    return sendOrigin;
+}
+
+template <class T>
+void CComm<T>::setSendOrigin(CVector<3, int> sendOrigin)
+{
+    this->sendOrigin = sendOrigin;
+}
+
+template <class T>
+CVector<3, int> CComm<T>::getRecvOrigin()
+{
+    return recvOrigin;
+}
+
+template <class T>
+void CComm<T>::setRecvOrigin(CVector<3, int> recvOrigin)
+{
+    this->recvOrigin = recvOrigin;
+}
+
+template <class T>
+Direction CComm<T>::getDirection()
+{
+    return direction;
+}
+
+template <class T>
+void CComm<T>::setDirection(Direction direction)
+{
+    this->direction = direction;
+}
+
+/*
+template <class T>
+Direction CComm<T>::getSendDirection()
+{
+    return sendDirection;
+}
+
+template <class T>
+void CComm<T>::setSendDirection(Direction sendDirection)
+{
+    this->sendDirection = sendDirection;
+}
+
+template <class T>
+Direction CComm<T>::getRecvDirection()
+{
+    return recvDirection;
+}
+
+template <class T>
+void CComm<T>::setRecvDirection(Direction recvDirection)
+{
+    this->recvDirection = recvDirection;
+}
+*/
 
 template class CComm<double>;
 template class CComm<float>;

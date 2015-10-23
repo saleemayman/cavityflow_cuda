@@ -21,6 +21,7 @@
 #define CCOMM_HPP
 
 #include "libmath/CVector.hpp"
+#include "common.h"
 
 /*
  * Class CComm provides necessary information for communication of data between two subdomains.
@@ -29,31 +30,43 @@ template<typename T>
 class CComm
 {
 private:
-    int _dstID;
-    CVector<3, int> _send_size;
-    CVector<3, int> _recv_size;
-    CVector<3, int> _send_origin;
-    CVector<3, int> _recv_origin;
-    CVector<3, int> _comm_direction;
+    int dstId;
+    CVector<3, int> sendSize;
+    CVector<3, int> recvSize;
+    CVector<3, int> sendOrigin;
+    CVector<3, int> recvOrigin;
+    Direction direction;
+    /*
+    Direction sendDirection;
+    Direction recvDirection;
+    */
 
 public:
-    CComm(int dstID, CVector<3, int> send_size, CVector<3, int> recv_size,
-            CVector<3, int> send_origin, CVector<3, int> recv_origin,
-            CVector<3, int> comm_direction);
+    CComm(int dstId,
+    		CVector<3, int> sendSize, CVector<3, int> recvSize,
+            CVector<3, int> sendOrigin, CVector<3, int> recvOrigin,
+            Direction direction/*,
+            Direction sendDirection, Direction recvDirection*/);
     ~CComm();
 
-    CVector<3, int> getCommDirection() const;
-    void setCommDirection(CVector<3, int> normal);
-    CVector<3, int> getRecvOrigin() const;
-    void setRecvOrigin(CVector<3, int> recvOrigin);
-    CVector<3, int> getRecvSize() const;
-    void setRecvSize(CVector<3, int> recvSize);
-    CVector<3, int> getSendOrigin() const;
-    void setSendOrigin(CVector<3, int> sendOrigin);
-    CVector<3, int> getSendSize() const;
-    void setSendSize(CVector<3, int> sendSize);
-    int getDstId() const;
+    int getDstId();
     void setDstId(int dstId);
+    CVector<3, int> getSendSize();
+    void setSendSize(CVector<3, int> sendSize);
+    CVector<3, int> getRecvSize();
+    void setRecvSize(CVector<3, int> recvSize);
+    CVector<3, int> getSendOrigin();
+    void setSendOrigin(CVector<3, int> sendOrigin);
+    CVector<3, int> getRecvOrigin();
+    void setRecvOrigin(CVector<3, int> recvOrigin);
+    Direction getDirection();
+    void setDirection(Direction direction);
+    /*
+    Direction getSendDirection();
+    void setSendDirection(Direction sendDirection);
+    Direction getRecvDirection();
+    void setRecvDirection(Direction recvDirection);
+    */
 };
 
 #endif

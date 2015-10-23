@@ -30,6 +30,7 @@ class CLbmVisualizationVTK : public virtual CLbmVisualization<T>
 {
 private:
     using CLbmVisualization<T>::id;
+    using CLbmVisualization<T>::visualizationRate;
     using CLbmVisualization<T>::flags;
     using CLbmVisualization<T>::densities;
     using CLbmVisualization<T>::velocities;
@@ -47,7 +48,7 @@ private:
 	void writeVelocities();
 
 public:
-	CLbmVisualizationVTK(int id, CLbmSolver<T>* solver, std::string filePath);
+	CLbmVisualizationVTK(int id, int visualizationRate, CLbmSolver<T>* solver, std::string filePath);
 
 	void render(int iteration);
 };
