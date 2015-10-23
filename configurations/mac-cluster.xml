@@ -25,14 +25,14 @@
       <!-- <x>92</x>   -->
       <!-- <y>512</y>  -->
       <!-- <z>256</z>  -->
-      <x>32</x>
-      <y>32</y>
-      <z>32</z>
+      <x>1024</x>
+      <y>512</y>
+      <z>256</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
-      <x>1.0</x>
-      <y>1.0</y>
+      <x>4.0</x>
+      <y>2.0</y>
       <z>1.0</z>
     </domian-length>
     <!-- number of subdomains in x, y and z direction -->
@@ -50,12 +50,12 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>32</loops>
+    <loops>32768</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>-1.0</timestep>
     <!--  -->
     <benchmark>
-      <do>0</do>
+      <do>1</do>
       <output-dir>benchmark</output-dir>
     </benchmark>
     <!--  -->
@@ -69,8 +69,8 @@
     </validation>
     <!--  -->
     <visualization>
-      <do>1</do>
-      <rate>4</rate>
+      <do>0</do>
+      <rate>4096</rate>
       <output-dir>visualization</output-dir>
     </visualization>
   </simulation>
