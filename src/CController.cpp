@@ -42,10 +42,12 @@ CController<T>::CController(
         communication(communication),
         simulationStepCounter(0)
 {
+	decomposeSubdomainCPUAndGPU();
+
     solverGPU = new CLbmSolverGPU<T>(
             this->id,
             this->configuration->threadsPerBlock,
-            this->domain,
+            *domainGPU,
             this->boundaryConditions,
             this->configuration->timestep,
             this->configuration->gravitation,
@@ -85,9 +87,51 @@ CController<T>::~CController()
     if (this->configuration->doVisualization)
         delete visualization;
 
+    delete domainGPU;
     // delete solverCPU;
     delete solverGPU;
 }
+
+template<class T>
+void CController<T>::decomposeSubdomainCPUAndGPU()
+{
+	/*
+	 * Divide the sub-domain between the GPU and CPU
+	 */
+	CVector<3, int> subdomainSize = this->domain.getSize();
+	CVector<3, int> subdomainOrigin = this->domain.getOrigin();
+	CVector<3, T> subdomainLength = this->domain.getLength();
+
+	CVector<3, int> subdomainSizeGPU(
+			subdomainSize[0] * this->configuration->CPUSubdomainRatio[0],
+			subdomainSize[1] * this->configuration->CPUSubdomainRatio[1],
+			subdomainSize[2] * this->configuration->CPUSubdomainRatio[2]);
+
+	CVector<3, int> subdomainOriginGPU(subdomainOrigin[0], subdomainOrigin[1], subdomainOrigin[2]);
+
+	CVector<3, T> subdomainLengthGPU(
+			subdomainLength[0] * this->configuration->CPUSubdomainRatio[0],
+			subdomainLength[1] * this->configuration->CPUSubdomainRatio[1],
+			subdomainLength[2] * this->configuration->CPUSubdomainRatio[2]);
+
+	domainGPU = new CDomain<T>(this->id, subdomainSizeGPU, subdomainOriginGPU, subdomainLengthGPU);
+
+    if (this->configuration->doLogging)
+    {
+        std::cout << "----- CController<T>::decomposeSubdomainCPUAndGPU() -----" << std::endl;
+        std::cout << "id:                     " << this->id << std::endl;
+        std::cout << "---------------------------------------------------------" << std::endl;
+        std::cout << "GPU sub-domain size:            " << this->domainGPU->getSize() << std::endl;
+        std::cout << "GPU sub-domain length:          " << this->domainGPU->getLength() << std::endl;
+        std::cout << "GPU sub-domain origin:          " << this->domainGPU->getOrigin() << std::endl;
+        std::cout << "---------------------------------------------------------" << std::endl;
+        std::cout << "CPU sub-domain size:            " << this->domain.getSize() << std::endl;
+        std::cout << "CPU sub-domain length:          " << this->domain.getLength() << std::endl;
+        std::cout << "CPU sub-domain origin:          " << this->domain.getOrigin() << std::endl;
+    }
+
+}
+
 
 template <class T>
 void CController<T>::syncAlpha()

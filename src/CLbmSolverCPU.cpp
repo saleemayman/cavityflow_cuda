@@ -21,32 +21,42 @@
 
 template <class T>
 CLbmSolverCPU<T>::CLbmSolverCPU(
-		int id,
-		CDomain<T> &domain,
-		std::vector<Flag> boundaryConditions,
-		CLbmSolverGPU<T>* solverGPU,
-		T timestepSize,
-		CVector<3, T>& gravitation,
-		CVector<4, T>& drivenCavityVelocity,
-		T viscocity,
-		T tau,
-		T massExchangeFactor,
-		T maxGravitationDimLess,
-		bool storeDensities,
-		bool storeVelocities,
-		bool doLogging) :
-		CLbmSolver<T>(id, domain,
+        int id,
+        CDomain<T> &domain,
+        std::vector<Flag> boundaryConditions,
+        CLbmSolverGPU<T>* solverGPU,
+        T timestepSize,
+        CVector<3, T>& gravitation,
+        CVector<4, T>& drivenCavityVelocity,
+        T viscocity,
+        T tau,
+        T massExchangeFactor,
+        T maxGravitationDimLess,
+        bool storeDensities,
+        bool storeVelocities,
+        bool doLogging) :
+        CLbmSolver<T>(id, domain,
                 boundaryConditions,
                 timestepSize, gravitation, drivenCavityVelocity,
                 viscocity, tau, massExchangeFactor, maxGravitationDimLess,
                 storeDensities, storeVelocities, doLogging),
         solverGPU(solverGPU)
 {
+    /*
+     * Allocate memory for density distributions, density, flags and velocities.
+     */
+
+
+    /*
+     * instantiate the cpu init-kernel class
+     */
+
 }
 
 template <class T>
 CLbmSolverCPU<T>::~CLbmSolverCPU()
 {
+//    delete initKernelCPU;
 }
 
 template <class T>

@@ -48,6 +48,7 @@ CXXFILES		:=	src/libmath/CMath.cpp \
 					src/CDomain.cpp \
 					src/CManager.cpp \
 					src/CLbmSolver.cpp \
+					src/cpukernels/CLbmInitCPU.cpp \
 					src/CLbmSolverCPU.cpp \
 					src/main.cpp
 

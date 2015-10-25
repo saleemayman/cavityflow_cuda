@@ -42,6 +42,7 @@ private:
     int id;
     CConfiguration<T>* configuration;
     CDomain<T> domain;
+    CDomain<T>* domainGPU;
     // CLbmSolverCPU<T> *solverCPU;
     CLbmSolverGPU<T> *solverGPU;
     CLbmVisualization<T>* visualization;
@@ -49,6 +50,7 @@ private:
     std::vector<CComm<T> > communication;
     int simulationStepCounter;
 
+	void decomposeSubdomainCPUAndGPU();
     void computeNextStep();
     void syncAlpha();
     void syncBeta();
