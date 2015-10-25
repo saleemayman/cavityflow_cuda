@@ -43,7 +43,7 @@ int main(int argc, char** argv)
 		for (int i = 0; i < argc; i++) {
 			std::cerr << "argv[" << i << "] = " << argv[i] << std::endl;
 		}
-		std::cerr << "EXECUTION WILL BE IMMEDIATELY TERMINATED" << std::endl;
+		std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
 		std::cerr << "------------------" << std::endl;
 
 		exit (EXIT_FAILURE);
@@ -87,7 +87,7 @@ int main(int argc, char** argv)
 		std::cerr << "Number of launched MPI ranks/processes not equal to the number of specified subdomains." << std::endl;
 		std::cerr << "number of launched MPI ranks/processes: " << numOfRanks << std::endl;
 		std::cerr << "number of specified subdomains:         " << configuration->numOfSubdomains.elements() << std::endl;
-		std::cerr << "EXECUTION WILL BE IMMEDIATELY TERMINATED" << std::endl;
+		std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
 		std::cerr << "------------------" << std::endl;
 
 		exit (EXIT_FAILURE);

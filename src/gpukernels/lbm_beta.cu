@@ -51,7 +51,9 @@ __global__ void lbm_kernel_beta(
         const int domainCells_z,
         const size_t localWorkGroup,
         const bool isDomainPowOfTwo,
-        const bool isLocalPowOfTwo)
+        const bool isLocalPowOfTwo,
+        const bool storeDensities,
+		const bool storeVelocities)
 {
     //const size_t gid = get_global_id(0);
     const int DOMAIN_CELLS_X = domainCells_x;
@@ -653,11 +655,13 @@ __global__ void lbm_kernel_beta(
 
         case OBSTACLE: // in case of an obstacle, we bounce back the values
             // set to zero velocity and no fluid density
-#if STORE_VELOCITY
-            velocity_x = 0.0f;
-            velocity_y = 0.0f;
-            velocity_z = 0.0f;
-#endif
+
+        	if (storeVelocities)
+        	{
+                velocity_x = (T)0;
+                velocity_y = (T)0;
+                velocity_z = (T)0;
+        	}
 
             // use simple bounce back
             vela2 = dd1;    dd1 = dd0;      dd0 = vela2;
@@ -765,24 +769,24 @@ __global__ void lbm_kernel_beta(
         dd2 += tmp;
         dd3 -= tmp;
 
-        tmp = (gravitation_x - gravitation_y)*(T)(1.0f/36.0f)*rho;
+        tmp = (gravitation_x - gravitation_y)*((T)1/(T)36)*rho;
         dd4 += tmp;
         dd5 -= tmp;
-        tmp = (gravitation_x + gravitation_y)*(T)(1.0f/36.0f)*rho;
+        tmp = (gravitation_x + gravitation_y)*(T)((T)1/(T)36)*rho;
         dd6 += tmp;
         dd7 -= tmp;
 
-        tmp = (gravitation_x + gravitation_z)*(T)(1.0f/36.0f)*rho;
+        tmp = (gravitation_x + gravitation_z)*(T)((T)1/(T)36)*rho;
         dd8 += tmp;
         dd9 -= tmp;
-        tmp = (gravitation_x - gravitation_z)*(T)(1.0f/36.0f)*rho;
+        tmp = (gravitation_x - gravitation_z)*(T)((T)1/(T)36)*rho;
         dd10 += tmp;
         dd11 -= tmp;
 
-        tmp = (gravitation_z - gravitation_y)*(T)(1.0f/36.0f)*rho;
+        tmp = (gravitation_z - gravitation_y)*(T)((T)1/(T)36))*rho;
         dd12 += tmp;
         dd13 -= tmp;
-        tmp = (gravitation_z + gravitation_y)*(T)(-1.0f/36.0f)*rho;
+        tmp = (gravitation_z + gravitation_y)*(T)((T)-1/(T)36)*rho;
         dd14 += tmp;
         dd15 -= tmp;
 
@@ -913,18 +917,19 @@ __global__ void lbm_kernel_beta(
     if ( flag == GHOST_LAYER)
         return;
 
-#if STORE_VELOCITY
-    // store velocity
-    current_dds = &velocity[gid];
-    *current_dds = velocity_x;  current_dds += DOMAIN_CELLS;
-    *current_dds = velocity_y;  current_dds += DOMAIN_CELLS;
-    *current_dds = velocity_z;
-#endif
+    if (storeVelocities)
+    {
+        current_dds = &velocity[gid];
+        *current_dds = velocity_x;  current_dds += DOMAIN_CELLS;
+        *current_dds = velocity_y;  current_dds += DOMAIN_CELLS;
+        *current_dds = velocity_z;
+    }
 
-#if STORE_DENSITY
-    // store density (not necessary)
-    density[gid] = rho;
-#endif
+    if (storeDensities)
+    {
+        // store density (not necessary)
+        density[gid] = rho;
+    }
 }
 
 template __global__ void lbm_kernel_beta<float>(
@@ -942,7 +947,9 @@ template __global__ void lbm_kernel_beta<float>(
         const int domainCells_z,
         const size_t localWorkGroup,
         const bool isDomainPowOfTwo,
-        const bool isLocalPowOfTwo);
+        const bool isLocalPowOfTwo,
+        const bool storeDensities,
+		const bool storeVelocities);
 template __global__ void lbm_kernel_beta<double>(
         double *global_dd,
         const Flag *flag_array,
@@ -958,4 +965,6 @@ template __global__ void lbm_kernel_beta<double>(
         const int domainCells_z,
         const size_t localWorkGroup,
         const bool isDomainPowOfTwo,
-        const bool isLocalPowOfTwo);
+        const bool isLocalPowOfTwo,
+        const bool storeDensities,
+		const bool storeVelocities);

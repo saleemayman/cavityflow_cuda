@@ -113,9 +113,8 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
         CVector<3, int> recvSize(1, subdomainSize[1], subdomainSize[2]);
         CVector<3, int> sendOrigin(1, 0, 0);
         CVector<3, int> recvOrigin(0, 0, 0);
-        CVector<3, int> commDirection(-1, 0, 0);
 
-        CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, commDirection);
+        CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, LEFT);
 
         communication.push_back(comm);
     }
@@ -125,9 +124,8 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
         CVector<3, int> recvSize(1, subdomainSize[1], subdomainSize[2]);
         CVector<3, int> sendOrigin(subdomainSize[0] - 2, 0, 0);
         CVector<3, int> recvOrigin(subdomainSize[0] - 1, 0, 0);
-        CVector<3, int> commDirection(1, 0, 0);
 
-        CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, commDirection);
+        CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, RIGHT);
 
         communication.push_back(comm);
     }
@@ -137,9 +135,8 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
         CVector<3, int> recvSize(subdomainSize[0], 1, subdomainSize[2]);
         CVector<3, int> sendOrigin(0, 1, 0);
         CVector<3, int> recvOrigin(0, 0, 0);
-        CVector<3, int> commDirection(0, -1, 0);
 
-        CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, commDirection);
+        CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, BOTTOM);
 
         communication.push_back(comm);
     }
@@ -149,9 +146,8 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
         CVector<3, int> recvSize(subdomainSize[0], 1, subdomainSize[2]);
         CVector<3, int> sendOrigin(0, subdomainSize[1] - 2, 0);
         CVector<3, int> recvOrigin(0, subdomainSize[1] - 1, 0);
-        CVector<3, int> commDirection(0, 1, 0);
 
-        CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, commDirection);
+        CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, TOP);
 
         communication.push_back(comm);
     }
@@ -161,9 +157,8 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
         CVector<3, int> recvSize(subdomainSize[0], subdomainSize[1], 1);
         CVector<3, int> sendOrigin(0, 0, 1);
         CVector<3, int> recvOrigin(0, 0, 0);
-        CVector<3, int> commDirection(0, 0, -1);
 
-        CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, commDirection);
+        CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, BACK);
 
         communication.push_back(comm);
     }
@@ -173,9 +168,8 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
         CVector<3, int> recvSize(subdomainSize[0], subdomainSize[1], 1);
         CVector<3, int> sendOrigin(0, 0, subdomainSize[2] - 2);
         CVector<3, int> recvOrigin(0, 0, subdomainSize[2] - 1);
-        CVector<3, int> commDirection(0, 0, 1);
 
-        CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, commDirection);
+        CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, FRONT);
 
         communication.push_back(comm);
     }

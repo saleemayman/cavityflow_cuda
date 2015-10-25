@@ -24,9 +24,10 @@
 template <class T>
 CLbmVisualizationVTK<T>::CLbmVisualizationVTK(
 		int id,
+		int visualizationRate,
 		CLbmSolver<T>* solver,
 		std::string filePath) :
-		CLbmVisualization<T>(id, solver),
+		CLbmVisualization<T>(id, visualizationRate, solver),
 		filePath(filePath)
 {
 }
@@ -37,12 +38,12 @@ void CLbmVisualizationVTK<T>::openFile(int iteration)
 	if (!file.is_open())
 	{
 	    std::stringstream fileName;
-	    fileName << filePath << "/visualization_" << iteration << "_" << id << ".vtk";
+	    fileName << filePath << "/visualization_" << id << "_" << iteration << ".vtk";
 	    file.open(fileName.str().c_str(), std::ios::out);
 	} else {
         std::cerr << "----- CLbmVisualizationVTK<T>::openFile() -----" << std::endl;
         std::cerr << "VTK file \"visualization_" << id << "_" << iteration << ".vtk is already open" << std::endl;
-        std::cerr << "EXECUTION WILL BE IMMEDIATELY TERMINATED" << std::endl;
+        std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
         std::cerr << "-----------------------------------------------" << std::endl;
 
         exit (EXIT_FAILURE);
@@ -58,7 +59,7 @@ void CLbmVisualizationVTK<T>::closeFile()
 	} else {
         std::cerr << "----- CLbmVisualizationVTK<T>::closeFile() -----" << std::endl;
         std::cerr << "There is no open VTK file to close" << std::endl;
-        std::cerr << "EXECUTION WILL BE IMMEDIATELY TERMINATED" << std::endl;
+        std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
         std::cerr << "------------------------------------------------" << std::endl;
 
         exit (EXIT_FAILURE);
@@ -76,7 +77,7 @@ void CLbmVisualizationVTK<T>::writeHeader()
 	} else {
         std::cerr << "----- CLbmVisualizationVTK<T>::writeHeader() -----" << std::endl;
         std::cerr << "There is no open VTK file to write header" << std::endl;
-        std::cerr << "EXECUTION WILL BE IMMEDIATELY TERMINATED" << std::endl;
+        std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
         std::cerr << "--------------------------------------------------" << std::endl;
 
         exit (EXIT_FAILURE);
@@ -104,7 +105,7 @@ void CLbmVisualizationVTK<T>::writeDataset()
 	} else {
         std::cerr << "----- CLbmVisualizationVTK<T>::writeDataset() -----" << std::endl;
         std::cerr << "There is no open VTK file to write dataset" << std::endl;
-        std::cerr << "EXECUTION WILL BE IMMEDIATELY TERMINATED" << std::endl;
+        std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
         std::cerr << "---------------------------------------------------" << std::endl;
 
         exit (EXIT_FAILURE);
@@ -128,7 +129,7 @@ void CLbmVisualizationVTK<T>::writeFlags()
 	} else {
         std::cerr << "----- CLbmVisualizationVTK<T>::writeFlags() -----" << std::endl;
         std::cerr << "There is no open VTK file to write flags" << std::endl;
-        std::cerr << "EXECUTION WILL BE IMMEDIATELY TERMINATED" << std::endl;
+        std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
         std::cerr << "-----------------------------------------------  " << std::endl;
 
         exit (EXIT_FAILURE);
@@ -152,7 +153,7 @@ void CLbmVisualizationVTK<T>::writeDensities()
 	} else {
         std::cerr << "----- CLbmVisualizationVTK<T>::writeDensities() -----" << std::endl;
         std::cerr << "There is no open VTK file to write densities" << std::endl;
-        std::cerr << "EXECUTION WILL BE IMMEDIATELY TERMINATED" << std::endl;
+        std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
         std::cerr << "-----------------------------------------------------" << std::endl;
 
         exit (EXIT_FAILURE);
@@ -179,7 +180,7 @@ void CLbmVisualizationVTK<T>::writeVelocities()
 	} else {
         std::cerr << "----- CLbmVisualizationVTK<T>::writeVelocities() -----" << std::endl;
         std::cerr << "There is no open VTK file to write velocities" << std::endl;
-        std::cerr << "EXECUTION WILL BE IMMEDIATELY TERMINATED" << std::endl;
+        std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
         std::cerr << "------------------------------------------------------" << std::endl;
 
         exit (EXIT_FAILURE);
@@ -189,14 +190,18 @@ void CLbmVisualizationVTK<T>::writeVelocities()
 template <class T>
 void CLbmVisualizationVTK<T>::render(int iteration)
 {
-	openFile(iteration);
-	writeHeader();
-	writeDataset();
-	file << "CELL_DATA " << solver->getDomain()->getNumOfCells() << "\n";
-	writeFlags();
-	writeDensities();
-	writeVelocities();
-	closeFile();
+	if(iteration % visualizationRate == 0)
+	{
+		openFile(iteration);
+		writeHeader();
+		writeDataset();
+		file << "CELL_DATA " << solver->getDomain()->getNumOfCells() << "\n";
+		writeFlags();
+		writeDensities();
+		writeVelocities();
+		closeFile();
+
+	}
 }
 
 template class CLbmVisualizationVTK<double>;

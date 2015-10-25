@@ -22,20 +22,35 @@
 
 #include "CLbmVisualization.hpp"
 
+#include <fstream>
+#include <sstream>
+
+#include <netcdf.h>
+// #include <netcdf_par.h>
+
 template <typename T>
 class CLbmVisualizationNetCDF : public virtual CLbmVisualization<T>
 {
 private:
     using CLbmVisualization<T>::id;
+    using CLbmVisualization<T>::visualizationRate;
+    using CLbmVisualization<T>::flags;
+    using CLbmVisualization<T>::densities;
+    using CLbmVisualization<T>::velocities;
     using CLbmVisualization<T>::solver;
 
 	std::string filePath;
+	int fileId;
+	int dimVarIds[3];
+	int flagsVarId, densitiesVarId, velocitiesVarId;
 
 	void openFile(int iteration);
     void closeFile();
+	void defineData();
+	void writeData();
 
 public:
-	CLbmVisualizationNetCDF(int id, CLbmSolver<T>* solver, std::string filePath);
+	CLbmVisualizationNetCDF(int id, int visualizationRate, CLbmSolver<T>* solver, std::string filePath);
 
 	void render(int iteration);
 };

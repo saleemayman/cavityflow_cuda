@@ -14,17 +14,16 @@ CCINCLUDES		+=	-I$(CUDAINSTALLPATH)/include
 CXXINCLUDES		+=	-I$(CUDAINSTALLPATH)/include
 CUDAINCLUDES	+=	-I$(CUDAINSTALLPATH)/include
 
-CCLIB			+=	-lrt \
-					-ltinyxml2
-CXXLIB			+=	-lrt \
-					-ltinyxml2
+CCLIB			+=	-lnetcdf \
+					-lrt
+CXXLIB			+=	-lnetcdf \
+					-lrt
 # libcuda:      required for access to driver api
 # libcudart:    required for execution of a cuda program
 # libcudadevrt: required for dynamic parallelism which is again required for
 #               valid linking of multiple cuda files
 CUDALIB			+=	-lcudart \
-					-lcudadevrt \
-					-ltinyxml2
+					-lcudadevrt
 
 EXECUTABLE		:=	lbm
 
@@ -36,7 +35,8 @@ EXECUTABLE		:=	lbm
 CCFILES			:=	
 
 # c/c++ source files (compiled with $(CXX))
-CXXFILES		:=	src/libmath/CMath.cpp \
+CXXFILES		:=	external/tinyxml2/tinyxml2.cpp \
+					src/libmath/CMath.cpp \
 					src/libmath/CVector2.cpp \
 					src/libmath/CVector3.cpp \
 					src/libmath/CVector4.cpp \
@@ -92,12 +92,13 @@ NVCCLINKERFLAGS	+=	-dlink
 # set up virtual path to enable subfolders for source files
 ################################################################################
 
-VPATH 			:=	src/ \
+VPATH 			:=	external/tinyxml2/ \
 					src/cpukernels/ \
 					src/gpukernels/ \
 					src/libmath/ \
 					src/libtools/ \
-					src/libvis/
+					src/libvis/ \
+					src/
 
 ################################################################################
 # set up object files

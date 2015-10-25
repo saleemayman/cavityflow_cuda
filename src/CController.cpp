@@ -22,10 +22,11 @@
 #include <fstream>
 #include <sstream>
 #include <typeinfo>
+#include <sys/time.h>
 
 #include <mpi.h>
 
-#include "libtools/CStopwatch.hpp"
+#include "libvis/CLbmVisualizationNetCDF.hpp"
 #include "libvis/CLbmVisualizationVTK.hpp"
 
 template <class T>
@@ -77,8 +78,8 @@ CController<T>::CController(
             this->configuration->doLogging);
     */
 
-	if (this->configuration->doVisualization)
-        visualization = new CLbmVisualizationVTK<T>(id, getSolver(), this->configuration->visualizationOutputDir);
+    if (this->configuration->doVisualization)
+        visualization = new CLbmVisualizationVTK<T>(id, this->configuration->visualizationRate, getSolver(), this->configuration->visualizationOutputDir);
 }
 
 template <class T>
@@ -136,134 +137,148 @@ void CController<T>::decomposeSubdomainCPUAndGPU()
 template <class T>
 void CController<T>::syncAlpha()
 {
-    /*
-     * TODO
-     * Rework this function.
-     */
-#if DEBUG
-    // std::cout << "--> Sync alpha" << std::endl;
-#endif
-    // TODO: OPTIMIZATION: communication of different neighbors can be done in Non-blocking way.
-    int i = 0;
-    typename std::vector<CComm<T> >::iterator it = communication.begin();
-    for (; it != communication.end(); it++, i++)
+    CVector<3, int> sendSize, recvSize;
+    CVector<3, int> sendOrigin, recvOrigin;
+    int dstId;
+    MPI_Request request[2];
+    MPI_Status status[2];
+    int sendBufferSize, recvBufferSize;
+    T* sendBuffer;
+    T* recvBuffer;
+
+    if (configuration->doLogging)
     {
-        CVector<3, int> send_size = it->getSendSize();
-        CVector<3, int> recv_size = it->getRecvSize();
-        // CVector<3, int> send_origin = (*it)->getSendOrigin();
-        // CVector<3, int> recv_origin = (*it)->getRecvOrigin();
-        int dst_rank = it->getDstId();
-#if DEBUG
-        // std::cout << "ALPHA RANK: " << dst_rank << std::endl;
-#endif
+        std::cout << "----- CController<T>::syncAlpha() -----" << std::endl;
+        std::cout << "id:                  " << id << std::endl;
+        std::cout << "---------------------------------------" << std::endl;
+    }
 
-        // send buffer
-        int send_buffer_size = send_size.elements() * NUM_LATTICE_VECTORS;
-        int recv_buffer_size = recv_size.elements() * NUM_LATTICE_VECTORS;
-        T* send_buffer = new T[send_buffer_size];
-        T* recv_buffer = new T[recv_buffer_size];
+    for (typename std::vector<CComm<T> >::iterator it = communication.begin(); it != communication.end(); it++)
+    {
+        sendSize = it->getSendSize();
+        recvSize = it->getRecvSize();
+        sendOrigin = it->getSendOrigin();
+        recvOrigin = it->getRecvOrigin();
+        dstId = it->getDstId();
+        sendBufferSize = NUM_LATTICE_VECTORS * sendSize.elements();
+        recvBufferSize = NUM_LATTICE_VECTORS * recvSize.elements();
+        sendBuffer = new T[sendBufferSize];
+        recvBuffer = new T[recvBufferSize];
 
-        //printf("syncAlph--> rank: %i, send_size: %li, recv_size: %li \n", _UID, send_size.elements(), recv_size.elements());
-
-        MPI_Request req[2];
-        MPI_Status status[2];
-
-        // Download data from device to host
-        solverGPU->getDensityDistributions(Direction(i), send_buffer);
-        //cLbmPtr->wait();
-        int my_rank, num_procs;
-        MPI_Comm_rank(MPI_COMM_WORLD, &my_rank); /// Get current process id
-        MPI_Comm_size(MPI_COMM_WORLD, &num_procs); /// get number of processes
-
-        if (typeid(T) == typeid(float)) {
-            MPI_Isend(send_buffer, send_buffer_size, MPI_FLOAT, dst_rank,
-                    MPI_TAG_ALPHA_SYNC, MPI_COMM_WORLD, &req[0]);
-            MPI_Irecv(recv_buffer, recv_buffer_size, MPI_FLOAT, dst_rank,
-                    MPI_TAG_ALPHA_SYNC, MPI_COMM_WORLD, &req[1]);
-        } else if (typeid(T) == typeid(double)) {
-            MPI_Isend(send_buffer, send_buffer_size, MPI_DOUBLE, dst_rank,
-                    MPI_TAG_ALPHA_SYNC, MPI_COMM_WORLD, &req[0]);
-            MPI_Irecv(recv_buffer, recv_buffer_size, MPI_DOUBLE, dst_rank,
-                    MPI_TAG_ALPHA_SYNC, MPI_COMM_WORLD, &req[1]);
-        } else {
-            throw "Type id of MPI send/receive buffer is unknown!";
+        if (configuration->doLogging)
+        {
+            std::cout << "destination rank:    " << dstId << std::endl;
+            std::cout << "send origin:         " << sendOrigin << std::endl;
+            std::cout << "receive origin:      " << recvOrigin << std::endl;
+            std::cout << "send buffer size:    " << ((T)sendBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "receive buffer size: " << ((T)recvBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "---------------------------------------" << std::endl;
         }
-        MPI_Waitall(2, req, status);
 
-        solverGPU->setDensityDistributions(Direction(i), recv_buffer);
-        //cLbmPtr->wait();
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffer);
 
-        delete[] send_buffer;
-        delete[] recv_buffer;
+        MPI_Isend(
+                sendBuffer,
+                sendBufferSize,
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                dstId,
+                MPI_TAG_ALPHA_SYNC,
+                MPI_COMM_WORLD,
+                &request[0]);
+        MPI_Irecv(
+                recvBuffer,
+                recvBufferSize,
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                dstId,
+                MPI_TAG_ALPHA_SYNC,
+                MPI_COMM_WORLD,
+                &request[1]);
+        MPI_Waitall(2, request, status);
+
+        if (configuration->doLogging)
+        {
+            std::cout << "Alpha synchronization successful." << std::endl;
+            std::cout << "---------------------------------------" << std::endl;
+        }
+
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffer);
+
+        delete[] recvBuffer;
+        delete[] sendBuffer;
     }
 }
 
 template <class T>
 void CController<T>::syncBeta()
 {
-    /*
-     * TODO
-     * Rework this function.
-     */
-#if DEBUG
-    // std::cout << "--> Sync beta" << std::endl;
-#endif
-    int i = 0;
-    // TODO: OPTIMIZATION: communication of different neighbors can be done in Non-blocking form.
-    typename std::vector<CComm<T> >::iterator it = communication.begin();
-    for (; it != communication.end(); it++, i++)
+    CVector<3, int> sendSize, recvSize;
+    CVector<3, int> sendOrigin, recvOrigin;
+    int dstId;
+    MPI_Request request[2];
+    MPI_Status status[2];
+    int sendBufferSize, recvBufferSize;
+    T* sendBuffer;
+    T* recvBuffer;
+
+    if (configuration->doLogging)
     {
-        // the send and receive values in beta sync is the opposite values of
-        // Comm instance related to current communication, since the ghost layer data
-        // will be sent back to their origin
-        CVector<3, int> send_size = it->getRecvSize();
-        CVector<3, int> recv_size = it->getSendSize();
-        // CVector<3, int> send_origin = (*it)->getRecvOrigin();
-        // CVector<3, int> recv_origin = (*it)->getSendOrigin();
-        // CVector<3, int> normal = (*it)->getCommDirection();
-        int dst_rank = it->getDstId();
-#if DEBUG
-        // std::cout << "BETA RANK: " << dst_rank << std::endl;
-#endif
-        // send buffer
-        int send_buffer_size = send_size.elements() * NUM_LATTICE_VECTORS;
-        int recv_buffer_size = recv_size.elements() * NUM_LATTICE_VECTORS;
-        T* send_buffer = new T[send_buffer_size];
-        T* recv_buffer = new T[recv_buffer_size];
+        std::cout << "----- CController<T>::syncBeta() -----" << std::endl;
+        std::cout << "id:                  " << id << std::endl;
+        std::cout << "--------------------------------------" << std::endl;
+    }
 
-        //printf("syncBeta--> rank: %i, send_size: %li, recv_size: %li \n", _UID, send_size.elements(), recv_size.elements());
+    for (typename std::vector<CComm<T> >::iterator it = communication.begin(); it != communication.end(); it++)
+    {
+        sendSize = it->getRecvSize();
+        recvSize = it->getSendSize();
+        sendOrigin = it->getRecvOrigin();
+        recvOrigin = it->getSendOrigin();
+        dstId = it->getDstId();
+        sendBufferSize = NUM_LATTICE_VECTORS * sendSize.elements();
+        recvBufferSize = NUM_LATTICE_VECTORS * recvSize.elements();
+        sendBuffer = new T[sendBufferSize];
+        recvBuffer = new T[recvBufferSize];
 
-        MPI_Request req[2];
-        MPI_Status status[2];
-
-        // Download data from device to host
-        solverGPU->getDensityDistributions(Direction(i), send_buffer);
-        //cLbmPtr->wait();
-        int my_rank, num_procs;
-        MPI_Comm_rank(MPI_COMM_WORLD, &my_rank); /// Get current process id
-        MPI_Comm_size(MPI_COMM_WORLD, &num_procs); /// get number of processes
-
-        if (typeid(T) == typeid(float)) {
-            MPI_Isend(send_buffer, send_buffer_size, MPI_FLOAT, dst_rank,
-                    MPI_TAG_BETA_SYNC, MPI_COMM_WORLD, &req[0]);
-            MPI_Irecv(recv_buffer, recv_buffer_size, MPI_FLOAT, dst_rank,
-                    MPI_TAG_BETA_SYNC, MPI_COMM_WORLD, &req[1]);
-        } else if (typeid(T) == typeid(double)) {
-            MPI_Isend(send_buffer, send_buffer_size, MPI_DOUBLE, dst_rank,
-                    MPI_TAG_BETA_SYNC, MPI_COMM_WORLD, &req[0]);
-            MPI_Irecv(recv_buffer, recv_buffer_size, MPI_DOUBLE, dst_rank,
-                    MPI_TAG_BETA_SYNC, MPI_COMM_WORLD, &req[1]);
-        } else {
-            throw "Type id of MPI send/receive buffer is unknown!";
+        if (configuration->doLogging)
+        {
+            std::cout << "destination rank:    " << dstId << std::endl;
+            std::cout << "send origin:         " << sendOrigin << std::endl;
+            std::cout << "receive origin:      " << recvOrigin << std::endl;
+            std::cout << "send buffer size:    " << ((T)sendBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "receive buffer size: " << ((T)recvBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "--------------------------------------" << std::endl;
         }
-        MPI_Waitall(2, req, status);
 
-        // TODO: OPTIMIZATION: you need to wait only for receiving to execute following command
-        solverGPU->setDensityDistributions(Direction(i), recv_buffer);
-        //cLbmPtr->wait();
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffer);
 
-        delete[] send_buffer;
-        delete[] recv_buffer;
+        MPI_Isend(
+                sendBuffer,
+                sendBufferSize,
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                dstId,
+                MPI_TAG_BETA_SYNC,
+                MPI_COMM_WORLD,
+                &request[0]);
+        MPI_Irecv(
+                recvBuffer,
+                recvBufferSize,
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                dstId,
+                MPI_TAG_BETA_SYNC,
+                MPI_COMM_WORLD,
+                &request[1]);
+        MPI_Waitall(2, request, status);
+
+        if (configuration->doLogging)
+        {
+            std::cout << "Beta synchronization successful." << std::endl;
+            std::cout << "--------------------------------------" << std::endl;
+        }
+
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, it->getDirection(), recvBuffer);
+
+        delete[] recvBuffer;
+        delete[] sendBuffer;
     }
 }
 
@@ -272,10 +287,10 @@ void CController<T>::computeNextStep()
 {
     if (simulationStepCounter & 1) {
         solverGPU->simulationStepBeta();
-        // syncBeta();
+        syncBeta();
     } else {
         solverGPU->simulationStepAlpha();
-        // syncAlpha();
+        syncAlpha();
     }
     simulationStepCounter++;
 }
@@ -319,12 +334,20 @@ void CController<T>::setDrivenCavitySzenario()
  * this class.
  */
 template <class T>
-int CController<T>::run()
+void CController<T>::run()
 {
     int usedDataSize;
-    CStopwatch cStopwatch;
+    timeval start, end;
+    T elapsed;
 
     usedDataSize = 0;
+
+    if (configuration->doLogging)
+    {
+        std::cout << "----- CController<T>::run() -----" << std::endl;
+        std::cout << "id:     " << id << std::endl;
+        std::cout << "---------------------------------" << std::endl;
+    }
 
     if (configuration->doBenchmark)
     {
@@ -346,23 +369,24 @@ int CController<T>::run()
     }
 
     if (configuration->doBenchmark)
-        cStopwatch.start();
+        gettimeofday(&start, NULL);
 
     for (int i = 0; i < configuration->loops || configuration->loops < 0; i++) {
+        if (configuration->doLogging)
+            std::cout << "Do iteration " << i << ":" << std::endl;
+
         computeNextStep();
 
         if (configuration->doVisualization)
             visualization->render(i);
     }
 
-    if (configuration->doVisualization)
-        visualization->render(0);
-
     if (configuration->doBenchmark)
     {
-        cStopwatch.stop();
+        gettimeofday(&end, NULL);
+        elapsed = (T)(end.tv_sec - start.tv_sec) + (T)(end.tv_usec - start.tv_usec) * (T)0.000001;
 
-        T iterationsPerSecond = (T)configuration->loops / (T)cStopwatch.time;
+        T iterationsPerSecond = (T)(configuration->loops) / elapsed;
         T glups = iterationsPerSecond * (T)configuration->domainSize.elements() * (T)0.000000001;
         T gbandwidth = glups * (T)usedDataSize;
 
@@ -371,20 +395,26 @@ int CController<T>::run()
         std::ofstream benchmarkFile(benchmarkFileName.str().c_str(), std::ios::out);
         if (benchmarkFile.is_open())
         {
-            benchmarkFile << "loops :          " << configuration->loops << std::endl;
-            benchmarkFile << "time:            " << cStopwatch.time << "s" << std::endl;
+            benchmarkFile << "loops:           " << configuration->loops << std::endl;
+            benchmarkFile << "time:            " << elapsed << "s" << std::endl;
             benchmarkFile << "iterations:      " << iterationsPerSecond << "s^-1" << std::endl;
             benchmarkFile << "lattice updates: " << glups << "GLUPS" << std::endl;
             benchmarkFile << "bandwidth:       " << gbandwidth << "GB/s" << std::endl;
             benchmarkFile.close();
         } else {
-            /*
-             * TODO
-             */
+            std::cerr << "----- CController<T>::run() -----" << std::endl;
+            std::cerr << "There is no open file to write benchmark results." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "---------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
         }
     }
 
-    return EXIT_SUCCESS;
+    if (configuration->doLogging)
+    {
+        std::cout << "---------------------------------" << std::endl;
+    }
 }
 
 template <class T>

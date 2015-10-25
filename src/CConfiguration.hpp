@@ -26,7 +26,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-#include <tinyxml2.h>
+#include "../external/tinyxml2/tinyxml2.h"
 
 #include "libmath/CVector.hpp"
 
@@ -83,6 +83,7 @@ public:
     std::string benchmarkOutputDir;
     std::string validationOutputDir;
     std::string visualizationOutputDir;
+    int visualizationRate;
 
     /*
      * Device configuration data

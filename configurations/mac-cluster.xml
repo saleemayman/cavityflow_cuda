@@ -13,7 +13,7 @@
       <z>0</z>
       <w>1</w>
     </cavity-velocity>
-    <viscosity>0.001308</viscosity>
+    <viscosity>130.8</viscosity>
     <tau>0.953575</tau>
     <mass-exchange-factor>1.0</mass-exchange-factor>
     <max-gravitation>0.0001</max-gravitation>
@@ -22,24 +22,24 @@
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-    <!--   <x>92</x>   -->
-    <!--   <y>512</y>  -->
-    <!--   <z>256</z>  -->
-    <x>64</x>
-    <y>16</y>
-    <z>8</z>
+      <!-- <x>92</x>   -->
+      <!-- <y>512</y>  -->
+      <!-- <z>256</z>  -->
+      <x>1024</x>
+      <y>512</y>
+      <z>256</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
-      <x>0.8</x>
-      <y>0.2</y>
-      <z>0.1</z>
+      <x>4.0</x>
+      <y>2.0</y>
+      <z>1.0</z>
     </domian-length>
     <!-- number of subdomains in x, y and z direction -->
     <subdomain-num>
-      <x>2</x>
+      <x>4</x>
       <y>2</y>
-      <z>2</z>
+      <z>1</z>
     </subdomain-num>
     <!-- ratio in x, y and z direction of subdomain cells which are processed by the CPU ([0.0, 1.0]) (unit: scalar factor) -->
     <cpu-subdomain-ratio>
@@ -50,20 +50,29 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>0</loops>
+    <loops>32768</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>-1.0</timestep>
     <!--  -->
-    <do-benchmark>1</do-benchmark>
-    <benchmark-output-dir>benchmark</benchmark-output-dir>
+    <benchmark>
+      <do>1</do>
+      <output-dir>benchmark</output-dir>
+    </benchmark>
     <!--  -->
-    <do-logging>1</do-logging>
+    <logging>
+      <do>0</do>
+    </logging>
     <!--  -->
-    <do-validation>0</do-validation>
-    <validation-output-dir>validation</validation-output-dir>
+    <validation>
+      <do>0</do>
+      <output-dir>validation</output-dir>
+    </validation>
     <!--  -->
-    <do-visualization>1</do-visualization>
-    <visualization-output-dir>visualization</visualization-output-dir>
+    <visualization>
+      <do>0</do>
+      <rate>4096</rate>
+      <output-dir>visualization</output-dir>
+    </visualization>
   </simulation>
   <!-- configuration data related to computing device (e.g. GPU) -->
   <device>
@@ -72,19 +81,19 @@
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_init() -->
       <init-grid-configuration>
         <x>32</x>
-        <y>1</y>
+        <y>16</y>
         <z>1</z>
       </init-grid-configuration>
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_alpha() -->
       <alpha-grid-configuration>
         <x>32</x>
-        <y>1</y>
+        <y>8</y>
         <z>1</z>
       </alpha-grid-configuration>
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_beta() -->
       <beta-grid-configuration>
         <x>32</x>
-        <y>1</y>
+        <y>8</y>
         <z>1</z>
       </beta-grid-configuration>
     </grid-configuration>
