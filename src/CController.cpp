@@ -83,6 +83,7 @@ CController<T>::CController(
         		id,
         		this->configuration->visualizationRate,
         		getSolver(),
+        		this->configuration->numOfSubdomains,
         		this->configuration->visualizationOutputDir);
 #else
         visualization = new CLbmVisualizationVTK<T>(
@@ -96,7 +97,7 @@ CController<T>::CController(
 template <class T>
 CController<T>::~CController()
 {
-    if (this->configuration->doVisualization)
+    if (configuration->doVisualization)
         delete visualization;
 
     delete solverCPU;
@@ -118,7 +119,7 @@ CDomain<T> CController<T>::decomposeSubdomain()
 
 	CDomain<T> domainGPU(id, sizeGPU, originGPU, lengthGPU);
 
-    if (this->configuration->doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "----- CController<T>::decomposeSubdomain() -----" << std::endl;
         std::cout << "id:                   " << id << std::endl;

@@ -25,10 +25,10 @@
 #include <fstream>
 #include <sstream>
 
-#include <netcdf.h>
 #ifdef PAR_NETCDF
 #include <netcdf_par.h>
 #endif
+#include <netcdf.h>
 
 template <typename T>
 class CLbmVisualizationNetCDF : public virtual CLbmVisualization<T>
@@ -41,10 +41,15 @@ private:
     using CLbmVisualization<T>::velocities;
     using CLbmVisualization<T>::solver;
 
+#ifdef PAR_NETCDF
+    CVector<3, int> numOfSubdomains;
+#endif
 	std::string filePath;
+
 	int fileId;
 	int dimVarIds[3];
-	int flagsVarId, densitiesVarId, velocitiesVarId;
+	int flagsVarId, densitiesVarId;
+	int velocitiesVarId[3];
 
 	void openFile(int iteration);
     void closeFile();
@@ -52,7 +57,11 @@ private:
 	void writeData();
 
 public:
+#ifdef PAR_NETCDF
+	CLbmVisualizationNetCDF(int id, int visualizationRate, CLbmSolver<T>* solver, CVector<3, int> numOfSubdomains, std::string filePath);
+#else
 	CLbmVisualizationNetCDF(int id, int visualizationRate, CLbmSolver<T>* solver, std::string filePath);
+#endif
 
 	void render(int iteration);
 };
