@@ -42,15 +42,18 @@ void CLbmVisualizationNetCDF<T>::openFile(int iteration)
 	{
 		int error;
 	    std::stringstream fileName;
+#ifdef PAR_NETCDF
 	    fileName << filePath << "/visualization_" << iteration << ".nc";
+	    error = nc_create_par(fileName.str().c_str(), NC_NETCDF4 | NC_MPIIO, MPI_COMM_WORLD, MPI_INFO_NULL, &fileId);
+#else
+	    fileName << filePath << "/visualization_" << id << "_" << iteration << ".nc";
 	    error = nc_create(fileName.str().c_str(), NC_CLOBBER, &fileId);
-	    // error = nc_create_par(fileName.str().c_str(), NC_NETCDF4 | NC_MPIIO, MPI_COMM_WORLD, MPI_INFO_NULL, &fileId);
+#endif
 
 	    if (error)
 	    {
 	        std::cerr << "----- CLbmVisualizationNetCDF<T>::openFile() -----" << std::endl;
-	        std::cerr << "An error occurred while opening parallel netCDF file \"" << fileName.str() << "\"" << std::endl;
-	        std::cerr << nc_strerror(error) << std::endl;
+	        std::cerr << "An error occurred while opening parallel netCDF file \"" << fileName.str() << "\"" << std::endl;std::cerr << nc_strerror(error) << std::endl;
 	        std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
 	        std::cerr << "--------------------------------------------------" << std::endl;
 
@@ -58,7 +61,11 @@ void CLbmVisualizationNetCDF<T>::openFile(int iteration)
 	    }
 	} else {
         std::cerr << "----- CLbmVisualizationNetCDF<T>::openFile() -----" << std::endl;
+#ifdef PAR_NETCDF
+        std::cerr << "netCDF file \"visualization_" << iteration << ".nc is already open" << std::endl;
+#else
         std::cerr << "netCDF file \"visualization_" << id << "_" << iteration << ".nc is already open" << std::endl;
+#endif
         std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
         std::cerr << "--------------------------------------------------" << std::endl;
 
@@ -185,8 +192,12 @@ void CLbmVisualizationNetCDF<T>::writeData()
 	        exit (EXIT_FAILURE);
 		}
 
-		// nc_var_par_access(fileId, flagsVarId, NC_COLLECTIVE);
+#ifdef PAR_NETCDF
+		nc_var_par_access(fileId, flagsVarId, NC_COLLECTIVE);
+#else
 		nc_put_var_int(fileId, flagsVarId, (int*)flags);
+#endif
+
 	} else {
         std::cerr << "----- CLbmVisualizationNetCDF<T>::writeData() -----" << std::endl;
         std::cerr << "There is no open NetCDF file to write dataset" << std::endl;

@@ -42,15 +42,14 @@ private:
     int id;
     CConfiguration<T>* configuration;
     CDomain<T> domain;
-    CDomain<T>* domainGPU;
-    // CLbmSolverCPU<T> *solverCPU;
+    CLbmSolverCPU<T> *solverCPU;
     CLbmSolverGPU<T> *solverGPU;
     CLbmVisualization<T>* visualization;
     std::vector<Flag> boundaryConditions;
     std::vector<CComm<T> > communication;
     int simulationStepCounter;
 
-	void decomposeSubdomainCPUAndGPU();
+    CDomain<T> decomposeSubdomain();
     void computeNextStep();
     void syncAlpha();
     void syncBeta();

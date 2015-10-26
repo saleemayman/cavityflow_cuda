@@ -35,10 +35,10 @@ NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 ################################################################################
 
 CCFLAGS				:=	-O3 \
-#						-D DEBUG \
+						-D PAR_NETCDF \
 #						-std=c0x
 CXXFLAGS			:=	-O3 \
-#						-D DEBUG \
+						-D PAR_NETCDF \
 #						-std=c++0x
 
 # arch: specifies the compatibility from source code to PTX stage. Can be a
@@ -50,7 +50,7 @@ CXXFLAGS			:=	-O3 \
 #       which can then be linked together.
 NVCCFLAGS			:=	-O3 \
 						-gencode arch=compute_$(COMPUTE_CAPABILITY),code=sm_$(COMPUTE_CAPABILITY) \
-#						-D DEBUG \
+						-D PAR_NETCDF \
 #						-Xcompiler "-std=c++0x"
 
 ################################################################################

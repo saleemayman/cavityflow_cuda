@@ -43,12 +43,13 @@ CController<T>::CController(
         communication(communication),
         simulationStepCounter(0)
 {
-	decomposeSubdomainCPUAndGPU();
+	CDomain<T> domainGPU = decomposeSubdomain();
 
-    solverGPU = new CLbmSolverGPU<T>(
+	solverGPU = new CLbmSolverGPU<T>(
             this->id,
             this->configuration->threadsPerBlock,
-            *domainGPU,
+            // &domainGPU,
+            this->domain,
             this->boundaryConditions,
             this->configuration->timestep,
             this->configuration->gravitation,
@@ -60,7 +61,6 @@ CController<T>::CController(
             this->configuration->doValidation || this->configuration->doVisualization,
             this->configuration->doValidation || this->configuration->doVisualization,
             this->configuration->doLogging);
-    /*
     solverCPU = new CLbmSolverCPU<T>(
             this->id,
             this->domain,
@@ -76,10 +76,21 @@ CController<T>::CController(
             this->configuration->doValidation || this->configuration->doVisualization,
             this->configuration->doValidation || this->configuration->doVisualization,
             this->configuration->doLogging);
-    */
 
     if (this->configuration->doVisualization)
-        visualization = new CLbmVisualizationVTK<T>(id, this->configuration->visualizationRate, getSolver(), this->configuration->visualizationOutputDir);
+#ifdef PAR_NETCDF
+        visualization = new CLbmVisualizationNetCDF<T>(
+        		id,
+        		this->configuration->visualizationRate,
+        		getSolver(),
+        		this->configuration->visualizationOutputDir);
+#else
+        visualization = new CLbmVisualizationVTK<T>(
+        		id,
+        		this->configuration->visualizationRate,
+        		getSolver(),
+        		this->configuration->visualizationOutputDir);
+#endif
 }
 
 template <class T>
@@ -88,49 +99,41 @@ CController<T>::~CController()
     if (this->configuration->doVisualization)
         delete visualization;
 
-    delete domainGPU;
-    // delete solverCPU;
+    delete solverCPU;
     delete solverGPU;
 }
 
 template<class T>
-void CController<T>::decomposeSubdomainCPUAndGPU()
+CDomain<T> CController<T>::decomposeSubdomain()
 {
-	/*
-	 * Divide the sub-domain between the GPU and CPU
-	 */
-	CVector<3, int> subdomainSize = this->domain.getSize();
-	CVector<3, int> subdomainOrigin = this->domain.getOrigin();
-	CVector<3, T> subdomainLength = this->domain.getLength();
+	CVector<3, int> sizeGPU(
+			configuration->CPUSubdomainRatio[0] * domain.getSize()[0],
+			configuration->CPUSubdomainRatio[1] * domain.getSize()[1],
+			configuration->CPUSubdomainRatio[2] * domain.getSize()[2]);
+	CVector<3, int> originGPU(domain.getOrigin() + ((domain.getSize() - sizeGPU) / 2));
+	CVector<3, T> lengthGPU(
+			domain.getLength()[0] * (T)sizeGPU[0] / (T)domain.getSize()[0],
+			domain.getLength()[1] * (T)sizeGPU[1] / (T)domain.getSize()[1],
+			domain.getLength()[2] * (T)sizeGPU[2] / (T)domain.getSize()[2]);
 
-	CVector<3, int> subdomainSizeGPU(
-			subdomainSize[0] * this->configuration->CPUSubdomainRatio[0],
-			subdomainSize[1] * this->configuration->CPUSubdomainRatio[1],
-			subdomainSize[2] * this->configuration->CPUSubdomainRatio[2]);
-
-	CVector<3, int> subdomainOriginGPU(subdomainOrigin[0], subdomainOrigin[1], subdomainOrigin[2]);
-
-	CVector<3, T> subdomainLengthGPU(
-			subdomainLength[0] * this->configuration->CPUSubdomainRatio[0],
-			subdomainLength[1] * this->configuration->CPUSubdomainRatio[1],
-			subdomainLength[2] * this->configuration->CPUSubdomainRatio[2]);
-
-	domainGPU = new CDomain<T>(this->id, subdomainSizeGPU, subdomainOriginGPU, subdomainLengthGPU);
+	CDomain<T> domainGPU(id, sizeGPU, originGPU, lengthGPU);
 
     if (this->configuration->doLogging)
     {
-        std::cout << "----- CController<T>::decomposeSubdomainCPUAndGPU() -----" << std::endl;
-        std::cout << "id:                     " << this->id << std::endl;
+        std::cout << "----- CController<T>::decomposeSubdomain() -----" << std::endl;
+        std::cout << "id:                   " << id << std::endl;
         std::cout << "---------------------------------------------------------" << std::endl;
-        std::cout << "GPU sub-domain size:            " << this->domainGPU->getSize() << std::endl;
-        std::cout << "GPU sub-domain length:          " << this->domainGPU->getLength() << std::endl;
-        std::cout << "GPU sub-domain origin:          " << this->domainGPU->getOrigin() << std::endl;
+        std::cout << "GPU subdomain size:   " << domainGPU.getSize() << std::endl;
+        std::cout << "GPU subdomain length: " << domainGPU.getLength() << std::endl;
+        std::cout << "GPU subdomain origin: " << domainGPU.getOrigin() << std::endl;
         std::cout << "---------------------------------------------------------" << std::endl;
-        std::cout << "CPU sub-domain size:            " << this->domain.getSize() << std::endl;
-        std::cout << "CPU sub-domain length:          " << this->domain.getLength() << std::endl;
-        std::cout << "CPU sub-domain origin:          " << this->domain.getOrigin() << std::endl;
+        std::cout << "CPU subdomain size:   " << domain.getSize() << std::endl;
+        std::cout << "CPU subdomain length: " << domain.getLength() << std::endl;
+        std::cout << "CPU subdomain origin: " << domain.getOrigin() << std::endl;
+        std::cout << "---------------------------------------------------------" << std::endl;
     }
 
+	return domainGPU;
 }
 
 
@@ -429,6 +432,7 @@ CDomain<T>* CController<T>::getDomain() {
 
 template <class T>
 CLbmSolver<T>* CController<T>::getSolver() {
+    // return solverGPU;
     return solverGPU;
 }
 

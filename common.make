@@ -36,6 +36,7 @@ CCFILES			:=
 
 # c/c++ source files (compiled with $(CXX))
 CXXFILES		:=	external/tinyxml2/tinyxml2.cpp \
+					src/cpukernels/CLbmInitCPU.cpp \
 					src/libmath/CMath.cpp \
 					src/libmath/CVector2.cpp \
 					src/libmath/CVector3.cpp \
@@ -48,16 +49,15 @@ CXXFILES		:=	external/tinyxml2/tinyxml2.cpp \
 					src/CDomain.cpp \
 					src/CManager.cpp \
 					src/CLbmSolver.cpp \
-					src/cpukernels/CLbmInitCPU.cpp \
 					src/CLbmSolverCPU.cpp \
 					src/main.cpp
 
 # cuda source files (compiled with $(NVCC))
-CUDAFILES		:=	src/CLbmSolverGPU.cu \
-					src/gpukernels/copy_buffer_rect.cu \
+CUDAFILES		:=	src/gpukernels/copy_buffer_rect.cu \
 					src/gpukernels/lbm_alpha.cu \
 					src/gpukernels/lbm_beta.cu \
-					src/gpukernels/lbm_init.cu
+					src/gpukernels/lbm_init.cu \
+					src/CLbmSolverGPU.cu
 
 ################################################################################
 # compiler arguments and flags
