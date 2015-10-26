@@ -4,16 +4,15 @@
 
 CUDAINSTALLPATH		:=	/usr/local/cuda
 
-CCLIBDIR			:= 
-CXXLIBDIR			:= 
+CCLIBDIR			:= -L/opt/netcdf/4.3.3.1/lib
+CXXLIBDIR			:= -L/opt/netcdf/4.3.3.1/lib
 CUDALIBDIR			:=	
 
-CCINCLUDES			:=	-I/usr/include \
-						-I/usr/lib/openmpi/include
-CXXINCLUDES			:=	-I/usr/include \
-						-I/usr/lib/openmpi/include
-CUDAINCLUDES		:=	-I/usr/include \
-						-I/usr/lib/openmpi/include
+CCINCLUDES			:=	-I/usr/lib/openmpi/include \
+						-I/opt/netcdf/4.3.3.1/include
+CXXINCLUDES			:=	-I/usr/lib/openmpi/include \
+						-I/opt/netcdf/4.3.3.1/include
+CUDAINCLUDES		:=	
 
 CCLIB				:=	
 CXXLIB				:=	
@@ -36,10 +35,10 @@ NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 ################################################################################
 
 CCFLAGS				:=	-O3 \
-#						-D DEBUG \
+						-D PAR_NETCDF \
 #						-std=c11
 CXXFLAGS			:=	-O3 \
-#						-D DEBUG \
+						-D PAR_NETCDF \
 #						-std=c++11
 
 # arch: specifies the compatibility from source code to PTX stage. Can be a
@@ -51,7 +50,7 @@ CXXFLAGS			:=	-O3 \
 #       which can then be linked together.
 NVCCFLAGS			:=	-O3 \
 						-gencode arch=compute_$(COMPUTE_CAPABILITY),code=sm_$(COMPUTE_CAPABILITY) \
-#						-D DEBUG \
+						-D PAR_NETCDF \
 #						-Xcompiler "-std=c++11"
 
 ################################################################################

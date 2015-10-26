@@ -13,7 +13,7 @@
       <z>0</z>
       <w>1</w>
     </cavity-velocity>
-    <viscosity>0.001308</viscosity>
+    <viscosity>0.00001308</viscosity>
     <tau>0.953575</tau>
     <mass-exchange-factor>1.0</mass-exchange-factor>
     <max-gravitation>0.0001</max-gravitation>
@@ -25,15 +25,15 @@
       <!-- <x>92</x>   -->
       <!-- <y>512</y>  -->
       <!-- <z>256</z>  -->
-      <x>64</x>
-      <y>16</y>
-      <z>8</z>
+      <x>32</x>
+      <y>256</y>
+      <z>128</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
-      <x>0.8</x>
-      <y>0.2</y>
-      <z>0.1</z>
+      <x>1.0</x>
+      <y>8.0</y>
+      <z>4.0</z>
     </domian-length>
     <!-- number of subdomains in x, y and z direction -->
     <subdomain-num>
@@ -50,13 +50,13 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>128</loops>
+    <loops>2</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>-1.0</timestep>
     <!--  -->
     <benchmark>
-      <do>0</do>
-      <output-dir>/work_fast/riesinge/dissertation/lbm/benchmark</output-dir>
+      <do>1</do>
+      <output-dir>benchmark</output-dir>
     </benchmark>
     <!--  -->
     <logging>
@@ -70,8 +70,8 @@
     <!--  -->
     <visualization>
       <do>1</do>
-      <rate>4</rate>
-      <output-dir>/work_fast/riesinge/dissertation/lbm/visualization</output-dir>
+      <rate>2</rate>
+      <output-dir>visualization</output-dir>
     </visualization>
   </simulation>
   <!-- configuration data related to computing device (e.g. GPU) -->

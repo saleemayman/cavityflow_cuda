@@ -29,7 +29,9 @@ CLbmVisualizationNetCDF<T>::CLbmVisualizationNetCDF(
 		int id,
 		int visualizationRate,
 		CLbmSolver<T>* solver,
+#ifdef PAR_NETCDF
 		CVector<3, int> numOfSubdomains,
+#endif
 		std::string filePath) :
 		CLbmVisualization<T>(id, visualizationRate, solver),
 #ifdef PAR_NETCDF
@@ -97,9 +99,16 @@ void CLbmVisualizationNetCDF<T>::defineData()
 	 * hand, since that's exactly the way how our data is stored, no final
 	 * matrix inversion is necessary.
 	 */
+
+#ifdef PAR_NETCDF
 	nc_def_dim(fileId, "x", numOfSubdomains[0] * solver->getDomain()->getSize()[0], &dimIds[2]);
 	nc_def_dim(fileId, "y", numOfSubdomains[1] * solver->getDomain()->getSize()[1], &dimIds[1]);
 	nc_def_dim(fileId, "z", numOfSubdomains[2] * solver->getDomain()->getSize()[2], &dimIds[0]);
+#else
+	nc_def_dim(fileId, "x", solver->getDomain()->getSize()[0], &dimIds[2]);
+	nc_def_dim(fileId, "y", solver->getDomain()->getSize()[1], &dimIds[1]);
+	nc_def_dim(fileId, "z", solver->getDomain()->getSize()[2], &dimIds[0]);
+#endif
 
 	nc_def_var(fileId, "x", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 1, &dimIds[2], &dimVarIds[2]);
 	nc_def_var(fileId, "y", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 1, &dimIds[1], &dimVarIds[1]);
@@ -141,15 +150,27 @@ void CLbmVisualizationNetCDF<T>::writeData()
 		T y[solver->getDomain()->getSize()[1]];
 		T z[solver->getDomain()->getSize()[2]];
 
+#ifdef PAR_NETCDF
 		for (int i = 0; i < numOfSubdomains[0] * solver->getDomain()->getSize()[0]; i++)
+#else
+		for (int i = 0; i < solver->getDomain()->getSize()[0]; i++)
+#endif
 		{
 			x[i] = ((T)(solver->getDomain()->getOrigin()[0] + i) + (T)0.5) * solver->getDomain()->getLength()[0] / (T)solver->getDomain()->getSize()[0];
 		}
+#ifdef PAR_NETCDF
 		for (int i = 0; i < numOfSubdomains[1] * solver->getDomain()->getSize()[1]; i++)
+#else
+		for (int i = 0; i < solver->getDomain()->getSize()[0]; i++)
+#endif
 		{
 			y[i] = ((T)(solver->getDomain()->getOrigin()[1] + i) + (T)0.5) * solver->getDomain()->getLength()[1] / (T)solver->getDomain()->getSize()[1];
 		}
+#ifdef PAR_NETCDF
 		for (int i = 0; i < numOfSubdomains[2] * solver->getDomain()->getSize()[2]; i++)
+#else
+		for (int i = 0; i < solver->getDomain()->getSize()[0]; i++)
+#endif
 		{
 			z[i] = ((T)(solver->getDomain()->getOrigin()[2] + i) + (T)0.5) * solver->getDomain()->getLength()[2] / (T)solver->getDomain()->getSize()[2];
 		}
