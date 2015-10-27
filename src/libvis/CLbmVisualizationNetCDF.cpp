@@ -160,7 +160,7 @@ void CLbmVisualizationNetCDF<T>::writeData()
 		for (int i = 0; i < solver->getDomain()->getSize()[0]; i++)
 #endif
 		{
-			x[i] = ((T)(solver->getDomain()->getOrigin()[0] + i) + (T)0.5) * solver->getDomain()->getLength()[0] / (T)solver->getDomain()->getSize()[0];
+			x[i] = ((T)i + (T)0.5) * solver->getDomain()->getLength()[0] / (T)solver->getDomain()->getSize()[0];
 		}
 #ifdef PAR_NETCDF
 		for (int i = 0; i < numOfSubdomains[1] * solver->getDomain()->getSize()[1]; i++)
@@ -168,7 +168,7 @@ void CLbmVisualizationNetCDF<T>::writeData()
 		for (int i = 0; i < solver->getDomain()->getSize()[0]; i++)
 #endif
 		{
-			y[i] = ((T)(solver->getDomain()->getOrigin()[1] + i) + (T)0.5) * solver->getDomain()->getLength()[1] / (T)solver->getDomain()->getSize()[1];
+			y[i] = ((T)i + (T)0.5) * solver->getDomain()->getLength()[1] / (T)solver->getDomain()->getSize()[1];
 		}
 #ifdef PAR_NETCDF
 		for (int i = 0; i < numOfSubdomains[2] * solver->getDomain()->getSize()[2]; i++)
@@ -176,7 +176,7 @@ void CLbmVisualizationNetCDF<T>::writeData()
 		for (int i = 0; i < solver->getDomain()->getSize()[0]; i++)
 #endif
 		{
-			z[i] = ((T)(solver->getDomain()->getOrigin()[2] + i) + (T)0.5) * solver->getDomain()->getLength()[2] / (T)solver->getDomain()->getSize()[2];
+			z[i] = ((T)i + (T)0.5) * solver->getDomain()->getLength()[2] / (T)solver->getDomain()->getSize()[2];
 		}
 
 		if (typeid(T) == typeid(double))
@@ -198,6 +198,7 @@ void CLbmVisualizationNetCDF<T>::writeData()
 		}
 	}
 
+	/*
 	solver->getFlags(flags);
 	solver->getDensities(densities);
 	solver->getVelocities(velocities);
@@ -226,6 +227,7 @@ void CLbmVisualizationNetCDF<T>::writeData()
 
 		exit (EXIT_FAILURE);
 	}
+	*/
 }
 
 template <class T>

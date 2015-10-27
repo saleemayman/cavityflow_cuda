@@ -4,14 +4,14 @@
 
 CUDAINSTALLPATH		:=	$(CUDA_HOME)
 
-CCLIBDIR			:=	-L/lrz/mnt/sys.x86_64/libraries/netcdf/4.3.3/intel/impi/lib
-CXXLIBDIR			:=	-L/lrz/mnt/sys.x86_64/libraries/netcdf/4.3.3/intel/impi/lib
+CCLIBDIR			:=	-L$(NETCDF_LIBDIR)
+CXXLIBDIR			:=	-L$(NETCDF_LIBDIR)
 CUDALIBDIR			:=	
 
 CCINCLUDES			:=	$(MPI_INC) \
-						-I/lrz/mnt/sys.x86_64/libraries/netcdf/4.3.3/intel/impi/include
+						$(NETCDF_INC)
 CXXINCLUDES			:=	$(MPI_INC) \
-						-I/lrz/mnt/sys.x86_64/libraries/netcdf/4.3.3/intel/impi/include
+						$(NETCDF_INC)
 CUDAINCLUDES		:=	
 
 CCLIB				:=	
