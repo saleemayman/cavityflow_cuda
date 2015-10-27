@@ -4,10 +4,8 @@
 
 CUDAINSTALLPATH		:=	/usr/local/cuda
 
-CCLIBDIR			:=	-L/opt/netcdf/4.3.3.1/lib \
-						-L/usr/lib/x86_64-linux-gnu/hdf5/openmpi
-CXXLIBDIR			:=	-L/opt/netcdf/4.3.3.1/lib \
-						-L/usr/lib/x86_64-linux-gnu/hdf5/openmpi
+CCLIBDIR			:=	-L/opt/netcdf/4.3.3.1/lib
+CXXLIBDIR			:=	-L/opt/netcdf/4.3.3.1/lib
 CUDALIBDIR			:=	
 
 CCINCLUDES			:=	-I/usr/lib/openmpi/include \
@@ -16,8 +14,8 @@ CXXINCLUDES			:=	-I/usr/lib/openmpi/include \
 						-I/opt/netcdf/4.3.3.1/include
 CUDAINCLUDES		:=	
 
-CCLIB				:=	-lhdf5_hl -lhdf5 -lpthread -lz -ldl -lm -lcurl
-CXXLIB				:=	-lhdf5_hl -lhdf5 -lpthread -lz -ldl -lm -lcurl
+CCLIB				:=	
+CXXLIB				:=	
 CUDALIB				:=	
 
 COMPUTE_CAPABILITY	:=	50
@@ -37,10 +35,10 @@ NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 ################################################################################
 
 CCFLAGS				:=	-O3 \
-						-D PAR_NETCDF \
+#						-D PAR_NETCDF \
 #						-std=c11
 CXXFLAGS			:=	-O3 \
-						-D PAR_NETCDF \
+#						-D PAR_NETCDF \
 #						-std=c++11
 
 # arch: specifies the compatibility from source code to PTX stage. Can be a
