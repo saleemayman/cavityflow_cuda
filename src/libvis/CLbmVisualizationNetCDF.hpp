@@ -26,7 +26,7 @@
 #include <sstream>
 
 #ifdef PAR_NETCDF
-#include <netcdf_par.h>
+#include "netcdf_par.h"
 #endif
 #include <netcdf.h>
 

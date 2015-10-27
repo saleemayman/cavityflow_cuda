@@ -57,7 +57,11 @@ void CLbmVisualizationNetCDF<T>::openFile(int iteration)
 	if (error)
 	{
 		std::cerr << "----- CLbmVisualizationNetCDF<T>::openFile() -----" << std::endl;
+#ifdef PAR_NETCDF
 		std::cerr << "An error occurred while opening parallel netCDF file \"" << fileName.str() << "\"" << std::endl;std::cerr << nc_strerror(error) << std::endl;
+#else
+		std::cerr << "An error occurred while opening serial netCDF file \"" << fileName.str() << "\"" << std::endl;std::cerr << nc_strerror(error) << std::endl;
+#endif
 		std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
 		std::cerr << "--------------------------------------------------" << std::endl;
 

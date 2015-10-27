@@ -123,15 +123,15 @@ CDomain<T> CController<T>::decomposeSubdomain()
     {
         std::cout << "----- CController<T>::decomposeSubdomain() -----" << std::endl;
         std::cout << "id:                   " << id << std::endl;
-        std::cout << "---------------------------------------------------------" << std::endl;
+        std::cout << "------------------------------------------------" << std::endl;
         std::cout << "GPU subdomain size:   " << domainGPU.getSize() << std::endl;
         std::cout << "GPU subdomain length: " << domainGPU.getLength() << std::endl;
         std::cout << "GPU subdomain origin: " << domainGPU.getOrigin() << std::endl;
-        std::cout << "---------------------------------------------------------" << std::endl;
+        std::cout << "------------------------------------------------" << std::endl;
         std::cout << "CPU subdomain size:   " << domain.getSize() << std::endl;
         std::cout << "CPU subdomain length: " << domain.getLength() << std::endl;
         std::cout << "CPU subdomain origin: " << domain.getOrigin() << std::endl;
-        std::cout << "---------------------------------------------------------" << std::endl;
+        std::cout << "------------------------------------------------" << std::endl;
     }
 
 	return domainGPU;

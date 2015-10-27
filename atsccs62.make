@@ -4,8 +4,10 @@
 
 CUDAINSTALLPATH		:=	/usr/local/cuda
 
-CCLIBDIR			:= -L/opt/netcdf/4.3.3.1/lib
-CXXLIBDIR			:= -L/opt/netcdf/4.3.3.1/lib
+CCLIBDIR			:=	-L/opt/netcdf/4.3.3.1/lib \
+						-L/usr/lib/x86_64-linux-gnu/hdf5/openmpi
+CXXLIBDIR			:=	-L/opt/netcdf/4.3.3.1/lib \
+						-L/usr/lib/x86_64-linux-gnu/hdf5/openmpi
 CUDALIBDIR			:=	
 
 CCINCLUDES			:=	-I/usr/lib/openmpi/include \
@@ -14,8 +16,8 @@ CXXINCLUDES			:=	-I/usr/lib/openmpi/include \
 						-I/opt/netcdf/4.3.3.1/include
 CUDAINCLUDES		:=	
 
-CCLIB				:=	
-CXXLIB				:=	
+CCLIB				:=	-lhdf5_hl -lhdf5 -lpthread -lz -ldl -lm -lcurl
+CXXLIB				:=	-lhdf5_hl -lhdf5 -lpthread -lz -ldl -lm -lcurl
 CUDALIB				:=	
 
 COMPUTE_CAPABILITY	:=	50
