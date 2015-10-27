@@ -30,7 +30,6 @@ CLbmSolver<T>::CLbmSolver(
         CVector<3, T> &gravitation,
         CVector<4, T> &drivenCavityVelocity,
         T viscocity,
-        T tau,
         T massExchangeFactor,
         T maxGravitationDimLess,
         bool storeDensities,
@@ -39,7 +38,7 @@ CLbmSolver<T>::CLbmSolver(
         id(id), domain(domain),
         boundaryConditions(boundaryConditions),
         timestepSize(timestepSize), gravitation(gravitation), drivenCavityVelocity(drivenCavityVelocity),
-        viscocity(viscocity), tau(tau), massExchangeFactor(massExchangeFactor), maxGravitationDimLess(maxGravitationDimLess),
+        viscocity(viscocity), massExchangeFactor(massExchangeFactor), maxGravitationDimLess(maxGravitationDimLess),
         storeDensities(storeDensities), storeVelocities(storeVelocities), doLogging(doLogging)
 {
     if (this->doLogging)
@@ -76,7 +75,6 @@ CLbmSolver<T>::CLbmSolver(
     {
         this->timestepSize = CMath<T>::sqrt((this->maxGravitationDimLess * cellLength) / this->gravitation.length());
         gravitationDimLess = this->gravitation * ((this->timestepSize * this->timestepSize) / cellLength);
-        this->tau = (T)0.5 * (this->timestepSize * this->viscocity * CMath<T>::sqrt(this->massExchangeFactor) * (T)6) / (cellLength * cellLength) + (T)0.5;
 
         if (this->doLogging)
         {
@@ -85,10 +83,12 @@ CLbmSolver<T>::CLbmSolver(
         }
     }
 
+    tau = (T)0.5 * (this->timestepSize * this->viscocity * CMath<T>::sqrt(this->massExchangeFactor) * (T)6) / (cellLength * cellLength) + (T)0.5;
+
     if (tau < (T)TAU_LOWER_LIMIT || tau > (T)TAU_UPPER_LIMIT)
     {
         std::cerr <<    "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
-        std::cerr << "Tau " << this->tau << " not within the boundary [" << TAU_LOWER_LIMIT <<"; " << TAU_UPPER_LIMIT <<"]." << std::endl;
+        std::cerr << "Tau " << tau << " not within the boundary [" << TAU_LOWER_LIMIT <<"; " << TAU_UPPER_LIMIT <<"]." << std::endl;
         std::cerr << "Simulation becomes unstable!" << std::endl;
         std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
         std::cerr << "---------------------------------------" << std::endl;

@@ -68,7 +68,6 @@ public:
             CVector<3, T> &gravitation,
             CVector<4, T> &drivenCavityVelocity,
             T viscocity,
-            T tau,
             T massExchangeFactor,
             T maxGravitationDimLess,
             bool storeDensities,

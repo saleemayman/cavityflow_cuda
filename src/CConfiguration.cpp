@@ -66,7 +66,6 @@ void CConfiguration<T>::interpretPhysiscsData(const tinyxml2::XMLNode* root)
     cavityVelocity[3] = atof(physicsChild->FirstChildElement("cavity-velocity")->FirstChildElement("w")->GetText());
 
     viscosity = atof(physicsChild->FirstChildElement("viscosity")->GetText());
-    tau = atof(physicsChild->FirstChildElement("tau")->GetText());
     massExchangeFactor = atof(physicsChild->FirstChildElement("mass-exchange-factor")->GetText());
     maxGravitationDimLess = atof(physicsChild->FirstChildElement("max-gravitation")->GetText());
 }
@@ -153,7 +152,6 @@ template <class T>
 void CConfiguration<T>::checkParameters()
 {
     assert(viscosity > (T)0);
-    assert(tau >= (T)TAU_LOWER_LIMIT || tau <= (T)TAU_UPPER_LIMIT);
     assert(massExchangeFactor > (T)0);
     assert(maxGravitationDimLess > (T)0);
     assert(domainSize[0] > 0 && domainSize[1] > 0 && domainSize[2] > 0);

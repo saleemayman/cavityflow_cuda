@@ -59,7 +59,6 @@ public:
     CVector<3, T> gravitation;
     CVector<4, T> cavityVelocity;
     T viscosity;
-	T tau;
 	T massExchangeFactor;
 	T maxGravitationDimLess;
 
