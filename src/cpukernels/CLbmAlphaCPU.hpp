@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef LBM_INITCPU_CUH
-#define LBM_INITCPU_CUH
+#ifndef LBM_ALPHACPU_CUH
+#define LBM_ALPHACPU_CUH
 
 #include <vector>
 
@@ -26,44 +26,41 @@
 #include "../CDomain.hpp"
 #include "../common.h"
 
-template<typename T>
-class CLbmInitCPU
+#define GRAVITATION 0
+
+template<class T>
+class CLbmAlphaCPU
 {
 private:
     int domainCellsCPU;
+    CVector<3, T> gravitation;
     CVector<3, int> domainSize;
     CVector<3, int> domainSizeGPU; 
     CVector<3, int> innerCPULimit;
     CVector<3, int> outerCPULimit;
 
-    // declare simulation related variables
-    Flag flag;
-    Flag boundaryConditionRight;
-    Flag boundaryConditionLeft;
-    Flag boundaryConditionTop;
-    Flag boundaryConditionBottom;
-    Flag boundaryConditionFront;
-    Flag boundaryConditionBack;
-
-    T velocity_x, velocity_y, velocity_z;
-    T dd_param;
-    T rho;
+    T vel2;     // vel*vel
     T vela2;
     T vela_velb;
-
-    Flag setFlags(int xPosition, int yPosition, int zPosition);
-
+    T velocity_x, velocity_y, velocity_z;   // velocity
+    T dd0, dd1, dd2, dd3, dd4, dd5, dd6, dd7, dd8, dd9, dd10, dd11, dd12, dd13, dd14, dd15, dd16, dd17, dd18;   // density distributions
+    T rho;  // density
 public:
-	CLbmInitCPU(
+    CLbmAlphaCPU(
             CVector<3, int> domainSize,
             CVector<3, int> domainSizeGPU,
-            std::vector<Flag>& boundaryConditions);
-	~CLbmInitCPU();
+            CVector<3, T> gravitation);
+    ~CLbmAlphaCPU();
 
-	void initLbm(
-		T *global_dd,
-        Flag *flags,
-        T *velocityArray,
-        T *density);
+    void alphaKernelCPU(
+            T* global_dd,                 // density distributions
+            const Flag* flag_array,        // flags
+            T* velocity,                  // velocities
+            T* density,                   // densities
+            const T inv_tau,
+            const T drivenCavityVelocity, // velocity parameters for modification of density distributions
+            const bool storeDensities,
+            const bool storeVelocities);
+
 };
 #endif

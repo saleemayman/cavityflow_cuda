@@ -35,13 +35,13 @@ CLbmInitCPU<T>::CLbmInitCPU(
 {
     domainCellsCPU = domainSize.elements() - domainSizeGPU.elements();  
 
-    // coordinates of the inner GPU domain w.r.t the CPU domain
-    innerGPUCoordinates[0] = (domainSize[0] - domainSizeGPU[0]) / 2;
-    outerGPUCoordinates[0] = innerGPUCoordinates[0] + domainSizeGPU[0] - 1;
-    innerGPUCoordinates[1] = (domainSize[1] - domainSizeGPU[1]) / 2;
-    outerGPUCoordinates[1] = innerGPUCoordinates[1] + domainSizeGPU[1] - 1;
-    innerGPUCoordinates[2] = (domainSize[2] - domainSizeGPU[2]) / 2;
-    outerGPUCoordinates[2] = innerGPUCoordinates[2] + domainSizeGPU[2] - 1;
+    // limits of the inner GPU domain w.r.t the CPU domain
+    innerCPULimit[0] = (domainSize[0] - domainSizeGPU[0]) / 2;
+    outerCPULimit[0] = innerCPULimit[0] + domainSizeGPU[0] + 1;
+    innerCPULimit[1] = (domainSize[1] - domainSizeGPU[1]) / 2;
+    outerCPULimit[1] = innerCPULimit[1] + domainSizeGPU[1] + 1;
+    innerCPULimit[2] = (domainSize[2] - domainSizeGPU[2]) / 2;
+    outerCPULimit[2] = innerCPULimit[2] + domainSizeGPU[2] + 1;
 }
 
 template<class T>
@@ -59,9 +59,9 @@ Flag CLbmInitCPU<T>::setFlags(int xPos, int yPos, int zPos)
     // set the flags for x-direction                
     if (xPos == 0)
         flag = boundaryConditionRight;
-    if (xPos == innerGPUCoordinates[0]-1 && flag != OBSTACLE)
+    if (xPos == innerCPULimit[0]-1 && flag != OBSTACLE)
         flag = GHOST_LAYER;
-    if (xPos == outerGPUCoordinates[0]+1 && flag != OBSTACLE)
+    if (xPos == outerCPULimit[0]-1 && flag != OBSTACLE)
         flag = GHOST_LAYER;
     if (xPos == domainSize[0]-1 && flag != OBSTACLE)
         flag = boundaryConditionLeft;
@@ -69,9 +69,9 @@ Flag CLbmInitCPU<T>::setFlags(int xPos, int yPos, int zPos)
     // set the flags for y-direction                
     if (yPos == 0 && flag != OBSTACLE)
         flag = boundaryConditionTop;
-    if (yPos == innerGPUCoordinates[1]-1 && flag != OBSTACLE)
+    if (yPos == innerCPULimit[1]-1 && flag != OBSTACLE)
         flag = GHOST_LAYER;
-    if (yPos == outerGPUCoordinates[1]+1 && flag != OBSTACLE)
+    if (yPos == outerCPULimit[1]-1 && flag != OBSTACLE)
         flag = GHOST_LAYER;
     if (yPos == domainSize[1]-1 && flag != OBSTACLE)
         flag = boundaryConditionBottom;
@@ -79,9 +79,9 @@ Flag CLbmInitCPU<T>::setFlags(int xPos, int yPos, int zPos)
     // set the flags for z-direction                
     if (zPos == 0 && flag != OBSTACLE)
         flag = boundaryConditionFront;
-    if (zPos == innerGPUCoordinates[2]-1 && flag != OBSTACLE)
+    if (zPos == innerCPULimit[2]-1 && flag != OBSTACLE)
         flag = GHOST_LAYER;
-    if (zPos == outerGPUCoordinates[2]+1 && flag != OBSTACLE)
+    if (zPos == outerCPULimit[2]-1 && flag != OBSTACLE)
         flag = GHOST_LAYER;
     if (zPos == domainSize[2]-1 && flag != OBSTACLE)
         flag = boundaryConditionBack;
@@ -96,6 +96,7 @@ void CLbmInitCPU<T>::initLbm(
             T *velocityArray,      // velocity array (first all x components, then all y components, then z...)
             T *density)
 {
+    // linear cell index
     int cellID = 0;
 
     /*
@@ -109,9 +110,9 @@ void CLbmInitCPU<T>::initLbm(
             for (int x = 0; x < domainSize[0]; x++)
             {
                 // if inside GPU domain then skip cell
-                if ((x >= innerGPUCoordinates[0] && x <= outerGPUCoordinates[0]) &&
-                    (y >= innerGPUCoordinates[1] && y <= outerGPUCoordinates[1]) &&
-                    (z >= innerGPUCoordinates[2] && z <= outerGPUCoordinates[2]))
+                if ((x > innerCPULimit[0]-1 && x < outerCPULimit[0]-1) &&
+                    (y > innerCPULimit[1]-1 && y < outerCPULimit[1]-1) &&
+                    (z > innerCPULimit[2]-1 && z < outerCPULimit[2]-1))
                 {
                     break;
                 }
