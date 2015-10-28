@@ -13,7 +13,7 @@
       <z>0</z>
       <w>1</w>
     </cavity-velocity>
-    <viscosity>0.00001308</viscosity>
+    <viscosity>0.01308</viscosity>
     <mass-exchange-factor>1.0</mass-exchange-factor>
     <max-gravitation>0.0001</max-gravitation>
   </physics>
@@ -24,20 +24,20 @@
       <!-- <x>92</x>   -->
       <!-- <y>512</y>  -->
       <!-- <z>256</z>  -->
-      <x>32</x>
-      <y>256</y>
-      <z>128</z>
+      <x>128</x>
+      <y>16</y>
+      <z>64</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
-      <x>1.0</x>
-      <y>8.0</y>
-      <z>4.0</z>
+      <x>0.8</x>
+      <y>0.1</y>
+      <z>0.4</z>
     </domian-length>
     <!-- number of subdomains in x, y and z direction -->
     <subdomain-num>
-      <x>2</x>
-      <y>1</y>
+      <x>1</x>
+      <y>4</y>
       <z>1</z>
     </subdomain-num>
     <!-- ratio in x, y and z direction of subdomain cells which are processed by the CPU ([0.0, 1.0]) (unit: scalar factor) -->

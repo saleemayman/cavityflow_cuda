@@ -256,122 +256,6 @@ void CLbmSolverGPU<T>::simulationStepBetaRect(CVector<3, int> origin, CVector<3,
      */
 }
 
-/*
-template <class T>
-void CLbmSolverGPU<T>::getDensityDistributions(Direction direction, T* hDensityDistributions)
-{
-    assert(0 <= direction < 6);
-
-    CVector<3, int> origin(0);
-    CVector<3, int> size(1);
-    CVector<3, int> norm(0);
-
-    switch(direction)
-    {
-    case LEFT:
-        size[1] = domain.getSize()[1];
-        size[2] = domain.getSize()[2];
-        origin[0] = 1;
-        norm[0] = 1;
-        break;
-    case RIGHT:
-        size[1] = domain.getSize()[1];
-        size[2] = domain.getSize()[2];
-        origin[0] = domain.getSize()[0] - 2;
-        norm[0] = -1;
-        break;
-    case BOTTOM:
-        size[0] = domain.getSize()[0];
-        size[2] = domain.getSize()[2];
-        origin[1] = 1;
-        norm[1] = 1;
-        break;
-    case TOP:
-        size[0] = domain.getSize()[0];
-        size[2] = domain.getSize()[2];
-        origin[1] = domain.getSize()[1] - 2;
-        norm[1] = -1;
-        break;
-    case BACK:
-        size[0] = domain.getSize()[0];
-        size[1] = domain.getSize()[1];
-        origin[2] = 1;
-        norm[2] = 1;
-        break;
-    case FRONT:
-        size[0] = domain.getSize()[0];
-        size[1] = domain.getSize()[1];
-        origin[2] = domain.getSize()[2] - 2;
-        norm[2] = -1;
-        break;
-    }
-
-    dim3 threadsPerBlock(size[1], size[2], 1);
-    if(size[1] > 1024)
-    {
-    	threadsPerBlock.x = 1024;
-    	threadsPerBlock.y = 1;
-    }
-    if(size[1] * size[2] > 1024)
-    	threadsPerBlock.y = 1024 / size[1];
-    dim3 blocksPerGrid = getBlocksPerGrid(2, CVector<3, int>(size[1], size[2], 0), threadsPerBlock);
-
-    if (doLogging)
-    {
-        std::cout << "----- CLbmSolverGPU<T>::getDensityDistributions() -----" << std::endl;
-        std::cout << "id:                " << id << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:       " << domain.getSize() << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "cuboid origin:     " << origin << std::endl;
-        std::cout << "cuboid size:       " << size << std::endl;
-        std::cout << "direction:         " << norm << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "threads per block: [" << threadsPerBlock.x << ", " << threadsPerBlock.y << ", " << threadsPerBlock.z << "]" << std::endl;
-        std::cout << "blocks per grid:   [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-    }
-
-    for (int latticeVector = 0; latticeVector < NUM_LATTICE_VECTORS; latticeVector++)
-    {
-      if(norm.dotProd(lbm_units[latticeVector]) > 0)
-        {
-            copy_buffer_rect<T><<<blocksPerGrid, threadsPerBlock>>>(
-                    densityDistributions,
-                    latticeVector * domain.getNumOfCells(),
-                    origin[0],
-                    origin[1],
-                    origin[2],
-                    domain.getSize()[0],
-                    domain.getSize()[1],
-                    domain.getSize()[2],
-                    getDensityDistributionsHalo[direction],
-                    latticeVector * size.elements(),
-                    0,
-                    0,
-                    0,
-                    size[0],
-                    size[1],
-                    size[2],
-                    size[0],
-                    size[1],
-                    size[2]);
-        }
-        GPU_ERROR_CHECK(cudaPeekAtLastError())
-    }
-
-    GPU_ERROR_CHECK(cudaMemcpy(hDensityDistributions, getDensityDistributionsHalo[direction], NUM_LATTICE_VECTORS * size.elements() * sizeof(T), cudaMemcpyDeviceToHost))
-
-    if (doLogging)
-    {
-        std::cout << "A copy operation from device to host for lattice vectors in direction " << direction << " was performed." << std::endl;
-        std::cout << "No additional buffer memory was allocated. Instead, getDensityDistributionsHalo was used." << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-    }
-}
-*/
-
 template <class T>
 void CLbmSolverGPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* hDensityDistributions)
 {
@@ -382,6 +266,7 @@ void CLbmSolverGPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<
     assert(origin[2] + size[2] <= domain.getSize()[2]);
 
     T* dDensityDistributions;
+    cudaMemcpy3DParms params = {0};
 
     dim3 threadsPerBlock(size[1], size[2], 1);
     if(size[1] > 1024)
@@ -413,6 +298,20 @@ void CLbmSolverGPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<
 
     for(int latticeVector = 0; latticeVector < NUM_LATTICE_VECTORS; latticeVector++)
     {
+    	// domain location and size
+    	params.srcPtr = make_cudaPitchedPtr(densityDistributions, domain.getSize()[0] * sizeof(T), domain.getSize()[0], domain.getSize()[1]);
+    	// cuboid origin
+    	params.srcPos = make_cudaPos(origin[0], origin[1], origin[2]);
+    	// hDensityDistributions location and size
+    	params.dstPtr = make_cudaPitchedPtr(hDensityDistributions, size[0] * sizeof(T), size[0], size[1]);
+    	// hDensityDistributions origin
+    	params.dstPos = make_cudaPos(0, 0, 0);
+    	// cuboid size
+    	params.extent = make_cudaExtent(size[0], size[1], size[2]);
+    	params.kind = cudaMemcpyDeviceToHost;
+
+    	// cudaMemcpy3D(&params);
+
         copy_buffer_rect<T><<<blocksPerGrid, threadsPerBlock>>>(
                 densityDistributions,
                 latticeVector * domain.getNumOfCells(),
