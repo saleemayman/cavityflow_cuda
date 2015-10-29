@@ -34,9 +34,8 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
 		std::vector<Flag> boundaryConditions,
 		T timestepSize,
 		CVector<3, T> &gravitation,
-		CVector<4, T> &drivenCavityVelocity,
-		T viscocity,
-		T massExchangeFactor,
+		CVector<3, T> &drivenCavityVelocity,
+		T viscosity,
 		T maxGravitationDimLess,
 		bool storeDensities,
 		bool storeVelocities,
@@ -44,7 +43,7 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
         CLbmSolver<T>(id, domain,
                 boundaryConditions,
                 timestepSize, gravitation, drivenCavityVelocity,
-                viscocity, massExchangeFactor, maxGravitationDimLess,
+                viscosity, maxGravitationDimLess,
                 storeDensities, storeVelocities, doLogging),
         threadsPerBlock(threadsPerBlock)
 {

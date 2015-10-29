@@ -63,10 +63,8 @@ void CConfiguration<T>::interpretPhysiscsData(const tinyxml2::XMLNode* root)
     cavityVelocity[0] = atof(physicsChild->FirstChildElement("cavity-velocity")->FirstChildElement("x")->GetText());
     cavityVelocity[1] = atof(physicsChild->FirstChildElement("cavity-velocity")->FirstChildElement("y")->GetText());
     cavityVelocity[2] = atof(physicsChild->FirstChildElement("cavity-velocity")->FirstChildElement("z")->GetText());
-    cavityVelocity[3] = atof(physicsChild->FirstChildElement("cavity-velocity")->FirstChildElement("w")->GetText());
 
     viscosity = atof(physicsChild->FirstChildElement("viscosity")->GetText());
-    massExchangeFactor = atof(physicsChild->FirstChildElement("mass-exchange-factor")->GetText());
     maxGravitationDimLess = atof(physicsChild->FirstChildElement("max-gravitation")->GetText());
 }
 
@@ -151,8 +149,7 @@ void CConfiguration<T>::interpretXMLDoc()
 template <class T>
 void CConfiguration<T>::checkParameters()
 {
-    assert(viscosity > (T)0);
-    assert(massExchangeFactor > (T)0);
+    assert(timestep > (T)0);
     assert(maxGravitationDimLess > (T)0);
     assert(domainSize[0] > 0 && domainSize[1] > 0 && domainSize[2] > 0);
     assert(domainLength[0] > (T)0 && domainLength[1] > (T)0 && domainLength[2] > (T)0);
