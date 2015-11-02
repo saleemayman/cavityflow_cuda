@@ -42,8 +42,17 @@ CLbmSolver<T>::CLbmSolver(
         viscosity(viscosity), maxGravitationDimLess(maxGravitationDimLess),
         storeDensities(storeDensities), storeVelocities(storeVelocities), doLogging(doLogging)
 {
+    if (this->doLogging)
+    {
+        std::cout << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
+        std::cout << "id:                                      " << this->id << std::endl;
+        std::cout << "---------------------------------------" << std::endl;
+    }
+
 	bool viscosityGiven = this->viscosity > (T)0;
-    T cellLength = domain.getLength()[0] / (T)domain.getSize()[0];
+	bool limitedByGravitation = false;
+	T cellLength = domain.getLength()[0] / (T)domain.getSize()[0];
+	T oldTimestepSize;
 
     while (true)
     {
@@ -59,38 +68,53 @@ CLbmSolver<T>::CLbmSolver(
 		 */
 		if (!viscosityGiven)
 		{
-			std::cerr << "No viscosity has been passed!" << std::endl;
-			std::cerr << "Artificial viscosity is set!" << std::endl;
+			if (this->doLogging)
+			{
+				std::cout << "No viscosity has been passed!" << std::endl;
+				std::cout << "Artificial viscosity is set!" << std::endl;
+			}
 
 			this->viscosity = this->domain.getLength()[0] * this->drivenCavityVelocity[0] / REYNOLDS_DEFAULT;
 
-			std::cerr << "viscosity:         " << this->viscosity << std::endl;
-			std::cerr << "---------------------------------------" << std::endl;
+			if (this->doLogging)
+			{
+				std::cout << "viscosity:         " << this->viscosity << std::endl;
+				std::cout << "---------------------------------------" << std::endl;
+			}
 		}
 
 		// (4.9)
 		viscosityDimLess = this->viscosity * (this->timestepSize / (cellLength * cellLength));
 
 		/*
-		 * If the dimension less gravity is larger than the specified maximum value,
-		 * the simulation becomes unstable. In such a case, the timestep size is
-		 * adapted accordingly and a valid dimension less gravity is set in the next iteration of this loop.
+		 * If the dimension less gravity is larger than the specified maximum
+		 * value, the simulation becomes unstable. In such a case, the timestep
+		 * size is adapted accordingly and a valid dimension less gravity is set
+		 * in the next iteration of this loop.
 		 */
 		if (gravitationDimLess.length() > this->maxGravitationDimLess + std::numeric_limits<T>::epsilon())
 		{
-			std::cerr << "Gravitation (dimension less) is too large so the simulation could get unstable!" << std::endl;
-			std::cerr << "Timestep size is adapted!" << std::endl;
-	        std::cerr << "old timestep size: " << this->timestepSize << std::endl;
+			if (this->doLogging)
+			{
+				std::cout << "Gravitation (dimension less) is too large so the simulation could get unstable!" << std::endl;
+				std::cout << "Timestep size is adapted!" << std::endl;
+				std::cout << "old timestep size: " << this->timestepSize << std::endl;
+			}
 
+	        limitedByGravitation = true;
 	        // (4.12)
 	        this->timestepSize = CMath<T>::sqrt((this->maxGravitationDimLess * cellLength) / this->gravitation.length());
 
-	        std::cerr << "new timestep size: " << this->timestepSize << std::endl;
-			std::cerr << "---------------------------------------" << std::endl;
+	        if (this->doLogging)
+	        {
+		        std::cout << "new timestep size: " << this->timestepSize << std::endl;
+				std::cout << "---------------------------------------" << std::endl;
+	        }
 
 			continue;
 		}
 
+		// (4.7)
 		tau = (T)0.5 * ((T)6 * viscosityDimLess + (T)1);
 
 		/*
@@ -100,17 +124,34 @@ CLbmSolver<T>::CLbmSolver(
 		 */
 		if (tau - std::numeric_limits<T>::epsilon() < (T)TAU_LOWER_LIMIT || tau + std::numeric_limits<T>::epsilon() > (T)TAU_UPPER_LIMIT)
 		{
+			if (this->doLogging)
+			{
+				std::cout << "Tau " << tau << " not within the range [" << TAU_LOWER_LIMIT <<"; " << TAU_UPPER_LIMIT << "]." << std::endl;
+				std::cout << "Timestep size is adapted!" << std::endl;
+				std::cout << "old timestep size: " << this->timestepSize << std::endl;
+			}
 
-			std::cerr << "Tau " << tau << " not within the range [" << TAU_LOWER_LIMIT <<"; " << TAU_UPPER_LIMIT << "]." << std::endl;
-			std::cerr << "Timestep size is adapted!" << std::endl;
-	        std::cerr << "old timestep size: " << this->timestepSize << std::endl;
+			oldTimestepSize = this->timestepSize;
+	        this->timestepSize = (cellLength * cellLength) * (((T)2 * TAU_DEFAULT - (T)1) / ((T)6 * this->viscosity));
 
-			this->timestepSize = (cellLength * cellLength) * (((T)2 * TAU_DEFAULT - (T)1) / ((T)6 * this->viscosity));
+	        if (this->doLogging)
+	        {
+				std::cout << "new timestep size: " << this->timestepSize << std::endl;
+				std::cout << "---------------------------------------" << std::endl;
+	        }
 
-	        std::cerr << "new timestep size: " << this->timestepSize << std::endl;
-			std::cerr << "---------------------------------------" << std::endl;
+			if (limitedByGravitation && this->timestepSize > oldTimestepSize) {
+		        std::cerr << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
+		        std::cerr << "No valid timestep size could be determined which satisfies" << std::endl;
+		        std::cerr << "- viscosity:              " << this->viscosity << std::endl;
+		        std::cerr << "- max gravitation length: " << this->maxGravitationDimLess << std::endl;
+		        std::cerr << "- tau:                    " << tau << std::endl;
+		        std::cerr << "so the simulation stays stable!" << std::endl;
 
-			continue;
+		        exit (EXIT_FAILURE);
+			} else {
+				continue;
+			}
 		}
 
 		break;
@@ -123,9 +164,6 @@ CLbmSolver<T>::CLbmSolver(
 
     if (this->doLogging)
     {
-        std::cout << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
-        std::cout << "id:                                      " << this->id << std::endl;
-        std::cout << "---------------------------------------" << std::endl;
         std::cout << "domain size:                             " << this->domain.getSize() << std::endl;
         std::cout << "domain length:                           " << this->domain.getLength() << std::endl;
         std::cout << "domain origin:                           " << this->domain.getOrigin() << std::endl;

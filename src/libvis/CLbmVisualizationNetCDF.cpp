@@ -118,9 +118,9 @@ void CLbmVisualizationNetCDF<T>::defineData()
     nc_def_var(fileId, "z", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 1, &dimIds[0], &dimVarIds[0]);
     nc_def_var(fileId, "flags", NC_INT, 3, dimIds, &flagsVarId);
     nc_def_var(fileId, "densities", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 3, dimIds, &densitiesVarId);
-    nc_def_var(fileId, "velocities x", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 3, dimIds, &velocitiesVarId[0]);
-    nc_def_var(fileId, "velocities y", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 3, dimIds, &velocitiesVarId[1]);
-    nc_def_var(fileId, "velocities z", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 3, dimIds, &velocitiesVarId[2]);
+    nc_def_var(fileId, "velocities_x", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 3, dimIds, &velocitiesVarId[0]);
+    nc_def_var(fileId, "velocities_y", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 3, dimIds, &velocitiesVarId[1]);
+    nc_def_var(fileId, "velocities_z", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 3, dimIds, &velocitiesVarId[2]);
 
     nc_put_att_text(fileId, dimVarIds[0], "units", DIM_UNIT.length(), DIM_UNIT.c_str());
     nc_put_att_text(fileId, dimVarIds[1], "units", DIM_UNIT.length(), DIM_UNIT.c_str());

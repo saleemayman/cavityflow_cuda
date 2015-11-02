@@ -24,13 +24,13 @@
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-      <x>192</x>
-      <y>192</y>
-      <z>192</z>
+      <x>64</x>
+      <y>32</y>
+      <z>32</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
-      <x>1.0</x>
+      <x>2.0</x>
       <y>1.0</y>
       <z>1.0</z>
     </domian-length>
@@ -59,7 +59,7 @@
     </benchmark>
     <!--  -->
     <logging>
-      <do>0</do>
+      <do>1</do>
     </logging>
     <!--  -->
     <validation>
@@ -69,7 +69,7 @@
     <!--  -->
     <visualization>
       <do>1</do>
-      <rate>100</rate>
+      <rate>3000</rate>
       <output-dir>/work_fast/riesinge/dissertation/lbm/visualization</output-dir>
     </visualization>
   </simulation>
