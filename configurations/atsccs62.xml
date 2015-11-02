@@ -55,7 +55,7 @@
     <!--  -->
     <benchmark>
       <do>1</do>
-      <output-dir>/work_fast/riesinge/dissertation/lbm/benchmark</output-dir>
+      <output-dir>/work_fast/riesinge/workspace/lbm/benchmark</output-dir>
     </benchmark>
     <!--  -->
     <logging>
@@ -64,13 +64,13 @@
     <!--  -->
     <validation>
       <do>0</do>
-      <output-dir>/work_fast/riesinge/dissertation/lbm/validation</output-dir>
+      <output-dir>/work_fast/riesinge/workspace/lbm/validation</output-dir>
     </validation>
     <!--  -->
     <visualization>
       <do>1</do>
       <rate>3000</rate>
-      <output-dir>/work_fast/riesinge/dissertation/lbm/visualization</output-dir>
+      <output-dir>/work_fast/riesinge/workspace/lbm/visualization</output-dir>
     </visualization>
   </simulation>
   <!-- configuration data related to computing device (e.g. GPU) -->

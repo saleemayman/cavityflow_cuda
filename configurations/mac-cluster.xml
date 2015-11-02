@@ -24,9 +24,9 @@
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-      <x>192</x>
-      <y>192</y>
-      <z>192</z>
+      <x>64</x>
+      <y>64</y>
+      <z>64</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
@@ -36,9 +36,9 @@
     </domian-length>
     <!-- number of subdomains in x, y and z direction (unit: scalar) -->
     <subdomain-num>
-      <x>1</x>
-      <y>1</y>
-      <z>1</z>
+      <x>2</x>
+      <y>2</y>
+      <z>2</z>
     </subdomain-num>
     <!-- ratio in x, y and z direction of subdomain cells which are processed by the CPU ([0.0, 1.0]) (unit: scalar factor) -->
     <cpu-subdomain-ratio>
@@ -49,13 +49,13 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>3002</loops>
+    <loops>6002</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>0.01</timestep>
     <!--  -->
     <benchmark>
       <do>1</do>
-      <output-dir>benchmark</output-dir>
+      <output-dir>/scratch/pr63so/lu32dec/dissertation/lbm/benchmark</output-dir>
     </benchmark>
     <!--  -->
     <logging>
@@ -64,13 +64,13 @@
     <!--  -->
     <validation>
       <do>0</do>
-      <output-dir>validation</output-dir>
+      <output-dir>/scratch/pr63so/lu32dec/dissertation/lbm/validation</output-dir>
     </validation>
     <!--  -->
     <visualization>
       <do>1</do>
       <rate>100</rate>
-      <output-dir>visualization</output-dir>
+      <output-dir>/scratch/pr63so/lu32dec/dissertation/lbm/visualization</output-dir>
     </visualization>
   </simulation>
   <!-- configuration data related to computing device (e.g. GPU) -->
