@@ -51,8 +51,10 @@ private:
      * [g/s]etDensityDistributionsHalo[4]: halo layer for back face
      * [g/s]etDensityDistributionsHalo[5]: halo layer for front face
      */
+    /*
     std::vector<T*> getDensityDistributionsHalo;
     std::vector<T*> setDensityDistributionsHalo;
+    */
 
     /*
      * Four slots for the parallel setup (threads per block) for the four different GPU kernels.

@@ -24,9 +24,9 @@
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-      <x>64</x>
-      <y>64</y>
-      <z>64</z>
+      <x>128</x>
+      <y>128</y>
+      <z>128</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
@@ -59,7 +59,7 @@
     </benchmark>
     <!--  -->
     <logging>
-      <do>0</do>
+      <do>1</do>
     </logging>
     <!--  -->
     <validation>

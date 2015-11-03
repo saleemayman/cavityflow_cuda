@@ -53,8 +53,7 @@ CXXFILES		:=	external/tinyxml2/tinyxml2.cpp \
 					src/main.cpp
 
 # cuda source files (compiled with $(NVCC))
-CUDAFILES		:=	src/gpukernels/copy_buffer_rect.cu \
-					src/gpukernels/lbm_alpha.cu \
+CUDAFILES		:=	src/gpukernels/lbm_alpha.cu \
 					src/gpukernels/lbm_beta.cu \
 					src/gpukernels/lbm_init.cu \
 					src/CLbmSolverGPU.cu
