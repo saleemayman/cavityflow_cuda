@@ -43,20 +43,6 @@ private:
     T* densities;
 
     /*
-     * Six slots for the halo layers of the six faces of a cuboid.
-     * [g/s]etDensityDistributionsHalo[0]: halo layer for left face
-     * [g/s]etDensityDistributionsHalo[1]: halo layer for right face
-     * [g/s]etDensityDistributionsHalo[2]: halo layer for bottom face
-     * [g/s]etDensityDistributionsHalo[3]: halo layer for tom face
-     * [g/s]etDensityDistributionsHalo[4]: halo layer for back face
-     * [g/s]etDensityDistributionsHalo[5]: halo layer for front face
-     */
-    /*
-    std::vector<T*> getDensityDistributionsHalo;
-    std::vector<T*> setDensityDistributionsHalo;
-    */
-
-    /*
      * Four slots for the parallel setup (threads per block) for the four different GPU kernels.
      * threadsPerBlock[0]: number of threads per block for kernel lbm_init()
      * threadsPerBlock[1]: number of threads per block for kernel lbm_alpha()

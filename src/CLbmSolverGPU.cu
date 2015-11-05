@@ -61,23 +61,23 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
         std::cout << "---------------------------------------------" << std::endl;
     }
 
-    GPU_ERROR_CHECK(cudaMalloc(&densityDistributions, this->domain.getNumOfCells() * NUM_LATTICE_VECTORS * sizeof(T)))
-    GPU_ERROR_CHECK(cudaMalloc(&flags, this->domain.getNumOfCells() * sizeof(Flag)))
+    GPU_ERROR_CHECK(cudaMalloc(&densityDistributions, this->domain.getNumOfCellsWithHalo() * NUM_LATTICE_VECTORS * sizeof(T)))
+    GPU_ERROR_CHECK(cudaMalloc(&flags, this->domain.getNumOfCellsWithHalo() * sizeof(Flag)))
     if(this->storeDensities)
-        GPU_ERROR_CHECK(cudaMalloc(&densities, this->domain.getNumOfCells() * sizeof(T)))
+        GPU_ERROR_CHECK(cudaMalloc(&densities, this->domain.getNumOfCellsWithHalo() * sizeof(T)))
     if(this->storeVelocities)
-        GPU_ERROR_CHECK(cudaMalloc(&velocities, this->domain.getNumOfCells() * 3 * sizeof(T)))
+        GPU_ERROR_CHECK(cudaMalloc(&velocities, 3 * this->domain.getNumOfCellsWithHalo() * sizeof(T)))
 
     if (doLogging) {
-        std::cout << "size of allocated memory for density distributions: " << ((T)(this->domain.getNumOfCells() * NUM_LATTICE_VECTORS * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
-        std::cout << "size of allocated memory for flags:                 " << ((T)(this->domain.getNumOfCells() * sizeof(Flag)) / (T)(1<<20)) << " MBytes" << std::endl;
+        std::cout << "size of allocated memory for density distributions: " << ((T)(this->domain.getNumOfCellsWithHalo() * NUM_LATTICE_VECTORS * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+        std::cout << "size of allocated memory for flags:                 " << ((T)(this->domain.getNumOfCellsWithHalo() * sizeof(Flag)) / (T)(1<<20)) << " MBytes" << std::endl;
         if(this->storeDensities)
-            std::cout << "size of allocated memory for velocities:            " << ((T)(this->domain.getNumOfCells() * 3 * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "size of allocated memory for velocities:            " << ((T)(3 * this->domain.getNumOfCellsWithHalo() * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
         if(this->storeVelocities)
-            std::cout << "size of allocated memory for densities:             " << ((T)(this->domain.getNumOfCells() * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "size of allocated memory for densities:             " << ((T)(this->domain.getNumOfCellsWithHalo() * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
     }
 
-    dim3 blocksPerGrid = getBlocksPerGrid(3, this->domain.getSize(), this->threadsPerBlock[0]);
+    dim3 blocksPerGrid = getBlocksPerGrid(3, this->domain.getSizeWithHalo(), this->threadsPerBlock[0]);
 
     if (doLogging) {
         std::cout << "threads per block:                                  [" << this->threadsPerBlock[0].x << ", " << this->threadsPerBlock[0].y << ", " << this->threadsPerBlock[0].z << "]" << std::endl;
@@ -97,9 +97,9 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
         boundaryConditions[4],
         boundaryConditions[5],
         drivenCavityVelocityDimLess.data[0],
-        domain.getSize()[0],
-        domain.getSize()[1],
-        domain.getSize()[2]);
+        domain.getSizeWithHalo()[0],
+        domain.getSizeWithHalo()[1],
+        domain.getSizeWithHalo()[2]);
     GPU_ERROR_CHECK(cudaPeekAtLastError())
     
     if (doLogging) {
@@ -122,7 +122,7 @@ CLbmSolverGPU<T>::~CLbmSolverGPU()
 template <class T>
 void CLbmSolverGPU<T>::simulationStepAlpha()
 {
-    dim3 blocksPerGrid = getBlocksPerGrid(3, this->domain.getSize(), this->threadsPerBlock[1]);
+    dim3 blocksPerGrid = getBlocksPerGrid(3, this->domain.getSizeWithHalo(), this->threadsPerBlock[1]);
 
     if (doLogging)
     {
@@ -144,9 +144,9 @@ void CLbmSolverGPU<T>::simulationStepAlpha()
             gravitationDimLess[1],
             gravitationDimLess[2],
             drivenCavityVelocityDimLess[0],
-            domain.getSize()[0],
-            domain.getSize()[1],
-            domain.getSize()[2],
+            domain.getSizeWithHalo()[0],
+            domain.getSizeWithHalo()[1],
+            domain.getSizeWithHalo()[2],
             storeDensities,
             storeVelocities);
     GPU_ERROR_CHECK(cudaPeekAtLastError())
@@ -169,7 +169,7 @@ void CLbmSolverGPU<T>::simulationStepAlphaRect(CVector<3, int> origin, CVector<3
 template <class T>
 void CLbmSolverGPU<T>::simulationStepBeta()
 {
-    dim3 blocksPerGrid = getBlocksPerGrid(3, domain.getSize(), threadsPerBlock[2]);
+    dim3 blocksPerGrid = getBlocksPerGrid(3, domain.getSizeWithHalo(), threadsPerBlock[2]);
     size_t sMemSize = 12 * sizeof(T) * getSize(threadsPerBlock[2]);
 
     if (doLogging)
@@ -193,11 +193,11 @@ void CLbmSolverGPU<T>::simulationStepBeta()
             gravitationDimLess[1],
             gravitationDimLess[2],
             drivenCavityVelocityDimLess[0],
-            domain.getSize()[0],
-            domain.getSize()[1],
-            domain.getSize()[2],
+            domain.getSizeWithHalo()[0],
+            domain.getSizeWithHalo()[1],
+            domain.getSizeWithHalo()[2],
             getSize(threadsPerBlock[2]),
-            isPowerOfTwo(domain.getNumOfCells()),
+            isPowerOfTwo(domain.getNumOfCellsWithHalo()),
             isPowerOfTwo(getSize(threadsPerBlock[2])),
             storeDensities,
             storeVelocities);
@@ -223,9 +223,9 @@ void CLbmSolverGPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<
 {
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
-    assert(origin[0] + size[0] <= domain.getSize()[0]);
-    assert(origin[1] + size[1] <= domain.getSize()[1]);
-    assert(origin[2] + size[2] <= domain.getSize()[2]);
+    assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
+    assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
 
     cudaMemcpy3DParms params = {0};
 
@@ -245,7 +245,7 @@ void CLbmSolverGPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<
     for(int latticeVector = 0; latticeVector < NUM_LATTICE_VECTORS; latticeVector++)
     {
     	// domain location and size
-    	params.srcPtr = make_cudaPitchedPtr(&densityDistributions[latticeVector * domain.getNumOfCells()], domain.getSize()[0] * sizeof(T), domain.getSize()[0], domain.getSize()[1]);
+    	params.srcPtr = make_cudaPitchedPtr(&densityDistributions[latticeVector * domain.getNumOfCellsWithHalo()], domain.getSizeWithHalo()[0] * sizeof(T), domain.getSizeWithHalo()[0], domain.getSizeWithHalo()[1]);
     	// cuboid origin
     	params.srcPos = make_cudaPos(origin[0] * (sizeof(T) / sizeof(unsigned char)), origin[1], origin[2]);
     	// hDensityDistributions location and size
@@ -269,7 +269,7 @@ void CLbmSolverGPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<
 template <class T>
 void CLbmSolverGPU<T>::getDensityDistributions(T* hDensityDistributions)
 {
-    CVector<3, int> origin(0);
+    CVector<3, int> origin(1);
     CVector<3, int> size(domain.getSize());
 
     getDensityDistributions(origin, size, hDensityDistributions);
@@ -279,6 +279,11 @@ template <class T>
 void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, Direction direction, T* hDensityDistributions)
 {
     assert(0 <= direction < 6);
+    assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
+    assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
+    assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
+    assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
 
     CVector<3, int> norm(0);
     cudaMemcpy3DParms params = {0};
@@ -327,7 +332,7 @@ void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
         	// hDensityDistributions origin
         	params.srcPos = make_cudaPos(0, 0, 0);
         	// domain location and size
-        	params.dstPtr = make_cudaPitchedPtr(&densityDistributions[latticeVector * domain.getNumOfCells()], domain.getSize()[0] * sizeof(T), domain.getSize()[0], domain.getSize()[1]);
+        	params.dstPtr = make_cudaPitchedPtr(&densityDistributions[latticeVector * domain.getNumOfCellsWithHalo()], domain.getSizeWithHalo()[0] * sizeof(T), domain.getSizeWithHalo()[0], domain.getSizeWithHalo()[1]);
         	// cuboid origin
         	params.dstPos = make_cudaPos(origin[0] * (sizeof(T) / sizeof(unsigned char)), origin[1], origin[2]);
         	// cuboid size
@@ -349,9 +354,9 @@ void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
 {
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
-    assert(origin[0] + size[0] <= domain.getSize()[0]);
-    assert(origin[1] + size[1] <= domain.getSize()[1]);
-    assert(origin[2] + size[2] <= domain.getSize()[2]);
+    assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
+    assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
 
     cudaMemcpy3DParms params = {0};
 
@@ -377,7 +382,7 @@ void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
     	// hDensityDistributions origin
     	params.srcPos = make_cudaPos(0, 0, 0);
     	// domain location and size
-    	params.dstPtr = make_cudaPitchedPtr(&densityDistributions[latticeVector * domain.getNumOfCells()], domain.getSize()[0] * sizeof(T), domain.getSize()[0], domain.getSize()[1]);
+    	params.dstPtr = make_cudaPitchedPtr(&densityDistributions[latticeVector * domain.getNumOfCellsWithHalo()], domain.getSizeWithHalo()[0] * sizeof(T), domain.getSizeWithHalo()[0], domain.getSizeWithHalo()[1]);
     	// cuboid origin
     	params.dstPos = make_cudaPos(origin[0] * (sizeof(T) / sizeof(unsigned char)), origin[1], origin[2]);
     	// cuboid size
@@ -397,7 +402,7 @@ void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
 template <class T>
 void CLbmSolverGPU<T>::setDensityDistributions(T* hDensityDistributions)
 {
-    CVector<3, int> origin(0);
+    CVector<3, int> origin(1);
     CVector<3, int> size(domain.getSize());
 
     setDensityDistributions(origin, size, hDensityDistributions);
@@ -408,9 +413,9 @@ void CLbmSolverGPU<T>::getFlags(CVector<3, int> &origin, CVector<3, int> &size, 
 {
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
-    assert(origin[0] + size[0] <= domain.getSize()[0]);
-    assert(origin[1] + size[1] <= domain.getSize()[1]);
-    assert(origin[2] + size[2] <= domain.getSize()[2]);
+    assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
+    assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
 
     cudaMemcpy3DParms params = {0};
 
@@ -428,7 +433,7 @@ void CLbmSolverGPU<T>::getFlags(CVector<3, int> &origin, CVector<3, int> &size, 
     }
 
 	// domain location and size
-	params.srcPtr = make_cudaPitchedPtr(flags, domain.getSize()[0] * sizeof(Flag), domain.getSize()[0], domain.getSize()[1]);
+	params.srcPtr = make_cudaPitchedPtr(flags, domain.getSizeWithHalo()[0] * sizeof(Flag), domain.getSizeWithHalo()[0], domain.getSizeWithHalo()[1]);
 	// cuboid origin
 	params.srcPos = make_cudaPos(origin[0] * (sizeof(Flag) / sizeof(unsigned char)), origin[1], origin[2]);
 	// hFlags location and size
@@ -451,7 +456,7 @@ void CLbmSolverGPU<T>::getFlags(CVector<3, int> &origin, CVector<3, int> &size, 
 template <class T>
 void CLbmSolverGPU<T>::getFlags(Flag* hFlags)
 {
-    CVector<3, int> origin(0);
+    CVector<3, int> origin(1);
     CVector<3, int> size(domain.getSize());
 
     getFlags(origin, size, hFlags);
@@ -462,9 +467,9 @@ void CLbmSolverGPU<T>::setFlags(CVector<3, int> &origin, CVector<3, int> &size, 
 {
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
-    assert(origin[0] + size[0] <= domain.getSize()[0]);
-    assert(origin[1] + size[1] <= domain.getSize()[1]);
-    assert(origin[2] + size[2] <= domain.getSize()[2]);
+    assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
+    assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
 
     cudaMemcpy3DParms params = {0};
 
@@ -488,7 +493,7 @@ void CLbmSolverGPU<T>::setFlags(CVector<3, int> &origin, CVector<3, int> &size, 
 	// hFlags origin
 	params.srcPos = make_cudaPos(0, 0, 0);
 	// domain location and size
-	params.dstPtr = make_cudaPitchedPtr(flags, domain.getSize()[0] * sizeof(Flag), domain.getSize()[0], domain.getSize()[1]);
+	params.dstPtr = make_cudaPitchedPtr(flags, domain.getSizeWithHalo()[0] * sizeof(Flag), domain.getSizeWithHalo()[0], domain.getSizeWithHalo()[1]);
 	// cuboid origin
 	params.dstPos = make_cudaPos(origin[0] * (sizeof(Flag) / sizeof(unsigned char)), origin[1], origin[2]);
 	// cuboid size
@@ -507,7 +512,7 @@ void CLbmSolverGPU<T>::setFlags(CVector<3, int> &origin, CVector<3, int> &size, 
 template <class T>
 void CLbmSolverGPU<T>::setFlags(Flag* hFlags)
 {
-    CVector<3, int> origin(0);
+    CVector<3, int> origin(1);
     CVector<3, int> size(domain.getSize());
 
     setFlags(origin, size, hFlags);
@@ -518,9 +523,9 @@ void CLbmSolverGPU<T>::getVelocities(CVector<3, int> &origin, CVector<3, int> &s
 {
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
-    assert(origin[0] + size[0] <= domain.getSize()[0]);
-    assert(origin[1] + size[1] <= domain.getSize()[1]);
-    assert(origin[2] + size[2] <= domain.getSize()[2]);
+    assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
+    assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
 
     cudaMemcpy3DParms params = {0};
 
@@ -542,7 +547,7 @@ void CLbmSolverGPU<T>::getVelocities(CVector<3, int> &origin, CVector<3, int> &s
     for (int dim = 0; dim < 3; dim++)
     {
     	// domain location and size
-    	params.srcPtr = make_cudaPitchedPtr(&velocities[dim * domain.getNumOfCells()], domain.getSize()[0] * sizeof(T), domain.getSize()[0], domain.getSize()[1]);
+    	params.srcPtr = make_cudaPitchedPtr(&velocities[dim * domain.getNumOfCellsWithHalo()], domain.getSizeWithHalo()[0] * sizeof(T), domain.getSizeWithHalo()[0], domain.getSizeWithHalo()[1]);
     	// cuboid origin
     	params.srcPos = make_cudaPos(origin[0] * (sizeof(T) / sizeof(unsigned char)), origin[1], origin[2]);
     	// hVelocities location and size
@@ -566,7 +571,7 @@ void CLbmSolverGPU<T>::getVelocities(CVector<3, int> &origin, CVector<3, int> &s
 template <class T>
 void CLbmSolverGPU<T>::getVelocities(T* hVelocities)
 {
-    CVector<3, int> origin(0);
+    CVector<3, int> origin(1);
     CVector<3, int> size(domain.getSize());
 
     getVelocities(origin, size, hVelocities);
@@ -577,9 +582,9 @@ void CLbmSolverGPU<T>::setVelocities(CVector<3, int> &origin, CVector<3, int> &s
 {
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
-    assert(origin[0] + size[0] <= domain.getSize()[0]);
-    assert(origin[1] + size[1] <= domain.getSize()[1]);
-    assert(origin[2] + size[2] <= domain.getSize()[2]);
+    assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
+    assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
 
     cudaMemcpy3DParms params = {0};
 
@@ -605,7 +610,7 @@ void CLbmSolverGPU<T>::setVelocities(CVector<3, int> &origin, CVector<3, int> &s
     	// hVelocities origin
     	params.srcPos = make_cudaPos(0, 0, 0);
     	// domain location and size
-    	params.dstPtr = make_cudaPitchedPtr(&velocities[dim * domain.getNumOfCells()], domain.getSize()[0] * sizeof(T), domain.getSize()[0], domain.getSize()[1]);
+    	params.dstPtr = make_cudaPitchedPtr(&velocities[dim * domain.getNumOfCellsWithHalo()], domain.getSizeWithHalo()[0] * sizeof(T), domain.getSizeWithHalo()[0], domain.getSizeWithHalo()[1]);
     	// cuboid origin
     	params.dstPos = make_cudaPos(origin[0] * (sizeof(T) / sizeof(unsigned char)), origin[1], origin[2]);
     	// cuboid size
@@ -625,7 +630,7 @@ void CLbmSolverGPU<T>::setVelocities(CVector<3, int> &origin, CVector<3, int> &s
 template <class T>
 void CLbmSolverGPU<T>::setVelocities(T* hVelocities)
 {
-    CVector<3, int> origin(0);
+    CVector<3, int> origin(1);
     CVector<3, int> size(domain.getSize());
 
     setVelocities(origin, size, hVelocities);
@@ -636,9 +641,9 @@ void CLbmSolverGPU<T>::getDensities(CVector<3, int> &origin, CVector<3, int> &si
 {
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
-    assert(origin[0] + size[0] <= domain.getSize()[0]);
-    assert(origin[1] + size[1] <= domain.getSize()[1]);
-    assert(origin[2] + size[2] <= domain.getSize()[2]);
+    assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
+    assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
 
     cudaMemcpy3DParms params = {0};
 
@@ -658,7 +663,7 @@ void CLbmSolverGPU<T>::getDensities(CVector<3, int> &origin, CVector<3, int> &si
     }
 
 	// domain location and size
-	params.srcPtr = make_cudaPitchedPtr(densities, domain.getSize()[0] * sizeof(T), domain.getSize()[0], domain.getSize()[1]);
+	params.srcPtr = make_cudaPitchedPtr(densities, domain.getSizeWithHalo()[0] * sizeof(T), domain.getSizeWithHalo()[0], domain.getSizeWithHalo()[1]);
 	// cuboid origin
 	params.srcPos = make_cudaPos(origin[0] * (sizeof(T) / sizeof(unsigned char)), origin[1], origin[2]);
 	// hDensities location and size
@@ -681,7 +686,7 @@ void CLbmSolverGPU<T>::getDensities(CVector<3, int> &origin, CVector<3, int> &si
 template <class T>
 void CLbmSolverGPU<T>::getDensities(T* hDensities)
 {
-    CVector<3, int> origin(0);
+    CVector<3, int> origin(1);
     CVector<3, int> size(domain.getSize());
 
     getDensities(origin, size, hDensities);
@@ -692,9 +697,9 @@ void CLbmSolverGPU<T>::setDensities(CVector<3, int> &origin, CVector<3, int> &si
 {
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
-    assert(origin[0] + size[0] <= domain.getSize()[0]);
-    assert(origin[1] + size[1] <= domain.getSize()[1]);
-    assert(origin[2] + size[2] <= domain.getSize()[2]);
+    assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
+    assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
 
     cudaMemcpy3DParms params = {0};
 
@@ -718,7 +723,7 @@ void CLbmSolverGPU<T>::setDensities(CVector<3, int> &origin, CVector<3, int> &si
 	// hDensities origin
 	params.srcPos = make_cudaPos(0, 0, 0);
 	// domain location and size
-	params.dstPtr = make_cudaPitchedPtr(densities, domain.getSize()[0] * sizeof(T), domain.getSize()[0], domain.getSize()[1]);
+	params.dstPtr = make_cudaPitchedPtr(densities, domain.getSizeWithHalo()[0] * sizeof(T), domain.getSizeWithHalo()[0], domain.getSizeWithHalo()[1]);
 	// cuboid origin
 	params.dstPos = make_cudaPos(origin[0] * (sizeof(T) / sizeof(unsigned char)), origin[1], origin[2]);
 	// cuboid size
@@ -737,7 +742,7 @@ void CLbmSolverGPU<T>::setDensities(CVector<3, int> &origin, CVector<3, int> &si
 template <class T>
 void CLbmSolverGPU<T>::setDensities(T* hDensities)
 {
-    CVector<3, int> origin(0);
+    CVector<3, int> origin(1);
     CVector<3, int> size(domain.getSize());
 
     setDensities(origin, size, hDensities);

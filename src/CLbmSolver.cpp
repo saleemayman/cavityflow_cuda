@@ -164,9 +164,9 @@ CLbmSolver<T>::CLbmSolver(
 
     if (this->doLogging)
     {
-        std::cout << "domain size:                             " << this->domain.getSize() << std::endl;
-        std::cout << "domain length:                           " << this->domain.getLength() << std::endl;
-        std::cout << "domain origin:                           " << this->domain.getOrigin() << std::endl;
+        std::cout << "domain size (without halo):              " << this->domain.getSize() << std::endl;
+        std::cout << "domain length (without halo):            " << this->domain.getLength() << std::endl;
+        std::cout << "domain origin (without halo):            " << this->domain.getOrigin() << std::endl;
         std::cout << "---------------------------------------" << std::endl;
         std::cout << "timestep size:                           " << this->timestepSize << std::endl;
         std::cout << "---------------------------------------" << std::endl;

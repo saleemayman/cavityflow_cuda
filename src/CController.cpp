@@ -167,11 +167,11 @@ void CController<T>::syncAlpha()
 
         if (configuration->doLogging)
         {
-            std::cout << "destination rank:    " << dstId << std::endl;
-            std::cout << "send origin:         " << sendOrigin << std::endl;
-            std::cout << "receive origin:      " << recvOrigin << std::endl;
-            std::cout << "send buffer size:    " << ((T)sendBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
-            std::cout << "receive buffer size: " << ((T)recvBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "destination rank:           " << dstId << std::endl;
+            std::cout << "send origin (with halo):    " << sendOrigin << std::endl;
+            std::cout << "receive origin (with halo): " << recvOrigin << std::endl;
+            std::cout << "send buffer size:           " << ((T)sendBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "receive buffer size:        " << ((T)recvBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
             std::cout << "---------------------------------------" << std::endl;
         }
 
@@ -241,11 +241,11 @@ void CController<T>::syncBeta()
 
         if (configuration->doLogging)
         {
-            std::cout << "destination rank:    " << dstId << std::endl;
-            std::cout << "send origin:         " << sendOrigin << std::endl;
-            std::cout << "receive origin:      " << recvOrigin << std::endl;
-            std::cout << "send buffer size:    " << ((T)sendBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
-            std::cout << "receive buffer size: " << ((T)recvBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "destination rank:           " << dstId << std::endl;
+            std::cout << "send origin (with halo):    " << sendOrigin << std::endl;
+            std::cout << "receive origin (with halo): " << recvOrigin << std::endl;
+            std::cout << "send buffer size:           " << ((T)sendBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "receive buffer size:        " << ((T)recvBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
             std::cout << "--------------------------------------" << std::endl;
         }
 
@@ -307,8 +307,8 @@ void CController<T>::setDrivenCavitySzenario()
         std::cout << "-----------------------------------------------------" << std::endl;
     }
 
-    CVector<3, int> origin(1, domain.getSize()[1] - 2, 1);
-    CVector<3, int> size(domain.getSize()[0] - 2, 1, domain.getSize()[2] - 2);
+    CVector<3, int> origin(1, domain.getSizeWithHalo()[1] - 2, 1);
+    CVector<3, int> size(domain.getSize()[0], 1, domain.getSize()[2]);
 
     if (configuration->doLogging)
     {
