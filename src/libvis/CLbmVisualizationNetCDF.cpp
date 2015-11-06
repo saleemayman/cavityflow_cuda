@@ -207,8 +207,8 @@ void CLbmVisualizationNetCDF<T>::writeData()
     // solver->getDensities(densities);
     solver->getVelocities(velocities);
 
-    size_t start[3] = {solver->getDomain()->getOrigin()[2], solver->getDomain()->getOrigin()[1], solver->getDomain()->getOrigin()[0]};
-    size_t count[3] = {solver->getDomain()->getSize()[2], solver->getDomain()->getSize()[1], solver->getDomain()->getSize()[0]};
+    size_t start[3] = {static_cast<size_t>(solver->getDomain()->getOrigin()[2]), static_cast<size_t>(solver->getDomain()->getOrigin()[1]), static_cast<size_t>(solver->getDomain()->getOrigin()[0])};
+    size_t count[3] = {static_cast<size_t>(solver->getDomain()->getSize()[2]), static_cast<size_t>(solver->getDomain()->getSize()[1]), static_cast<size_t>(solver->getDomain()->getSize()[0])};
 
     // nc_put_vara_int(fileId, flagsVarId, start, count, (int*)flags);
 
