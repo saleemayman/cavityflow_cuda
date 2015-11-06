@@ -13,7 +13,7 @@
 #SBATCH --ntasks-per-node=2
 #Number of threads per task/rank/process:
 #SBATCH --cpus-per-task=1
-#SBATCH --time=12:00:00
+#SBATCH --time=24:00:00
 #
 #SBATCH --mail-type=END
 #SBATCH --mail-user=riesinge@in.tum.de

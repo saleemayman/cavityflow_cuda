@@ -15,24 +15,23 @@
       <z>0</z>
     </cavity-velocity>
     <!-- viscosity of the fluid, -1 for automatic detection (unit: meters^2 * second^-1) -->
-    <!-- <viscosity>0.00152</viscosity> -->
     <viscosity>-1</viscosity>
     <!-- maximum external acceleration to avoid instabilities (unit: meters * second^-2) -->
-    <max-gravitation>0.0001</max-gravitation>
+    <max-gravitation>0.00001</max-gravitation>
   </physics>
   <!-- configuration data related to simulation grid -->
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-      <x>216</x>
-      <y>216</y>
-      <z>216</z>
+      <x>512</x>
+      <y>512</y>
+      <z>32</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
       <x>1.0</x>
       <y>1.0</y>
-      <z>1.0</z>
+      <z>0.0625</z>
     </domian-length>
     <!-- number of subdomains in x, y and z direction (unit: scalar) -->
     <subdomain-num>
@@ -49,7 +48,7 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>12002</loops>
+    <loops>1344602</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>0.01</timestep>
     <!--  -->
@@ -69,7 +68,7 @@
     <!--  -->
     <visualization>
       <do>1</do>
-      <rate>100</rate>
+      <rate>2241</rate>
       <output-dir>/scratch/pr63so/lu32dec/dissertation/lbm/visualization</output-dir>
     </visualization>
   </simulation>
