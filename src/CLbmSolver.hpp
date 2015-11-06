@@ -31,8 +31,8 @@ class CLbmSolver
 {
 protected:
     int id;
+    CVector<3, T> globalLength;
     CDomain<T> domain;
-    
     /*
      * Vector for the boundary conditions of the six faces of a cuboid.
      * boundaryConditions[0]: boundary condition for left face (smallest x-coordinate)
@@ -61,6 +61,7 @@ public:
     CLbmSolver();
     CLbmSolver(
             int id,
+            CVector<3, T> &globalLength,
             CDomain<T> &domain,
             std::vector<Flag> boundaryConditions,
             T timestepSize,

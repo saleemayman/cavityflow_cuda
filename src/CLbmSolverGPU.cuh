@@ -27,6 +27,7 @@ class CLbmSolverGPU : public CLbmSolver<T>
 {
 private:
     using CLbmSolver<T>::id;
+    using CLbmSolver<T>::globalLength;
     using CLbmSolver<T>::domain;
     using CLbmSolver<T>::gravitation;
     using CLbmSolver<T>::gravitationDimLess;
@@ -55,6 +56,7 @@ public:
     CLbmSolverGPU(
             int id,
             std::vector<dim3> threadsPerBlock,
+            CVector<3, T> &globalLength,
 			CDomain<T> &domain,
 			std::vector<Flag> boundaryConditions,
 			T timestepSize,

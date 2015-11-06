@@ -29,6 +29,7 @@ template <class T>
 CLbmSolverGPU<T>::CLbmSolverGPU(
 		int id,
 		std::vector<dim3> threadsPerBlock,
+        CVector<3, T> &globalLength,
 		CDomain<T> &domain,
 		std::vector<Flag> boundaryConditions,
 		T timestepSize,
@@ -39,8 +40,8 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
 		bool storeDensities,
 		bool storeVelocities,
 		bool doLogging) :
-        CLbmSolver<T>(id, domain,
-                boundaryConditions,
+        CLbmSolver<T>(id, globalLength,
+        		domain, boundaryConditions,
                 timestepSize, gravitation, drivenCavityVelocity,
                 viscosity, maxGravitationDimLess,
                 storeDensities, storeVelocities, doLogging),

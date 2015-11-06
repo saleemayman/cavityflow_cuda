@@ -54,6 +54,7 @@ public:
     CLbmSolverCPU();
     CLbmSolverCPU(
             int id,
+            CVector<3, T> &globalLength,
             CDomain<T> &domain,
             std::vector<Flag> boundaryConditions,
             CLbmSolverGPU<T>* solverGPU,

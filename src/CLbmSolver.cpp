@@ -26,6 +26,7 @@
 template <class T>
 CLbmSolver<T>::CLbmSolver(
         int id,
+        CVector<3, T> &globalLength,
         CDomain<T> &domain,
         std::vector<Flag> boundaryConditions,
         T timestepSize,
@@ -36,8 +37,8 @@ CLbmSolver<T>::CLbmSolver(
         bool storeDensities,
         bool storeVelocities,
         bool doLogging) :
-        id(id), domain(domain),
-        boundaryConditions(boundaryConditions),
+        id(id), globalLength(globalLength),
+        domain(domain), boundaryConditions(boundaryConditions),
         timestepSize(timestepSize), gravitation(gravitation), drivenCavityVelocity(drivenCavityVelocity),
         viscosity(viscosity), maxGravitationDimLess(maxGravitationDimLess),
         storeDensities(storeDensities), storeVelocities(storeVelocities), doLogging(doLogging)
@@ -74,7 +75,7 @@ CLbmSolver<T>::CLbmSolver(
 				std::cout << "Artificial viscosity is set!" << std::endl;
 			}
 
-			this->viscosity = this->domain.getLength()[0] * this->drivenCavityVelocity[0] / REYNOLDS_DEFAULT;
+			this->viscosity = this->globalLength.max() * this->drivenCavityVelocity[0] / REYNOLDS_DEFAULT;
 
 			if (this->doLogging)
 			{

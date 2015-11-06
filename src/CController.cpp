@@ -48,6 +48,7 @@ CController<T>::CController(
 	solverGPU = new CLbmSolverGPU<T>(
             this->id,
             this->configuration->threadsPerBlock,
+            this->configuration->domainLength,
             // &domainGPU,
             this->domain,
             this->boundaryConditions,
@@ -61,6 +62,7 @@ CController<T>::CController(
             this->configuration->doLogging);
     solverCPU = new CLbmSolverCPU<T>(
             this->id,
+            this->configuration->domainLength,
             this->domain,
             this->boundaryConditions,
             solverGPU,
