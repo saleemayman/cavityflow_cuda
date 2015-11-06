@@ -18,21 +18,21 @@
     <!-- <viscosity>0.00152</viscosity> -->
     <viscosity>-1</viscosity>
     <!-- maximum external acceleration to avoid instabilities (unit: meters * second^-2) -->
-    <max-gravitation>0.0001</max-gravitation>
+    <max-gravitation>0.00001</max-gravitation>
   </physics>
   <!-- configuration data related to simulation grid -->
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-      <x>216</x>
-      <y>216</y>
-      <z>216</z>
+      <x>1024</x>
+      <y>512</y>
+      <z>16</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
       <x>1.0</x>
-      <y>1.0</y>
-      <z>1.0</z>
+      <y>0.5</y>
+      <z>0.015625</z>
     </domian-length>
     <!-- number of subdomains in x, y and z direction (unit: scalar) -->
     <subdomain-num>
@@ -49,7 +49,7 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>0</loops>
+    <loops>3002</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>0.01</timestep>
     <!--  -->
@@ -68,8 +68,8 @@
     </validation>
     <!--  -->
     <visualization>
-      <do>0</do>
-      <rate>2878</rate>
+      <do>1</do>
+      <rate>3000</rate>
       <output-dir>/work_fast/riesinge/workspace/lbm/visualization</output-dir>
     </visualization>
   </simulation>

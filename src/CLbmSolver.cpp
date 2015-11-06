@@ -43,6 +43,10 @@ CLbmSolver<T>::CLbmSolver(
         viscosity(viscosity), maxGravitationDimLess(maxGravitationDimLess),
         storeDensities(storeDensities), storeVelocities(storeVelocities), doLogging(doLogging)
 {
+	bool limitedByGravitation = false;
+	T cellLength = domain.getLength()[0] / (T)domain.getSize()[0];
+	T oldTimestepSize;
+
     if (this->doLogging)
     {
         std::cout << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
@@ -50,40 +54,40 @@ CLbmSolver<T>::CLbmSolver(
         std::cout << "---------------------------------------" << std::endl;
     }
 
-	bool viscosityGiven = this->viscosity > (T)0;
-	bool limitedByGravitation = false;
-	T cellLength = domain.getLength()[0] / (T)domain.getSize()[0];
-	T oldTimestepSize;
+	/*
+	 * If no viscosity was passed to this program, a default viscosity
+	 * basing on a predefined reynolds number is set. This artificial
+	 * viscosity can be further adapted if the timestep size has to adapted.
+	 * The predefined reynolds number is always kept and stays constant.
+	 */
+	if (this->viscosity <= (T)0)
+	{
+		if (this->doLogging)
+		{
+			std::cout << "No viscosity has been passed!" << std::endl;
+			std::cout << "Artificial viscosity is set!" << std::endl;
+		}
+
+		this->viscosity = this->globalLength.max() * this->drivenCavityVelocity[0] / REYNOLDS_DEFAULT;
+
+		if (this->doLogging)
+		{
+			std::cout << "viscosity:         " << this->viscosity << std::endl;
+			std::cout << "---------------------------------------" << std::endl;
+		}
+	}
 
     while (true)
     {
+		if (this->doLogging)
+		{
+			std::cout << "New iteration of finding timestep size started." << std::endl;
+			std::cout << "---------------------------------------" << std::endl;
+        }
+
     	// (4.11)
 		gravitationDimLess = this->gravitation * ((this->timestepSize * this->timestepSize) / cellLength);
 		drivenCavityVelocityDimLess = this->drivenCavityVelocity * (this->timestepSize / cellLength);
-
-		/*
-		 * If no viscosity was passed to this program, a default viscosity
-		 * basing on a predefined reynolds number is set. This artificial
-		 * viscosity can be further adapted if the timestep size has to adapted.
-		 * The predefined reynolds number is always kept and stays constant.
-		 */
-		if (!viscosityGiven)
-		{
-			if (this->doLogging)
-			{
-				std::cout << "No viscosity has been passed!" << std::endl;
-				std::cout << "Artificial viscosity is set!" << std::endl;
-			}
-
-			this->viscosity = this->globalLength.max() * this->drivenCavityVelocity[0] / REYNOLDS_DEFAULT;
-
-			if (this->doLogging)
-			{
-				std::cout << "viscosity:         " << this->viscosity << std::endl;
-				std::cout << "---------------------------------------" << std::endl;
-			}
-		}
-
 		// (4.9)
 		viscosityDimLess = this->viscosity * (this->timestepSize / (cellLength * cellLength));
 
@@ -95,19 +99,16 @@ CLbmSolver<T>::CLbmSolver(
 		 */
 		if (gravitationDimLess.length() > this->maxGravitationDimLess + std::numeric_limits<T>::epsilon())
 		{
+	        limitedByGravitation = true;
+			oldTimestepSize = this->timestepSize;
+	        // (4.12)
+	        this->timestepSize = CMath<T>::sqrt((this->maxGravitationDimLess * cellLength) / this->gravitation.length());
+
 			if (this->doLogging)
 			{
 				std::cout << "Gravitation (dimension less) is too large so the simulation could get unstable!" << std::endl;
 				std::cout << "Timestep size is adapted!" << std::endl;
-				std::cout << "old timestep size: " << this->timestepSize << std::endl;
-			}
-
-	        limitedByGravitation = true;
-	        // (4.12)
-	        this->timestepSize = CMath<T>::sqrt((this->maxGravitationDimLess * cellLength) / this->gravitation.length());
-
-	        if (this->doLogging)
-	        {
+				std::cout << "old timestep size: " << oldTimestepSize << std::endl;
 		        std::cout << "new timestep size: " << this->timestepSize << std::endl;
 				std::cout << "---------------------------------------" << std::endl;
 	        }
@@ -125,18 +126,14 @@ CLbmSolver<T>::CLbmSolver(
 		 */
 		if (tau - std::numeric_limits<T>::epsilon() < (T)TAU_LOWER_LIMIT || tau + std::numeric_limits<T>::epsilon() > (T)TAU_UPPER_LIMIT)
 		{
+			oldTimestepSize = this->timestepSize;
+	        this->timestepSize = (cellLength * cellLength) * (((T)2 * TAU_DEFAULT - (T)1) / ((T)6 * this->viscosity));
+
 			if (this->doLogging)
 			{
 				std::cout << "Tau " << tau << " not within the range [" << TAU_LOWER_LIMIT <<"; " << TAU_UPPER_LIMIT << "]." << std::endl;
 				std::cout << "Timestep size is adapted!" << std::endl;
-				std::cout << "old timestep size: " << this->timestepSize << std::endl;
-			}
-
-			oldTimestepSize = this->timestepSize;
-	        this->timestepSize = (cellLength * cellLength) * (((T)2 * TAU_DEFAULT - (T)1) / ((T)6 * this->viscosity));
-
-	        if (this->doLogging)
-	        {
+				std::cout << "old timestep size: " << oldTimestepSize << std::endl;
 				std::cout << "new timestep size: " << this->timestepSize << std::endl;
 				std::cout << "---------------------------------------" << std::endl;
 	        }
