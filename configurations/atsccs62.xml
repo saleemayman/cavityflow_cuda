@@ -23,15 +23,15 @@
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-      <x>1024</x>
-      <y>512</y>
-      <z>16</z>
+      <x>256</x>
+      <y>256</y>
+      <z>32</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
       <x>1.0</x>
-      <y>0.5</y>
-      <z>0.015625</z>
+      <y>1.0</y>
+      <z>0.125</z>
     </domian-length>
     <!-- number of subdomains in x, y and z direction (unit: scalar) -->
     <subdomain-num>
@@ -68,7 +68,7 @@
     <!--  -->
     <visualization>
       <do>1</do>
-      <rate>3000</rate>
+      <rate>100</rate>
       <output-dir>/work_fast/riesinge/workspace/lbm/visualization</output-dir>
     </visualization>
   </simulation>

@@ -37,7 +37,8 @@ do
 	
 	echo "Scheduling job on "${numOfNodes}" nodes, spawning "${numOfRanks}" MPI ranks to utilize "${numOfGPUs}" GPUs"
 
-	python generate_jobscript.py ${numOfNodes} ${numOfRanksPerNode} ${numOfThreadsPerProcess} ${HOME}	
+	python generate_configuration.py ${numOfNodes} ${numOfRanksPerNode} ${numOfThreadsPerProcess} ${HOME}
+	python generate_jobscript.py ${numOfNodes} ${numOfRanksPerNode} ${numOfThreadsPerProcess} ${HOME}
 	sbatch jobscript.sh
 done
 

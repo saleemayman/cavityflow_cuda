@@ -68,6 +68,7 @@ CLbmSolver<T>::CLbmSolver(
 			std::cout << "Artificial viscosity is set!" << std::endl;
 		}
 
+		// definition reynolds number
 		this->viscosity = this->globalLength.max() * this->drivenCavityVelocity[0] / REYNOLDS_DEFAULT;
 
 		if (this->doLogging)
@@ -127,6 +128,7 @@ CLbmSolver<T>::CLbmSolver(
 		if (tau - std::numeric_limits<T>::epsilon() < (T)TAU_LOWER_LIMIT || tau + std::numeric_limits<T>::epsilon() > (T)TAU_UPPER_LIMIT)
 		{
 			oldTimestepSize = this->timestepSize;
+			// 4.9 & 4.10
 	        this->timestepSize = (cellLength * cellLength) * (((T)2 * TAU_DEFAULT - (T)1) / ((T)6 * this->viscosity));
 
 			if (this->doLogging)
@@ -162,6 +164,8 @@ CLbmSolver<T>::CLbmSolver(
 
     if (this->doLogging)
     {
+        std::cout << "global length (without halo):            " << this->globalLength << std::endl;
+        std::cout << "---------------------------------------" << std::endl;
         std::cout << "domain size (without halo):              " << this->domain.getSize() << std::endl;
         std::cout << "domain length (without halo):            " << this->domain.getLength() << std::endl;
         std::cout << "domain origin (without halo):            " << this->domain.getOrigin() << std::endl;
