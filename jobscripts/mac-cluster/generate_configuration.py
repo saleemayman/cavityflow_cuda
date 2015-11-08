@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import sys
 import xml.etree.ElementTree as ET
 
 root       = ET.Element("lbm-configuration")
@@ -27,8 +28,8 @@ ET.SubElement(domianlength, "x").text = "1.0"
 ET.SubElement(domianlength, "y").text = "1.0"
 ET.SubElement(domianlength, "z").text = "0.125"
 subdomainnum = ET.SubElement(grid, "subdomain-num")
-ET.SubElement(subdomainnum, "x").text = "1"
-ET.SubElement(subdomainnum, "y").text = "1"
+ET.SubElement(subdomainnum, "x").text = "2"
+ET.SubElement(subdomainnum, "y").text = "2"
 ET.SubElement(subdomainnum, "z").text = "1"
 cpusubdomainratio = ET.SubElement(grid, "cpu-subdomain-ratio")
 ET.SubElement(cpusubdomainratio, "x").text = "0.5"
@@ -39,15 +40,16 @@ ET.SubElement(simulation, "loops").text = "3002"
 ET.SubElement(simulation, "timestep").text = "0.01"
 benchmark = ET.SubElement(simulation, "benchmark")
 ET.SubElement(benchmark, "do").text = "1"
-ET.SubElement(benchmark, "output-dir").text = "/scratch/pr63so/lu32dec/dissertation/lbm/benchmark"
+ET.SubElement(benchmark, "output-dir").text = str(sys.argv[5]) + "/dissertation/lbm/benchmark"
 logging = ET.SubElement(simulation, "logging")
-ET.SubElement(logging, "do").text = "0"
+ET.SubElement(logging, "do").text = "1"
 validation = ET.SubElement(simulation, "validation")
-ET.SubElement(validation, "do").text = "1"
-ET.SubElement(validation, "output-dir").text = "/scratch/pr63so/lu32dec/dissertation/lbm/validation"
+ET.SubElement(validation, "do").text = "0"
+ET.SubElement(validation, "output-dir").text = str(sys.argv[5]) + "/dissertation/lbm/validation"
 visualization = ET.SubElement(simulation, "visualization")
 ET.SubElement(visualization, "do").text = "1"
-ET.SubElement(visualization, "output-dir").text = "/scratch/pr63so/lu32dec/dissertation/lbm/visualization"
+ET.SubElement(visualization, "rate").text = "100"
+ET.SubElement(visualization, "output-dir").text = str(sys.argv[5]) + "/dissertation/lbm/visualization"
 
 gridconfiguration = ET.SubElement(device, "grid-configuration")
 initgridconfiguration = ET.SubElement(gridconfiguration, "init-grid-configuration")
