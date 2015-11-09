@@ -199,5 +199,11 @@ void CConfiguration<T>::print()
     std::cout << "--------------------------------------" << std::endl;
 }
 
+template <class T>
+void CConfiguration<T>::serialize()
+{
+	numOfSubdomains[0] = numOfSubdomains[1] = numOfSubdomains[2] = 1;
+}
+
 template class CConfiguration<double>;
 template class CConfiguration<float>;

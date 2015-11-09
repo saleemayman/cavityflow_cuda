@@ -92,6 +92,7 @@ public:
     ~CConfiguration();
 
     void print();
+    void serialize();
 };
 
 #endif

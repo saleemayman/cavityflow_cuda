@@ -6,7 +6,7 @@ code += "#\n";
 code += "#SBATCH -D " + str(sys.argv[4]) + "/workspace/lbm/\n";
 code += "#SBATCH -o " + str(sys.argv[4]) + "/workspace/lbm/results/" + str(int(sys.argv[1]) * int(sys.argv[2])) + ".o.txt\n";
 code += "#SBATCH -e " + str(sys.argv[4]) + "/workspace/lbm/results/" + str(int(sys.argv[1]) * int(sys.argv[2])) + ".e.txt\n";
-code += "#SBATCH -J " + str(sys.argv[1]) + "\n";
+code += "#SBATCH -J lbm\n";
 code += "#SBATCH --get-user-env\n";
 code += "#\n";
 code += "#SBATCH --partition=nvd\n";
