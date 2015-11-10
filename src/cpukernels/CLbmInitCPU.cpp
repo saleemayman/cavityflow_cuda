@@ -94,7 +94,9 @@ void CLbmInitCPU<T>::initLbm(
             T *global_dd,           // density distributions
             Flag *flags,            // flags
             T *velocityArray,      // velocity array (first all x components, then all y components, then z...)
-            T *density)
+            T *density,
+            const bool storeDensities,
+            const bool storeVelocities)
 {
     // linear cell index
     int cellID = 0;
@@ -137,7 +139,6 @@ void CLbmInitCPU<T>::initLbm(
                 global_dd[cellID + 2*domainCellsCPU] = eq_dd_a0(velocity_y, vela2, dd_param);
                 global_dd[cellID + 3*domainCellsCPU] = eq_dd_a1(velocity_y, vela2, dd_param);
 
-#define vela_velb_2 vela2
                 /***********************
                  * DD1
                  ***********************/
@@ -183,7 +184,6 @@ void CLbmInitCPU<T>::initLbm(
                 global_dd[cellID + 14*domainCellsCPU] = eq_dd4(vela_velb, vela_velb_2, dd_param);
                 global_dd[cellID + 15*domainCellsCPU] = eq_dd5(vela_velb, vela_velb_2, dd_param);
 
-#undef vela_velb_2
                 /***********************
                  * DD4
                  ***********************/
@@ -193,15 +193,17 @@ void CLbmInitCPU<T>::initLbm(
                 global_dd[cellID + 17*domainCellsCPU] = eq_dd_a1(velocity_z, vela2, dd_param);
                 global_dd[cellID + 18*domainCellsCPU] = eq_dd18(dd_param);
 
-#if STORE_VELOCITY
-                velocityArray[cellID] = velocity_x;
-                velocityArray[cellID + domainCellsCPU] = velocity_y;
-                velocityArray[cellID + 2*domainCellsCPU] = velocity_z;
-#endif
+                if (storeVelocities)
+                {
+                    velocityArray[cellID] = velocity_x;
+                    velocityArray[cellID + domainCellsCPU] = velocity_y;
+                    velocityArray[cellID + 2*domainCellsCPU] = velocity_z;
+                }
 
-#if STORE_DENSITY
-                density[cellID] = rho;
-#endif
+                if (storeDensities)
+                {
+                    density[cellID] = rho;
+                }
 
                 // increment cell linear id
                 cellID++;

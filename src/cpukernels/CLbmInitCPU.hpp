@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef LBM_INITCPU_CUH
-#define LBM_INITCPU_CUH
+#ifndef LBM_INITCPU_HPP
+#define LBM_INITCPU_HPP
 
 #include <vector>
 
@@ -50,20 +50,23 @@ private:
     T rho;
     T vela2;
     T vela_velb;
+    T vela_velb_2;
 
     Flag setFlags(int xPosition, int yPosition, int zPosition);
 
 public:
-	CLbmInitCPU(
+    CLbmInitCPU(
             CVector<3, int> domainSize,
             CVector<3, int> domainSizeGPU,
             std::vector<Flag>& boundaryConditions);
-	~CLbmInitCPU();
+    ~CLbmInitCPU();
 
-	void initLbm(
-		T *global_dd,
+    void initLbm(
+        T *global_dd,
         Flag *flags,
         T *velocityArray,
-        T *density);
+        T *density,
+        const bool storeDensities,
+        const bool storeVelocities);
 };
 #endif
