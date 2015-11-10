@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include <cassert>
 #include <fstream>
 #include <limits>
 #include <sstream>
@@ -127,9 +128,6 @@ int main(int argc, char** argv)
 		int numOfDomainCells = manager->getDomain()->getSize().elements();
 		int numOfSubomainCells = manager->getController()->getDomain()->getSize().elements();
 
-    	std::cout << "domain size:    [" << domainSize[0] << ", " << domainSize[1] << ", " << domainSize[2] << "] -> " << numOfDomainCells << std::endl;
-    	std::cout << "subdomain size: [" << subdomainSize[0] << ", " << subdomainSize[1] << ", " << subdomainSize[2] << "] -> " << numOfSubomainCells << std::endl;
-
     	/*
     	 * All ranks compute their local result.
     	 */
@@ -165,17 +163,22 @@ int main(int argc, char** argv)
     	 */
     	MPI_Datatype sendArray;
     	MPI_Datatype recvArray;
-    	int start[3] = {0, 0, 0};
+    	MPI_Datatype recvArrayResized;
+    	int starts[3] = {0, 0, 0};
+    	int sendcounts[configuration->numOfSubdomains.elements()];
     	int displacements[configuration->numOfSubdomains.elements()];
 
-    	MPI_Type_create_subarray(3, domainSize, subdomainSize, start, MPI_ORDER_C, ((typeid(TYPE) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE), &sendArray);
+    	MPI_Type_create_subarray(3, subdomainSize, subdomainSize, starts, MPI_ORDER_C, ((typeid(TYPE) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE), &sendArray);
     	MPI_Type_commit(&sendArray);
 
-    		int globalIdx;
-    		int idx = 0;
+    	if (rank == 0)
+    	{
+			MPI_Type_create_subarray(3, domainSize, subdomainSize, starts, MPI_ORDER_C, ((typeid(TYPE) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE), &recvArray);
+			MPI_Type_create_resized(recvArray, 0, sizeof(TYPE), &recvArrayResized);
+			MPI_Type_commit(&recvArrayResized);
 
-			MPI_Type_create_subarray(3, domainSize, domainSize, start, MPI_ORDER_C, ((typeid(TYPE) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE), &recvArray);
-			MPI_Type_commit(&recvArray);
+    		int displacementGlobalIdx;
+    		int subdomainGlobalIdx;
 
 			for (int i = 0; i < configuration->numOfSubdomains[0]; i++)
 			{
@@ -183,48 +186,47 @@ int main(int argc, char** argv)
 				{
 					for (int k = 0; k < configuration->numOfSubdomains[2]; k++)
 					{
-						globalIdx = k * domainSize[0] * subdomainSize[1] * domainSize[1] * subdomainSize[2] + j * domainSize[0] * subdomainSize[1] + i * subdomainSize[0];
-						displacements[idx] = globalIdx;
-						std::cout << "[" << i << ", " << j << ", " << k << "] = " << idx << ": " << globalIdx << " vs. " << displacements[idx] << std::endl;
-						idx++;
+						/*
+						 * The index of the subdomain has to be computed in the
+						 * way how subdomains are distributed among ranks: with
+						 * x-coordinate running fastest.
+						 */
+						subdomainGlobalIdx = k * configuration->numOfSubdomains[0] * configuration->numOfSubdomains[1] + j * configuration->numOfSubdomains[0] + i;
+						/*
+						 * Even if we store our data with x-coordinate running
+						 * fastest, MPI assumes for its multi-dimensional data
+						 * types that z-coordinate is running fastest. Though
+						 * the displacement for gathering data in velocities has
+						 * to be computed with z-coordinate is running fastest.
+						 * Hence, an adequate treatment of velocities when
+						 * comparing it with velocitiesValidation has to be
+						 * implemented.
+						 */
+						displacementGlobalIdx = i * subdomainSize[0] * domainSize[1] * domainSize[2] + j * subdomainSize[1] * domainSize[2] + k * subdomainSize[2];
+						sendcounts[subdomainGlobalIdx] = 1;
+						displacements[subdomainGlobalIdx] = displacementGlobalIdx;
+						// std::cout << "rank " << rank << ": [" << i << ", " << j << ", " << k << "] = " << subdomainGlobalIdx << ": " << displacementGlobalIdx << " vs. " << displacements[subdomainGlobalIdx] << std::endl;
 					}
 				}
 			}
-
-			for (int i = 0; i < configuration->numOfSubdomains.elements() + 8; i++)
-			{
-				std::cout << "displacements[" << i << "] = " << displacements[i] << std::endl;
-			}
-
-	    int one = 1;
-
-    	std::cout << velocitiesLocal << ": " << velocitiesLocal[0] << std::endl;
-    	if (rank == 0)
-    	{
-			std::cout << velocities << std::endl;
-			std::cout << velocitiesValidation << std::endl;
     	}
-    	std::cout << &one << ": " << (&one)[0] << std::endl;
-    	std::cout << displacements << ": " << displacements[0] << std::endl;
 
     	MPI_Gatherv(
     			&velocitiesLocal[0], 1, sendArray,
-    			&velocities[0], &one, displacements, recvArray,
+    			&velocities[0], sendcounts, displacements, recvArrayResized,
     			0, MPI_COMM_WORLD);
-    	/*
-    	MPI_Gather(
-    			&velocitiesLocal[manager->getDomain()->getNumOfCells()], 1, sendArray,
-    			&velocities[configuration->domainSize.elements()], 1, recvArray,
+    	MPI_Gatherv(
+    			&velocitiesLocal[numOfSubomainCells], 1, sendArray,
+    			&velocities[numOfDomainCells], sendcounts, displacements, recvArrayResized,
     			0, MPI_COMM_WORLD);
-    	MPI_Gather(
-    			&velocitiesLocal[2 * manager->getDomain()->getNumOfCells()], 1, sendArray,
-    			&velocities[2 * configuration->domainSize.elements()], manager->getDomain()->getNumOfCells(), recvArray,
+    	MPI_Gatherv(
+    			&velocitiesLocal[2 * numOfSubomainCells], 1, sendArray,
+    			&velocities[2 * numOfDomainCells], sendcounts, displacements, recvArrayResized,
     			0, MPI_COMM_WORLD);
-    	*/
 
     	MPI_Type_free(&sendArray);
     	if (rank == 0)
-    		MPI_Type_free(&recvArray);
+    		MPI_Type_free(&recvArrayResized);
     	delete[] velocitiesLocal;
 
     	/*
@@ -235,45 +237,60 @@ int main(int argc, char** argv)
     	if (rank == 0)
     	{
     		int numOfInequalities = 0;
-    		int globalIdx, x, y, z;
+    		int resultIdx, resultX, resultY, resultZ;
+    		int validationIdx, validationX, validationY, validationZ;
 
     		std::stringstream validationFileName;
     		validationFileName << configuration->validationOutputDir << "/validation.txt";
             std::ofstream validationFile(validationFileName.str().c_str(), std::ios::out);
 
-    		for (int i = 0; i < domainSize[0]; i++)
-    		{
-        		for (int j = 0; j < domainSize[1]; j++)
-        		{
-            		for (int k = 0; k < domainSize[2]; k++)
+            for (int i = 0; i < domainSize[0] / subdomainSize[0]; i++)
+            	{
+            		for (int j = 0; j < domainSize[1] / subdomainSize[1]; j++)
             		{
-            			globalIdx = k * domainSize[1] * domainSize[2] + j * domainSize[0] + i;
-						x = globalIdx;
-						y = numOfDomainCells + globalIdx;
-						z = 2 * numOfDomainCells + globalIdx;
+            			for (int k = 0; k < domainSize[2] / subdomainSize[2]; k++)
+            			{
+            				for (int ii = 0; ii < subdomainSize[0]; ii++)
+            				{
+            					for (int jj = 0; jj < subdomainSize[1]; jj++)
+            					{
+            						for (int kk = 0; kk < subdomainSize[2]; kk++)
+            						{
+            							resultIdx = (i * subdomainSize[0] * domainSize[1] * domainSize[2] + j * subdomainSize[1] * domainSize[2] + k * subdomainSize[2]) + (kk * 1 + jj * domainSize[1] * 1 + ii);
+            							resultX = resultIdx;
+            							resultY = numOfDomainCells + resultIdx;
+            							resultZ = 2 * numOfDomainCells + resultIdx;
+            							validationIdx = ((k * subdomainSize[2] + kk) * domainSize[1] * domainSize[2] + (j * subdomainSize[1] + jj) * domainSize[1] + (i * subdomainSize[0] + ii));
+            							validationX = validationIdx;
+            							validationY = numOfDomainCells + validationIdx;
+            							validationZ = 2 * numOfDomainCells + validationIdx;
 
-						if (CMath<TYPE>::abs(velocities[x] - velocitiesValidation[x]) > std::numeric_limits<TYPE>::epsilon() ||
-								CMath<TYPE>::abs(velocities[y] - velocitiesValidation[y]) > std::numeric_limits<TYPE>::epsilon() ||
-								CMath<TYPE>::abs(velocities[z] - velocitiesValidation[z]) > std::numeric_limits<TYPE>::epsilon())
-						{
-							if (validationFile.is_open())
-							{
-								validationFile << "[" << i << ",\t" << j << ",\t" << k << "]: ";
-								validationFile << "[" << velocities[x] << ", " << velocities[y] << ", " << velocities[z] << "] vs. ";
-								validationFile << "[" << velocitiesValidation[x] << ", " << velocitiesValidation[y] << ", " << velocitiesValidation[z] << "]" << std::endl;
-							} else {
-								std::cerr << "----- main() -----" << std::endl;
-								std::cerr << "There is no open file to write validation results." << std::endl;
-								std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
-								std::cerr << "------------------" << std::endl;
+            							if (CMath<TYPE>::abs(velocities[resultX] - velocitiesValidation[validationX]) > std::numeric_limits<TYPE>::epsilon() ||
+            									CMath<TYPE>::abs(velocities[resultY] - velocitiesValidation[validationY]) > std::numeric_limits<TYPE>::epsilon() ||
+            									CMath<TYPE>::abs(velocities[resultZ] - velocitiesValidation[validationZ]) > std::numeric_limits<TYPE>::epsilon())
+            							{
+            								if (validationFile.is_open())
+            								{
+            									validationFile << "[" << i << "," << j << "," << k << "] ";
+            									validationFile << "[" << ii << "," << jj << "," << kk << "]: ";
+            									validationFile << "[" << velocities[resultX] << ", " << velocities[resultY] << ", " << velocities[resultZ] << "] vs. ";
+            									validationFile << "[" << velocitiesValidation[validationX] << ", " << velocitiesValidation[validationY] << ", " << velocitiesValidation[validationZ] << "]" << std::endl;
+            								} else {
+            									std::cerr << "----- main() -----" << std::endl;
+            									std::cerr << "There is no open file to write validation results." << std::endl;
+            									std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            									std::cerr << "------------------" << std::endl;
 
-								exit (EXIT_FAILURE);
-							}
+            									exit (EXIT_FAILURE);
+            								}
 
-							numOfInequalities++;
-						}
-					}
-        		}
+            								numOfInequalities++;
+            						}
+            					}
+            				}
+            			}
+            		}
+            	}
     		}
 
 			if (validationFile.is_open())
