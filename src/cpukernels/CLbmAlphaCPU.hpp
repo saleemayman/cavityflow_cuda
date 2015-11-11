@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef LBM_ALPHACPU_CUH
-#define LBM_ALPHACPU_CUH
+#ifndef LBM_ALPHACPU_HPP
+#define LBM_ALPHACPU_HPP
 
 #include <vector>
 
@@ -33,9 +33,9 @@ class CLbmAlphaCPU
 {
 private:
     int domainCellsCPU;
-    CVector<3, T> gravitation;
     CVector<3, int> domainSize;
     CVector<3, int> domainSizeGPU; 
+    CVector<3, T> gravitation;
     CVector<3, int> innerCPULimit;
     CVector<3, int> outerCPULimit;
 
@@ -53,10 +53,10 @@ public:
     ~CLbmAlphaCPU();
 
     void alphaKernelCPU(
-            T* global_dd,                 // density distributions
-            const Flag* flag_array,        // flags
-            T* velocity,                  // velocities
-            T* density,                   // densities
+            std::vector<T> &densityDistributions,
+            std::vector<Flag> &flags,
+            std::vector<T> &velocities,
+            std::vector<T> &densities,
             const T inv_tau,
             const T drivenCavityVelocity, // velocity parameters for modification of density distributions
             const bool storeDensities,
