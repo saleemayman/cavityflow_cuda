@@ -2,39 +2,38 @@
 <lbm-configuration>
   <!-- configuration data related to physcis of the simulation -->
   <physics>
+    <!-- external acceleratiopn to system (unit: meters * second^-2) -->
     <gravitation>
       <x>0</x>
       <y>-9.81</y>
       <z>0</z>
     </gravitation>
+    <!-- velocity injection vector (unit: meters * second^-1) -->
     <cavity-velocity>
-      <x>100</x>
+      <x>10.0</x>
       <y>0</y>
       <z>0</z>
-      <w>1</w>
     </cavity-velocity>
-    <viscosity>0.001308</viscosity>
-    <mass-exchange-factor>1.0</mass-exchange-factor>
-    <max-gravitation>0.0001</max-gravitation>
+    <!-- viscosity of the fluid, -1 for automatic detection (unit: meters^2 * second^-1) -->
+    <viscosity>-1</viscosity>
+    <!-- maximum external acceleration to avoid instabilities (unit: meters * second^-2) -->
+    <max-gravitation>0.00001</max-gravitation>
   </physics>
   <!-- configuration data related to simulation grid -->
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-      <!-- <x>92</x>   -->
-      <!-- <y>512</y>  -->
-      <!-- <z>256</z>  -->
-      <x>64</x>
-      <y>16</y>
-      <z>8</z>
+      <x>192</x>
+      <y>192</y>
+      <z>192</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
-      <x>0.8</x>
-      <y>0.2</y>
-      <z>0.1</z>
+      <x>1.0</x>
+      <y>1.0</y>
+      <z>1.0</z>
     </domian-length>
-    <!-- number of subdomains in x, y and z direction -->
+    <!-- number of subdomains in x, y and z direction (unit: scalar) -->
     <subdomain-num>
       <x>1</x>
       <y>1</y>
@@ -49,12 +48,12 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>128</loops>
+    <loops>3002</loops>
     <!-- timestep size, -1 for automatic detection -->
-    <timestep>-1.0</timestep>
+    <timestep>0.01</timestep>
     <!--  -->
     <benchmark>
-      <do>0</do>
+      <do>1</do>
       <output-dir>benchmark</output-dir>
     </benchmark>
     <!--  -->
@@ -69,13 +68,13 @@
     <!--  -->
     <visualization>
       <do>1</do>
-      <rate>4</rate>
+      <rate>100</rate>
       <output-dir>visualization</output-dir>
     </visualization>
   </simulation>
   <!-- configuration data related to computing device (e.g. GPU) -->
   <device>
-    <!--  -->
+    <!-- configuration data related to GPU kernel setup -->
     <grid-configuration>
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_init() -->
       <init-grid-configuration>

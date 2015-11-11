@@ -54,14 +54,14 @@ public:
     CLbmSolverCPU();
     CLbmSolverCPU(
             int id,
+            CVector<3, T> &globalLength,
             CDomain<T> &domain,
             std::vector<Flag> boundaryConditions,
             CLbmSolverGPU<T>* solverGPU,
             T timestepSize,
             CVector<3, T>& gravitation,
-            CVector<4, T>& drivenCavityVelocity,
+            CVector<3, T>& drivenCavityVelocity,
             T viscocity,
-            T massExchangeFactor,
             T maxGravitationDimLess,
             bool storeDensities,
             bool storeVelocities,

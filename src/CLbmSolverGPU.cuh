@@ -27,6 +27,7 @@ class CLbmSolverGPU : public CLbmSolver<T>
 {
 private:
     using CLbmSolver<T>::id;
+    using CLbmSolver<T>::globalLength;
     using CLbmSolver<T>::domain;
     using CLbmSolver<T>::gravitation;
     using CLbmSolver<T>::gravitationDimLess;
@@ -43,18 +44,6 @@ private:
     T* densities;
 
     /*
-     * Six slots for the halo layers of the six faces of a cuboid.
-     * [g/s]etDensityDistributionsHalo[0]: halo layer for left face
-     * [g/s]etDensityDistributionsHalo[1]: halo layer for right face
-     * [g/s]etDensityDistributionsHalo[2]: halo layer for bottom face
-     * [g/s]etDensityDistributionsHalo[3]: halo layer for tom face
-     * [g/s]etDensityDistributionsHalo[4]: halo layer for back face
-     * [g/s]etDensityDistributionsHalo[5]: halo layer for front face
-     */
-    std::vector<T*> getDensityDistributionsHalo;
-    std::vector<T*> setDensityDistributionsHalo;
-
-    /*
      * Four slots for the parallel setup (threads per block) for the four different GPU kernels.
      * threadsPerBlock[0]: number of threads per block for kernel lbm_init()
      * threadsPerBlock[1]: number of threads per block for kernel lbm_alpha()
@@ -67,13 +56,13 @@ public:
     CLbmSolverGPU(
             int id,
             std::vector<dim3> threadsPerBlock,
+            CVector<3, T> &globalLength,
 			CDomain<T> &domain,
 			std::vector<Flag> boundaryConditions,
 			T timestepSize,
 			CVector<3, T> &gravitation,
-			CVector<4, T> &drivenCavityVelocity,
-			T viscocity,
-			T massExchangeFactor,
+			CVector<3, T> &drivenCavityVelocity,
+			T viscosity,
 			T maxGravitationDimLess,
 			bool storeDensities,
 			bool storeVelocities,

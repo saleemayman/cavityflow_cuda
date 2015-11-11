@@ -19,28 +19,34 @@
 
 #include "CLbmSolver.hpp"
 
+#include <limits>
+
 #include "libmath/CMath.hpp"
 
 template <class T>
 CLbmSolver<T>::CLbmSolver(
         int id,
+        CVector<3, T> &globalLength,
         CDomain<T> &domain,
         std::vector<Flag> boundaryConditions,
         T timestepSize,
         CVector<3, T> &gravitation,
-        CVector<4, T> &drivenCavityVelocity,
-        T viscocity,
-        T massExchangeFactor,
+        CVector<3, T> &drivenCavityVelocity,
+        T viscosity,
         T maxGravitationDimLess,
         bool storeDensities,
         bool storeVelocities,
         bool doLogging) :
-        id(id), domain(domain),
-        boundaryConditions(boundaryConditions),
+        id(id), globalLength(globalLength),
+        domain(domain), boundaryConditions(boundaryConditions),
         timestepSize(timestepSize), gravitation(gravitation), drivenCavityVelocity(drivenCavityVelocity),
-        viscocity(viscocity), massExchangeFactor(massExchangeFactor), maxGravitationDimLess(maxGravitationDimLess),
+        viscosity(viscosity), maxGravitationDimLess(maxGravitationDimLess),
         storeDensities(storeDensities), storeVelocities(storeVelocities), doLogging(doLogging)
 {
+	bool limitedByGravitation = false;
+	T cellLength = domain.getLength()[0] / (T)domain.getSize()[0];
+	T oldTimestepSize;
+
     if (this->doLogging)
     {
         std::cout << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
@@ -48,64 +54,121 @@ CLbmSolver<T>::CLbmSolver(
         std::cout << "---------------------------------------" << std::endl;
     }
 
-    T cellLength = domain.getLength()[0] / (T)domain.getSize()[0];
+	/*
+	 * If no viscosity was passed to this program, a default viscosity
+	 * basing on a predefined reynolds number is set. This artificial
+	 * viscosity can be further adapted if the timestep size has to adapted.
+	 * The predefined reynolds number is always kept and stays constant.
+	 */
+	if (this->viscosity <= (T)0)
+	{
+		if (this->doLogging)
+		{
+			std::cout << "No viscosity has been passed!" << std::endl;
+			std::cout << "Artificial viscosity is set!" << std::endl;
+		}
 
-    /*
-     * If an invalid timestep size was passed to this program, a default
-     * timestep size is set.
-     */
-    if (this->timestepSize < (T)0)
+		// definition reynolds number
+		this->viscosity = this->globalLength.max() * this->drivenCavityVelocity[0] / REYNOLDS_DEFAULT;
+
+		if (this->doLogging)
+		{
+			std::cout << "viscosity:         " << this->viscosity << std::endl;
+			std::cout << "---------------------------------------" << std::endl;
+		}
+	}
+
+    while (true)
     {
-        this->timestepSize = (cellLength * cellLength) * ((T)2 * this->tau - (T)1) / ((T)6 * this->viscocity * CMath<T>::sqrt(this->massExchangeFactor));
-
-        if (this->doLogging)
-        {
-            std::cout << "No valid timestep size has been passed. A default timestep size set!" << std::endl;
-            std::cout << "---------------------------------------" << std::endl;
+		if (this->doLogging)
+		{
+			std::cout << "New iteration of finding timestep size started." << std::endl;
+			std::cout << "---------------------------------------" << std::endl;
         }
+
+    	// (4.11)
+		gravitationDimLess = this->gravitation * ((this->timestepSize * this->timestepSize) / cellLength);
+		drivenCavityVelocityDimLess = this->drivenCavityVelocity * (this->timestepSize / cellLength);
+		// (4.9)
+		viscosityDimLess = this->viscosity * (this->timestepSize / (cellLength * cellLength));
+
+		/*
+		 * If the dimension less gravity is larger than the specified maximum
+		 * value, the simulation becomes unstable. In such a case, the timestep
+		 * size is adapted accordingly and a valid dimension less gravity is set
+		 * in the next iteration of this loop.
+		 */
+		if (gravitationDimLess.length() > this->maxGravitationDimLess + std::numeric_limits<T>::epsilon())
+		{
+	        limitedByGravitation = true;
+			oldTimestepSize = this->timestepSize;
+	        // (4.12)
+	        this->timestepSize = CMath<T>::sqrt((this->maxGravitationDimLess * cellLength) / this->gravitation.length());
+
+			if (this->doLogging)
+			{
+				std::cout << "Gravitation (dimension less) is too large so the simulation could get unstable!" << std::endl;
+				std::cout << "Timestep size is adapted!" << std::endl;
+				std::cout << "old timestep size: " << oldTimestepSize << std::endl;
+		        std::cout << "new timestep size: " << this->timestepSize << std::endl;
+				std::cout << "---------------------------------------" << std::endl;
+	        }
+
+			continue;
+		}
+
+		// (4.7)
+		tau = (T)0.5 * ((T)6 * viscosityDimLess + (T)1);
+
+		/*
+		 * If tau is not within a certain range, the simulation becomes
+		 * unstable. In such a case, the timestep size is adapted accordingly
+		 * and a valid tau is set in the next iteration of this loop.
+		 */
+		if (tau - std::numeric_limits<T>::epsilon() < (T)TAU_LOWER_LIMIT || tau + std::numeric_limits<T>::epsilon() > (T)TAU_UPPER_LIMIT)
+		{
+			oldTimestepSize = this->timestepSize;
+			// 4.9 & 4.10
+	        this->timestepSize = (cellLength * cellLength) * (((T)2 * TAU_DEFAULT - (T)1) / ((T)6 * this->viscosity));
+
+			if (this->doLogging)
+			{
+				std::cout << "Tau " << tau << " not within the range [" << TAU_LOWER_LIMIT <<"; " << TAU_UPPER_LIMIT << "]." << std::endl;
+				std::cout << "Timestep size is adapted!" << std::endl;
+				std::cout << "old timestep size: " << oldTimestepSize << std::endl;
+				std::cout << "new timestep size: " << this->timestepSize << std::endl;
+				std::cout << "---------------------------------------" << std::endl;
+	        }
+
+			if (limitedByGravitation && this->timestepSize > oldTimestepSize) {
+		        std::cerr << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
+		        std::cerr << "No valid timestep size could be determined which satisfies" << std::endl;
+		        std::cerr << "- viscosity:              " << this->viscosity << std::endl;
+		        std::cerr << "- max gravitation length: " << this->maxGravitationDimLess << std::endl;
+		        std::cerr << "- tau:                    " << tau << std::endl;
+		        std::cerr << "so the simulation stays stable!" << std::endl;
+
+		        exit (EXIT_FAILURE);
+			} else {
+				continue;
+			}
+		}
+
+		break;
     }
-
-    gravitationDimLess = this->gravitation * ((this->timestepSize * this->timestepSize) / cellLength);
-
-    /*
-     * Limit the gravitation parameter for the simulation to avoid large
-     * velocities and thus an unstable simulation.
-     */
-    if (gravitationDimLess.length() >= this->maxGravitationDimLess)
-    {
-        this->timestepSize = CMath<T>::sqrt((this->maxGravitationDimLess * cellLength) / this->gravitation.length());
-        gravitationDimLess = this->gravitation * ((this->timestepSize * this->timestepSize) / cellLength);
-
-        if (this->doLogging)
-        {
-            std::cout << "Gravitation has been limited to avoid large velocities and thus instability!" << std::endl;
-            std::cout << "---------------------------------------" << std::endl;
-        }
-    }
-
-    tau = (T)0.5 * (this->timestepSize * this->viscocity * CMath<T>::sqrt(this->massExchangeFactor) * (T)6) / (cellLength * cellLength) + (T)0.5;
-
-    if (tau < (T)TAU_LOWER_LIMIT || tau > (T)TAU_UPPER_LIMIT)
-    {
-        std::cerr <<    "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
-        std::cerr << "Tau " << tau << " not within the boundary [" << TAU_LOWER_LIMIT <<"; " << TAU_UPPER_LIMIT <<"]." << std::endl;
-        std::cerr << "Simulation becomes unstable!" << std::endl;
-        std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
-        std::cerr << "---------------------------------------" << std::endl;
-
-        exit (EXIT_FAILURE);
-    }
-
-    drivenCavityVelocityDimLess = this->drivenCavityVelocity * this->timestepSize;
 
     tauInv = (T)1 / tau;
     tauInvTrt = (T)1 / ((T)0.5 + (T)3 / ((T)16 * tau - (T)8));
 
+    int reynolds = this->domain.getLength()[0] * this->drivenCavityVelocity[0] / this->viscosity;
+
     if (this->doLogging)
     {
-        std::cout << "domain size:                             " << this->domain.getSize() << std::endl;
-        std::cout << "domain length:                           " << this->domain.getLength() << std::endl;
-        std::cout << "domain origin:                           " << this->domain.getOrigin() << std::endl;
+        std::cout << "global length (without halo):            " << this->globalLength << std::endl;
+        std::cout << "---------------------------------------" << std::endl;
+        std::cout << "domain size (without halo):              " << this->domain.getSize() << std::endl;
+        std::cout << "domain length (without halo):            " << this->domain.getLength() << std::endl;
+        std::cout << "domain origin (without halo):            " << this->domain.getOrigin() << std::endl;
         std::cout << "---------------------------------------" << std::endl;
         std::cout << "timestep size:                           " << this->timestepSize << std::endl;
         std::cout << "---------------------------------------" << std::endl;
@@ -114,9 +177,10 @@ CLbmSolver<T>::CLbmSolver(
         std::cout << "driven cavity velocity:                  " << this->drivenCavityVelocity << std::endl;
         std::cout << "driven cavity velocity (dimension less): " << drivenCavityVelocityDimLess << std::endl;
         std::cout << "---------------------------------------" << std::endl;
-        std::cout << "viscocity:                               " << this->viscocity << std::endl;
+        std::cout << "viscosity:                               " << this->viscosity << std::endl;
+        std::cout << "viscosity (dimension less):              " << viscosityDimLess << std::endl;
         std::cout << "tau:                                     " << this->tau << std::endl;
-        std::cout << "mass exchange factor:                    " << this->massExchangeFactor << std::endl;
+        std::cout << "reynolds number (dimension less):        " << reynolds << std::endl;
         std::cout << "max gravitation length (dimension less): " << this->maxGravitationDimLess << std::endl;
         std::cout << "inv tau:                                 " << this->tauInv << std::endl;
         std::cout << "inv trt tau:                             " << this->tauInvTrt << std::endl;

@@ -37,16 +37,16 @@ public:
 	CLbmVisualization(int id, int visualizationRate, CLbmSolver<T>* solver) :
 		id(id), visualizationRate(visualizationRate), solver(solver)
 	{
-		flags = new Flag[this->solver->getDomain()->getNumOfCells()];
-		densities = new T[this->solver->getDomain()->getNumOfCells()];
+		// flags = new Flag[this->solver->getDomain()->getNumOfCells()];
+		// densities = new T[this->solver->getDomain()->getNumOfCells()];
 		velocities = new T[3 * this->solver->getDomain()->getNumOfCells()];
 	}
 
     virtual ~CLbmVisualization()
     {
 		delete[] velocities;
-		delete[] densities;
-		delete[] flags;
+		// delete[] densities;
+		// delete[] flags;
     };
 
 	virtual void render(int iteration = -1) = 0;

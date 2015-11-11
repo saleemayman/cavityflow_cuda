@@ -2,43 +2,42 @@
 <lbm-configuration>
   <!-- configuration data related to physcis of the simulation -->
   <physics>
+    <!-- external acceleratiopn to system (unit: meters * second^-2) -->
     <gravitation>
       <x>0</x>
       <y>-9.81</y>
       <z>0</z>
     </gravitation>
+    <!-- velocity injection vector (unit: meters * second^-1) -->
     <cavity-velocity>
-      <x>100</x>
+      <x>10.0</x>
       <y>0</y>
       <z>0</z>
-      <w>1</w>
     </cavity-velocity>
-    <viscosity>0.00001308</viscosity>
-    <mass-exchange-factor>1.0</mass-exchange-factor>
-    <max-gravitation>0.0001</max-gravitation>
+    <!-- viscosity of the fluid, -1 for automatic detection (unit: meters^2 * second^-1) -->
+    <viscosity>-1</viscosity>
+    <!-- maximum external acceleration to avoid instabilities (unit: meters * second^-2) -->
+    <max-gravitation>0.00001</max-gravitation>
   </physics>
   <!-- configuration data related to simulation grid -->
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-      <!-- <x>92</x>   -->
-      <!-- <y>512</y>  -->
-      <!-- <z>256</z>  -->
-      <x>32</x>
-      <y>256</y>
-      <z>128</z>
+      <x>512</x>
+      <y>512</y>
+      <z>32</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
       <x>1.0</x>
-      <y>8.0</y>
-      <z>4.0</z>
+      <y>1.0</y>
+      <z>0.0625</z>
     </domian-length>
-    <!-- number of subdomains in x, y and z direction -->
+    <!-- number of subdomains in x, y and z direction (unit: scalar) -->
     <subdomain-num>
       <x>2</x>
-      <y>1</y>
-      <z>1</z>
+      <y>2</y>
+      <z>2</z>
     </subdomain-num>
     <!-- ratio in x, y and z direction of subdomain cells which are processed by the CPU ([0.0, 1.0]) (unit: scalar factor) -->
     <cpu-subdomain-ratio>
@@ -49,13 +48,13 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>2</loops>
+    <loops>1344602</loops>
     <!-- timestep size, -1 for automatic detection -->
-    <timestep>-1.0</timestep>
+    <timestep>0.01</timestep>
     <!--  -->
     <benchmark>
       <do>1</do>
-      <output-dir>benchmark</output-dir>
+      <output-dir>/scratch/pr63so/lu32dec/dissertation/lbm/benchmark</output-dir>
     </benchmark>
     <!--  -->
     <logging>
@@ -64,18 +63,18 @@
     <!--  -->
     <validation>
       <do>0</do>
-      <output-dir>validation</output-dir>
+      <output-dir>/scratch/pr63so/lu32dec/dissertation/lbm/validation</output-dir>
     </validation>
     <!--  -->
     <visualization>
       <do>1</do>
-      <rate>2</rate>
-      <output-dir>visualization</output-dir>
+      <rate>2241</rate>
+      <output-dir>/scratch/pr63so/lu32dec/dissertation/lbm/visualization</output-dir>
     </visualization>
   </simulation>
   <!-- configuration data related to computing device (e.g. GPU) -->
   <device>
-    <!--  -->
+    <!-- configuration data related to GPU kernel setup -->
     <grid-configuration>
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_init() -->
       <init-grid-configuration>

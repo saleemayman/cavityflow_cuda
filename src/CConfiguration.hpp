@@ -57,9 +57,8 @@ public:
      * physics configuration data
      */
     CVector<3, T> gravitation;
-    CVector<4, T> cavityVelocity;
+    CVector<3, T> cavityVelocity;
     T viscosity;
-	T massExchangeFactor;
 	T maxGravitationDimLess;
 
     /*
@@ -93,6 +92,7 @@ public:
     ~CConfiguration();
 
     void print();
+    void serialize();
 };
 
 #endif

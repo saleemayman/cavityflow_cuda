@@ -31,8 +31,8 @@ class CLbmSolver
 {
 protected:
     int id;
+    CVector<3, T> globalLength;
     CDomain<T> domain;
-    
     /*
      * Vector for the boundary conditions of the six faces of a cuboid.
      * boundaryConditions[0]: boundary condition for left face (smallest x-coordinate)
@@ -46,10 +46,9 @@ protected:
 
     T timestepSize;
     CVector<3, T> gravitation, gravitationDimLess;
-    CVector<4, T> drivenCavityVelocity, drivenCavityVelocityDimLess;
-    T viscocity;
+    CVector<3, T> drivenCavityVelocity, drivenCavityVelocityDimLess;
+    T viscosity, viscosityDimLess;
     T tau;
-    T massExchangeFactor;
     T maxGravitationDimLess;
 
     bool storeDensities;
@@ -62,13 +61,13 @@ public:
     CLbmSolver();
     CLbmSolver(
             int id,
+            CVector<3, T> &globalLength,
             CDomain<T> &domain,
             std::vector<Flag> boundaryConditions,
             T timestepSize,
             CVector<3, T> &gravitation,
-            CVector<4, T> &drivenCavityVelocity,
-            T viscocity,
-            T massExchangeFactor,
+            CVector<3, T> &drivenCavityVelocity,
+            T viscosity,
             T maxGravitationDimLess,
             bool storeDensities,
             bool storeVelocities,

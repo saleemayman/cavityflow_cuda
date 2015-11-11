@@ -44,12 +44,13 @@ public:
 
     int getId() const;
     CVector<3, T> getLength() const;
+    CVector<3, T> getLengthWithHalo() const;
     int getNumOfCells() const;
-    int getNumOfXFaceCells() const;
-    int getNumOfYFaceCells() const;
-    int getNumOfZFaceCells() const;
+    int getNumOfCellsWithHalo() const;
     CVector<3, int> getOrigin() const;
+    CVector<3, int> getOriginWithHalo() const;
     CVector<3, int> getSize() const;
+    CVector<3, int> getSizeWithHalo() const;
 };
 
 #endif

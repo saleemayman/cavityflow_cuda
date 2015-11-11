@@ -48,6 +48,7 @@ CController<T>::CController(
 	solverGPU = new CLbmSolverGPU<T>(
             this->id,
             this->configuration->threadsPerBlock,
+            this->configuration->domainLength,
             // &domainGPU,
             this->domain,
             this->boundaryConditions,
@@ -55,13 +56,13 @@ CController<T>::CController(
             this->configuration->gravitation,
             this->configuration->cavityVelocity,
             this->configuration->viscosity,
-            this->configuration->massExchangeFactor,
             this->configuration->maxGravitationDimLess,
             this->configuration->doValidation || this->configuration->doVisualization,
             this->configuration->doValidation || this->configuration->doVisualization,
             this->configuration->doLogging);
     solverCPU = new CLbmSolverCPU<T>(
             this->id,
+            this->configuration->domainLength,
             this->domain,
             this->boundaryConditions,
             solverGPU,
@@ -69,7 +70,6 @@ CController<T>::CController(
             this->configuration->gravitation,
             this->configuration->cavityVelocity,
             this->configuration->viscosity,
-            this->configuration->massExchangeFactor,
             this->configuration->maxGravitationDimLess,
             this->configuration->doValidation || this->configuration->doVisualization,
             this->configuration->doValidation || this->configuration->doVisualization,
@@ -169,11 +169,11 @@ void CController<T>::syncAlpha()
 
         if (configuration->doLogging)
         {
-            std::cout << "destination rank:    " << dstId << std::endl;
-            std::cout << "send origin:         " << sendOrigin << std::endl;
-            std::cout << "receive origin:      " << recvOrigin << std::endl;
-            std::cout << "send buffer size:    " << ((T)sendBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
-            std::cout << "receive buffer size: " << ((T)recvBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "destination rank:           " << dstId << std::endl;
+            std::cout << "send origin (with halo):    " << sendOrigin << std::endl;
+            std::cout << "receive origin (with halo): " << recvOrigin << std::endl;
+            std::cout << "send buffer size:           " << ((T)sendBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "receive buffer size:        " << ((T)recvBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
             std::cout << "---------------------------------------" << std::endl;
         }
 
@@ -243,11 +243,11 @@ void CController<T>::syncBeta()
 
         if (configuration->doLogging)
         {
-            std::cout << "destination rank:    " << dstId << std::endl;
-            std::cout << "send origin:         " << sendOrigin << std::endl;
-            std::cout << "receive origin:      " << recvOrigin << std::endl;
-            std::cout << "send buffer size:    " << ((T)sendBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
-            std::cout << "receive buffer size: " << ((T)recvBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "destination rank:           " << dstId << std::endl;
+            std::cout << "send origin (with halo):    " << sendOrigin << std::endl;
+            std::cout << "receive origin (with halo): " << recvOrigin << std::endl;
+            std::cout << "send buffer size:           " << ((T)sendBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "receive buffer size:        " << ((T)recvBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
             std::cout << "--------------------------------------" << std::endl;
         }
 
@@ -309,8 +309,8 @@ void CController<T>::setDrivenCavitySzenario()
         std::cout << "-----------------------------------------------------" << std::endl;
     }
 
-    CVector<3, int> origin(1, domain.getSize()[1] - 2, 1);
-    CVector<3, int> size(domain.getSize()[0] - 2, 1, domain.getSize()[2] - 2);
+    CVector<3, int> origin(1, domain.getSizeWithHalo()[1] - 2, 1);
+    CVector<3, int> size(domain.getSize()[0], 1, domain.getSize()[2]);
 
     if (configuration->doLogging)
     {

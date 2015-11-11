@@ -109,8 +109,8 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
 
     if (boundaryConditions[0] == GHOST_LAYER) {
         int commDestination = rank - 1;
-        CVector<3, int> sendSize(1, subdomainSize[1], subdomainSize[2]);
-        CVector<3, int> recvSize(1, subdomainSize[1], subdomainSize[2]);
+        CVector<3, int> sendSize(1, subdomain->getSizeWithHalo()[1], subdomain->getSizeWithHalo()[2]);
+        CVector<3, int> recvSize(1, subdomain->getSizeWithHalo()[1], subdomain->getSizeWithHalo()[2]);
         CVector<3, int> sendOrigin(1, 0, 0);
         CVector<3, int> recvOrigin(0, 0, 0);
 
@@ -120,10 +120,10 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
     }
     if (boundaryConditions[1] == GHOST_LAYER) {
         int commDestination = rank + 1;
-        CVector<3, int> sendSize(1, subdomainSize[1], subdomainSize[2]);
-        CVector<3, int> recvSize(1, subdomainSize[1], subdomainSize[2]);
-        CVector<3, int> sendOrigin(subdomainSize[0] - 2, 0, 0);
-        CVector<3, int> recvOrigin(subdomainSize[0] - 1, 0, 0);
+        CVector<3, int> sendSize(1, subdomain->getSizeWithHalo()[1], subdomain->getSizeWithHalo()[2]);
+        CVector<3, int> recvSize(1, subdomain->getSizeWithHalo()[1], subdomain->getSizeWithHalo()[2]);
+        CVector<3, int> sendOrigin(subdomain->getSizeWithHalo()[0] - 2, 0, 0);
+        CVector<3, int> recvOrigin(subdomain->getSizeWithHalo()[0] - 1, 0, 0);
 
         CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, RIGHT);
 
@@ -131,8 +131,8 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
     }
     if (boundaryConditions[2] == GHOST_LAYER) {
         int commDestination = rank - configuration->numOfSubdomains[0];
-        CVector<3, int> sendSize(subdomainSize[0], 1, subdomainSize[2]);
-        CVector<3, int> recvSize(subdomainSize[0], 1, subdomainSize[2]);
+        CVector<3, int> sendSize(subdomain->getSizeWithHalo()[0], 1, subdomain->getSizeWithHalo()[2]);
+        CVector<3, int> recvSize(subdomain->getSizeWithHalo()[0], 1, subdomain->getSizeWithHalo()[2]);
         CVector<3, int> sendOrigin(0, 1, 0);
         CVector<3, int> recvOrigin(0, 0, 0);
 
@@ -142,10 +142,10 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
     }
     if (boundaryConditions[3] == GHOST_LAYER) {
         int commDestination = rank + configuration->numOfSubdomains[0];
-        CVector<3, int> sendSize(subdomainSize[0], 1, subdomainSize[2]);
-        CVector<3, int> recvSize(subdomainSize[0], 1, subdomainSize[2]);
-        CVector<3, int> sendOrigin(0, subdomainSize[1] - 2, 0);
-        CVector<3, int> recvOrigin(0, subdomainSize[1] - 1, 0);
+        CVector<3, int> sendSize(subdomain->getSizeWithHalo()[0], 1, subdomain->getSizeWithHalo()[2]);
+        CVector<3, int> recvSize(subdomain->getSizeWithHalo()[0], 1, subdomain->getSizeWithHalo()[2]);
+        CVector<3, int> sendOrigin(0, subdomain->getSizeWithHalo()[1] - 2, 0);
+        CVector<3, int> recvOrigin(0, subdomain->getSizeWithHalo()[1] - 1, 0);
 
         CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, TOP);
 
@@ -153,8 +153,8 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
     }
     if (boundaryConditions[4] == GHOST_LAYER) {
         int commDestination = rank - configuration->numOfSubdomains[0] * configuration->numOfSubdomains[1];
-        CVector<3, int> sendSize(subdomainSize[0], subdomainSize[1], 1);
-        CVector<3, int> recvSize(subdomainSize[0], subdomainSize[1], 1);
+        CVector<3, int> sendSize(subdomain->getSizeWithHalo()[0], subdomain->getSizeWithHalo()[1], 1);
+        CVector<3, int> recvSize(subdomain->getSizeWithHalo()[0], subdomain->getSizeWithHalo()[1], 1);
         CVector<3, int> sendOrigin(0, 0, 1);
         CVector<3, int> recvOrigin(0, 0, 0);
 
@@ -164,10 +164,10 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
     }
     if (boundaryConditions[5] == GHOST_LAYER) {
         int commDestination = rank + configuration->numOfSubdomains[0] * configuration->numOfSubdomains[1];
-        CVector<3, int> sendSize(subdomainSize[0], subdomainSize[1], 1);
-        CVector<3, int> recvSize(subdomainSize[0], subdomainSize[1], 1);
-        CVector<3, int> sendOrigin(0, 0, subdomainSize[2] - 2);
-        CVector<3, int> recvOrigin(0, 0, subdomainSize[2] - 1);
+        CVector<3, int> sendSize(subdomain->getSizeWithHalo()[0], subdomain->getSizeWithHalo()[1], 1);
+        CVector<3, int> recvSize(subdomain->getSizeWithHalo()[0], subdomain->getSizeWithHalo()[1], 1);
+        CVector<3, int> sendOrigin(0, 0, subdomain->getSizeWithHalo()[2] - 2);
+        CVector<3, int> recvOrigin(0, 0, subdomain->getSizeWithHalo()[2] - 1);
 
         CComm<T> comm(commDestination, sendSize, recvSize, sendOrigin, recvOrigin, FRONT);
 
