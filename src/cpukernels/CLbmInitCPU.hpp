@@ -52,7 +52,7 @@ private:
     T vela_velb;
     T vela_velb_2;
 
-    Flag setFlags(int xPosition, int yPosition, int zPosition);
+    void setFlags(std::vector<Flag> &flags);
 
 public:
     CLbmInitCPU(
@@ -62,10 +62,10 @@ public:
     ~CLbmInitCPU();
 
     void initLbm(
-        T *global_dd,
-        Flag *flags,
-        T *velocityArray,
-        T *density,
+        std::vector<T> &densityDistributions,
+        std::vector<Flag> &flags,
+        std::vector<T> &velocities,
+        std::vector<T> &densities,
         const bool storeDensities,
         const bool storeVelocities);
 };

@@ -51,55 +51,11 @@ CLbmInitCPU<T>::~CLbmInitCPU()
 
 
 template<class T>
-Flag CLbmInitCPU<T>::setFlags(int xPos, int yPos, int zPos)
-{
-    // initialize flag field
-    flag = FLUID;
-
-    // set the flags for x-direction                
-    if (xPos == 0)
-        flag = boundaryConditionRight;
-    if (xPos == innerCPULimit[0]-1 && flag != OBSTACLE)
-        flag = GHOST_LAYER;
-    if (xPos == outerCPULimit[0]-1 && flag != OBSTACLE)
-        flag = GHOST_LAYER;
-    if (xPos == domainSize[0]-1 && flag != OBSTACLE)
-        flag = boundaryConditionLeft;
-    
-    // set the flags for y-direction                
-    if (yPos == 0 && flag != OBSTACLE)
-        flag = boundaryConditionTop;
-    if (yPos == innerCPULimit[1]-1 && flag != OBSTACLE)
-        flag = GHOST_LAYER;
-    if (yPos == outerCPULimit[1]-1 && flag != OBSTACLE)
-        flag = GHOST_LAYER;
-    if (yPos == domainSize[1]-1 && flag != OBSTACLE)
-        flag = boundaryConditionBottom;
-    
-    // set the flags for z-direction                
-    if (zPos == 0 && flag != OBSTACLE)
-        flag = boundaryConditionFront;
-    if (zPos == innerCPULimit[2]-1 && flag != OBSTACLE)
-        flag = GHOST_LAYER;
-    if (zPos == outerCPULimit[2]-1 && flag != OBSTACLE)
-        flag = GHOST_LAYER;
-    if (zPos == domainSize[2]-1 && flag != OBSTACLE)
-        flag = boundaryConditionBack;
-
-    return flag;
-}
-
-template<class T>
-void CLbmInitCPU<T>::initLbm(
-            T *global_dd,           // density distributions
-            Flag *flags,            // flags
-            T *velocityArray,      // velocity array (first all x components, then all y components, then z...)
-            T *density,
-            const bool storeDensities,
-            const bool storeVelocities)
+void CLbmInitCPU<T>::setFlags(std::vector<Flag> &flags)
 {
     // linear cell index
     int cellID = 0;
+    Flag flag;
 
     /*
      * Iterate over all CPU domain cells in the following order:
@@ -111,104 +67,173 @@ void CLbmInitCPU<T>::initLbm(
         {
             for (int x = 0; x < domainSize[0]; x++)
             {
+                // initialize flag field
+                flag = FLUID;
+
                 // if inside GPU domain then skip cell
                 if ((x > innerCPULimit[0]-1 && x < outerCPULimit[0]-1) &&
                     (y > innerCPULimit[1]-1 && y < outerCPULimit[1]-1) &&
                     (z > innerCPULimit[2]-1 && z < outerCPULimit[2]-1))
                 {
-                    break;
+                    continue;
                 }
+
+                // set the flags for x-direction                
+                if (x == 0)
+                    flag = boundaryConditionRight;
+                if (x == innerCPULimit[0]-1 &&
+                        (y > innerCPULimit[1]-1 && y < outerCPULimit[1]-1) &&
+                        (z > innerCPULimit[2]-1 && z < outerCPULimit[2]-1) &&
+                        flag != OBSTACLE)
+                    flag = GHOST_LAYER;
+                if (x == outerCPULimit[0]-1 &&
+                        (y > innerCPULimit[1]-1 && y < outerCPULimit[1]-1) && 
+                        (z > innerCPULimit[2]-1 && z < outerCPULimit[2]-1) &&
+                        flag != OBSTACLE)
+                    flag = GHOST_LAYER;
+                if (x == domainSize[0]-1 && flag != OBSTACLE)
+                    flag = boundaryConditionLeft;
                 
-                // set the current cell's flag
-                flags[cellID] = setFlags(x, y, z); 
+                // set the flags for y-direction                
+                if (y == 0 && flag != OBSTACLE)
+                    flag = boundaryConditionTop;
+                if (y == innerCPULimit[1]-1 && 
+                        (x > innerCPULimit[0]-1 && x < outerCPULimit[0]-1) && 
+                        (z > innerCPULimit[2]-1 && z < outerCPULimit[2]-1) && 
+                        flag != OBSTACLE)
+                    flag = GHOST_LAYER;
+                if (y == outerCPULimit[1]-1 && 
+                        (x > innerCPULimit[0]-1 && x < outerCPULimit[0]-1) && 
+                        (z > innerCPULimit[2]-1 && z < outerCPULimit[2]-1) && 
+                        flag != OBSTACLE)
+                    flag = GHOST_LAYER;
+                if (y == domainSize[1]-1 && flag != OBSTACLE)
+                    flag = boundaryConditionBottom;
+                
+                // set the flags for z-direction                
+                if (z == 0 && flag != OBSTACLE)
+                    flag = boundaryConditionFront;
+                if (z == innerCPULimit[2]-1 && 
+                        (x > innerCPULimit[0]-1 && x < outerCPULimit[0]-1) &&
+                        (y > innerCPULimit[1]-1 && y < outerCPULimit[1]-1) &&  
+                        flag != OBSTACLE)
+                    flag = GHOST_LAYER;
+                if (z == outerCPULimit[2]-1 && 
+                        (x > innerCPULimit[0]-1 && x < outerCPULimit[0]-1) &&
+                        (y > innerCPULimit[1]-1 && y < outerCPULimit[1]-1) && 
+                        flag != OBSTACLE)
+                    flag = GHOST_LAYER;
+                if (z == domainSize[2]-1 && flag != OBSTACLE)
+                    flag = boundaryConditionBack;
 
-                // initialize the cell density distributions
-                velocity_x = 0;
-                velocity_y = 0;
-                velocity_z = 0;
-                rho = 1.0f;
-
-                // compute and store velocity
-                vela2 = velocity_x*velocity_x;
-                dd_param = rho - (T)(3.0f/2.0f)*(vela2);
-
-                global_dd[cellID + 0*domainCellsCPU] = eq_dd_a0(velocity_x, vela2, dd_param);
-                global_dd[cellID + 1*domainCellsCPU] = eq_dd_a1(velocity_x, vela2, dd_param);
- 
-                vela2 = velocity_y*velocity_y;
-                global_dd[cellID + 2*domainCellsCPU] = eq_dd_a0(velocity_y, vela2, dd_param);
-                global_dd[cellID + 3*domainCellsCPU] = eq_dd_a1(velocity_y, vela2, dd_param);
-
-                /***********************
-                 * DD1
-                 ***********************/
-                vela_velb = velocity_x+velocity_y;
-                vela_velb_2 = vela_velb*vela_velb;
-
-                global_dd[cellID + 4*domainCellsCPU] = eq_dd4(vela_velb, vela_velb_2, dd_param);
-                global_dd[cellID + 5*domainCellsCPU] = eq_dd5(vela_velb, vela_velb_2, dd_param);
-
-
-                vela_velb = velocity_x-velocity_y;
-                vela_velb_2 = vela_velb*vela_velb;
-                global_dd[cellID + 6*domainCellsCPU] = eq_dd4(vela_velb, vela_velb_2, dd_param);
-                global_dd[cellID + 7*domainCellsCPU] = eq_dd5(vela_velb, vela_velb_2, dd_param);
-
-                /***********************
-                 * DD2
-                 ***********************/
-                vela_velb = velocity_x+velocity_z;
-                vela_velb_2 = vela_velb*vela_velb;
-
-                global_dd[cellID + 8*domainCellsCPU] = eq_dd4(vela_velb, vela_velb_2, dd_param);
-                global_dd[cellID + 9*domainCellsCPU] = eq_dd5(vela_velb, vela_velb_2, dd_param);
-
-                vela_velb = velocity_x-velocity_z;
-                vela_velb_2 = vela_velb*vela_velb;
-
-                global_dd[cellID + 10*domainCellsCPU] = eq_dd4(vela_velb, vela_velb_2, dd_param);
-                global_dd[cellID + 11*domainCellsCPU] = eq_dd5(vela_velb, vela_velb_2, dd_param);
-
-                /***********************
-                 * DD3
-                 ***********************/
-                vela_velb = velocity_y+velocity_z;
-                vela_velb_2 = vela_velb*vela_velb;
-
-                global_dd[cellID + 12*domainCellsCPU] = eq_dd4(vela_velb, vela_velb_2, dd_param);
-                global_dd[cellID + 13*domainCellsCPU] = eq_dd5(vela_velb, vela_velb_2, dd_param);
-
-                vela_velb = velocity_y-velocity_z;
-                vela_velb_2 = vela_velb*vela_velb;
-
-                global_dd[cellID + 14*domainCellsCPU] = eq_dd4(vela_velb, vela_velb_2, dd_param);
-                global_dd[cellID + 15*domainCellsCPU] = eq_dd5(vela_velb, vela_velb_2, dd_param);
-
-                /***********************
-                 * DD4
-                 ***********************/
-                vela2 = velocity_z*velocity_z;
-
-                global_dd[cellID + 16*domainCellsCPU] = eq_dd_a0(velocity_z, vela2, dd_param);
-                global_dd[cellID + 17*domainCellsCPU] = eq_dd_a1(velocity_z, vela2, dd_param);
-                global_dd[cellID + 18*domainCellsCPU] = eq_dd18(dd_param);
-
-                if (storeVelocities)
-                {
-                    velocityArray[cellID] = velocity_x;
-                    velocityArray[cellID + domainCellsCPU] = velocity_y;
-                    velocityArray[cellID + 2*domainCellsCPU] = velocity_z;
-                }
-
-                if (storeDensities)
-                {
-                    density[cellID] = rho;
-                }
+                flags[cellID] = flag;
 
                 // increment cell linear id
                 cellID++;
-
             }
+        }
+    }
+}
+
+template<class T>
+void CLbmInitCPU<T>::initLbm(
+            std::vector<T> &densityDistributions,
+            std::vector<Flag> &flags,
+            std::vector<T> &velocities,
+            std::vector<T> &densities,
+            const bool storeDensities,
+            const bool storeVelocities)
+{
+    // initialize the flag field
+    setFlags(flags);
+
+    /*
+     * Iterate over all CPU domain cells.
+     * 
+     */
+    for (int i = 0; i < domainCellsCPU; i++)
+    {
+        // initialize the cell density distributions
+        velocity_x = 0;
+        velocity_y = 0;
+        velocity_z = 0;
+        rho = 1.0f;
+
+        // compute and store velocity
+        vela2 = velocity_x*velocity_x;
+        dd_param = rho - (T)(3.0f/2.0f)*(vela2);
+
+        densityDistributions[i + 0*domainCellsCPU] = eq_dd_a0(velocity_x, vela2, dd_param);
+        densityDistributions[i + 1*domainCellsCPU] = eq_dd_a1(velocity_x, vela2, dd_param);
+
+        vela2 = velocity_y*velocity_y;
+        densityDistributions[i + 2*domainCellsCPU] = eq_dd_a0(velocity_y, vela2, dd_param);
+        densityDistributions[i + 3*domainCellsCPU] = eq_dd_a1(velocity_y, vela2, dd_param);
+
+        /***********************
+         * DD1
+         ***********************/
+        vela_velb = velocity_x+velocity_y;
+        vela_velb_2 = vela_velb*vela_velb;
+
+        densityDistributions[i + 4*domainCellsCPU] = eq_dd4(vela_velb, vela_velb_2, dd_param);
+        densityDistributions[i + 5*domainCellsCPU] = eq_dd5(vela_velb, vela_velb_2, dd_param);
+
+
+        vela_velb = velocity_x-velocity_y;
+        vela_velb_2 = vela_velb*vela_velb;
+        densityDistributions[i + 6*domainCellsCPU] = eq_dd4(vela_velb, vela_velb_2, dd_param);
+        densityDistributions[i + 7*domainCellsCPU] = eq_dd5(vela_velb, vela_velb_2, dd_param);
+
+        /***********************
+         * DD2
+         ***********************/
+        vela_velb = velocity_x+velocity_z;
+        vela_velb_2 = vela_velb*vela_velb;
+
+        densityDistributions[i + 8*domainCellsCPU] = eq_dd4(vela_velb, vela_velb_2, dd_param);
+        densityDistributions[i + 9*domainCellsCPU] = eq_dd5(vela_velb, vela_velb_2, dd_param);
+
+        vela_velb = velocity_x-velocity_z;
+        vela_velb_2 = vela_velb*vela_velb;
+
+        densityDistributions[i + 10*domainCellsCPU] = eq_dd4(vela_velb, vela_velb_2, dd_param);
+        densityDistributions[i + 11*domainCellsCPU] = eq_dd5(vela_velb, vela_velb_2, dd_param);
+
+        /***********************
+         * DD3
+         ***********************/
+        vela_velb = velocity_y+velocity_z;
+        vela_velb_2 = vela_velb*vela_velb;
+
+        densityDistributions[i + 12*domainCellsCPU] = eq_dd4(vela_velb, vela_velb_2, dd_param);
+        densityDistributions[i + 13*domainCellsCPU] = eq_dd5(vela_velb, vela_velb_2, dd_param);
+
+        vela_velb = velocity_y-velocity_z;
+        vela_velb_2 = vela_velb*vela_velb;
+
+        densityDistributions[i + 14*domainCellsCPU] = eq_dd4(vela_velb, vela_velb_2, dd_param);
+        densityDistributions[i + 15*domainCellsCPU] = eq_dd5(vela_velb, vela_velb_2, dd_param);
+
+        /***********************
+         * DD4
+         ***********************/
+        vela2 = velocity_z*velocity_z;
+
+        densityDistributions[i + 16*domainCellsCPU] = eq_dd_a0(velocity_z, vela2, dd_param);
+        densityDistributions[i + 17*domainCellsCPU] = eq_dd_a1(velocity_z, vela2, dd_param);
+        densityDistributions[i + 18*domainCellsCPU] = eq_dd18(dd_param);
+
+        if (storeVelocities)
+        {
+            velocities[i] = velocity_x;
+            velocities[i + domainCellsCPU] = velocity_y;
+            velocities[i + 2*domainCellsCPU] = velocity_z;
+        }
+
+        if (storeDensities)
+        {
+            densities[i] = rho;
         }
     }
 }
