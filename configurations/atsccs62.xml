@@ -17,15 +17,15 @@
     <!-- viscosity of the fluid, -1 for automatic detection (unit: meters^2 * second^-1) -->
     <viscosity>-1</viscosity>
     <!-- maximum external acceleration to avoid instabilities (unit: meters * second^-2) -->
-    <max-gravitation>0.1</max-gravitation>
+    <max-gravitation>0.00001</max-gravitation>
   </physics>
   <!-- configuration data related to simulation grid -->
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-      <x>4</x>
-      <y>4</y>
-      <z>4</z>
+      <x>208</x>
+      <y>208</y>
+      <z>208</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
@@ -37,7 +37,7 @@
     <subdomain-num>
       <x>1</x>
       <y>1</y>
-      <z>2</z>
+      <z>1</z>
     </subdomain-num>
     <!-- ratio in x, y and z direction of subdomain cells which are processed by the CPU ([0.0, 1.0]) (unit: scalar factor) -->
     <cpu-subdomain-ratio>
@@ -48,12 +48,12 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>8</loops>
+    <loops>857102</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>0.01</timestep>
     <!--  -->
     <benchmark>
-      <do>0</do>
+      <do>1</do>
       <output-dir>/work_fast/riesinge/workspace/lbm/benchmark</output-dir>
     </benchmark>
     <!--  -->
@@ -62,13 +62,13 @@
     </logging>
     <!--  -->
     <validation>
-      <do>1</do>
+      <do>0</do>
       <output-dir>/work_fast/riesinge/workspace/lbm/validation</output-dir>
     </validation>
     <!--  -->
     <visualization>
-      <do>0</do>
-      <rate>100</rate>
+      <do>1</do>
+      <rate>14285</rate>
       <output-dir>/work_fast/riesinge/workspace/lbm/visualization</output-dir>
     </visualization>
   </simulation>

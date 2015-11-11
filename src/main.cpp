@@ -164,21 +164,21 @@ int main(int argc, char** argv)
     	MPI_Datatype sendArray;
     	MPI_Datatype recvArray;
     	MPI_Datatype recvArrayResized;
-    	int starts[3] = {0, 0, 0};
+    	int start[3] = {0, 0, 0};
     	int sendcounts[configuration->numOfSubdomains.elements()];
     	int displacements[configuration->numOfSubdomains.elements()];
 
-    	MPI_Type_create_subarray(3, subdomainSize, subdomainSize, starts, MPI_ORDER_C, ((typeid(TYPE) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE), &sendArray);
+    	MPI_Type_create_subarray(3, subdomainSize, subdomainSize, start, MPI_ORDER_FORTRAN, ((typeid(TYPE) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE), &sendArray);
     	MPI_Type_commit(&sendArray);
 
     	if (rank == 0)
     	{
-			MPI_Type_create_subarray(3, domainSize, subdomainSize, starts, MPI_ORDER_C, ((typeid(TYPE) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE), &recvArray);
+    		MPI_Type_create_subarray(3, domainSize, subdomainSize, start, MPI_ORDER_FORTRAN, ((typeid(TYPE) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE), &recvArray);
 			MPI_Type_create_resized(recvArray, 0, sizeof(TYPE), &recvArrayResized);
 			MPI_Type_commit(&recvArrayResized);
 
-    		int displacementGlobalIdx;
-    		int subdomainGlobalIdx;
+    		int displacementIdx;
+    		int subdomainIdx;
 
 			for (int i = 0; i < configuration->numOfSubdomains[0]; i++)
 			{
@@ -186,26 +186,10 @@ int main(int argc, char** argv)
 				{
 					for (int k = 0; k < configuration->numOfSubdomains[2]; k++)
 					{
-						/*
-						 * The index of the subdomain has to be computed in the
-						 * way how subdomains are distributed among ranks: with
-						 * x-coordinate running fastest.
-						 */
-						subdomainGlobalIdx = k * configuration->numOfSubdomains[0] * configuration->numOfSubdomains[1] + j * configuration->numOfSubdomains[0] + i;
-						/*
-						 * Even if we store our data with x-coordinate running
-						 * fastest, MPI assumes for its multi-dimensional data
-						 * types that z-coordinate is running fastest. Though
-						 * the displacement for gathering data in velocities has
-						 * to be computed with z-coordinate is running fastest.
-						 * Hence, an adequate treatment of velocities when
-						 * comparing it with velocitiesValidation has to be
-						 * implemented.
-						 */
-						displacementGlobalIdx = i * subdomainSize[0] * domainSize[1] * domainSize[2] + j * subdomainSize[1] * domainSize[2] + k * subdomainSize[2];
-						sendcounts[subdomainGlobalIdx] = 1;
-						displacements[subdomainGlobalIdx] = displacementGlobalIdx;
-						// std::cout << "rank " << rank << ": [" << i << ", " << j << ", " << k << "] = " << subdomainGlobalIdx << ": " << displacementGlobalIdx << " vs. " << displacements[subdomainGlobalIdx] << std::endl;
+						subdomainIdx = k * configuration->numOfSubdomains[0] * configuration->numOfSubdomains[1] + j * configuration->numOfSubdomains[0] + i;
+						displacementIdx = k * subdomainSize[2] * domainSize[0] * domainSize[1] + j * subdomainSize[1] * domainSize[0] + i * subdomainSize[0];
+						sendcounts[subdomainIdx] = 1;
+						displacements[subdomainIdx] = displacementIdx;
 					}
 				}
 			}
@@ -237,8 +221,7 @@ int main(int argc, char** argv)
     	if (rank == 0)
     	{
     		int numOfInequalities = 0;
-    		int resultIdx, resultX, resultY, resultZ;
-    		int validationIdx, validationX, validationY, validationZ;
+    		int globalIdx, velocitiesX, velocitiesY, velocitiesZ;
 
     		std::stringstream validationFileName;
     		validationFileName << configuration->validationOutputDir << "/validation.txt";
@@ -250,44 +233,30 @@ int main(int argc, char** argv)
             		{
             			for (int k = 0; k < domainSize[2] / subdomainSize[2]; k++)
             			{
-            				for (int ii = 0; ii < subdomainSize[0]; ii++)
-            				{
-            					for (int jj = 0; jj < subdomainSize[1]; jj++)
-            					{
-            						for (int kk = 0; kk < subdomainSize[2]; kk++)
-            						{
-            							resultIdx = (i * subdomainSize[0] * domainSize[1] * domainSize[2] + j * subdomainSize[1] * domainSize[2] + k * subdomainSize[2]) + (kk * 1 + jj * domainSize[1] * 1 + ii);
-            							resultX = resultIdx;
-            							resultY = numOfDomainCells + resultIdx;
-            							resultZ = 2 * numOfDomainCells + resultIdx;
-            							validationIdx = ((k * subdomainSize[2] + kk) * domainSize[1] * domainSize[2] + (j * subdomainSize[1] + jj) * domainSize[1] + (i * subdomainSize[0] + ii));
-            							validationX = validationIdx;
-            							validationY = numOfDomainCells + validationIdx;
-            							validationZ = 2 * numOfDomainCells + validationIdx;
+            				globalIdx = k * domainSize[1] * domainSize[2] + j * domainSize[1] + i;
+							velocitiesX = globalIdx;
+							velocitiesY = numOfDomainCells + globalIdx;
+							velocitiesZ = 2 * numOfDomainCells + globalIdx;
 
-            							if (CMath<TYPE>::abs(velocities[resultX] - velocitiesValidation[validationX]) > std::numeric_limits<TYPE>::epsilon() ||
-            									CMath<TYPE>::abs(velocities[resultY] - velocitiesValidation[validationY]) > std::numeric_limits<TYPE>::epsilon() ||
-            									CMath<TYPE>::abs(velocities[resultZ] - velocitiesValidation[validationZ]) > std::numeric_limits<TYPE>::epsilon())
-            							{
-            								if (validationFile.is_open())
-            								{
-            									validationFile << "[" << i << "," << j << "," << k << "] ";
-            									validationFile << "[" << ii << "," << jj << "," << kk << "]: ";
-            									validationFile << "[" << velocities[resultX] << ", " << velocities[resultY] << ", " << velocities[resultZ] << "] vs. ";
-            									validationFile << "[" << velocitiesValidation[validationX] << ", " << velocitiesValidation[validationY] << ", " << velocitiesValidation[validationZ] << "]" << std::endl;
-            								} else {
-            									std::cerr << "----- main() -----" << std::endl;
-            									std::cerr << "There is no open file to write validation results." << std::endl;
-            									std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
-            									std::cerr << "------------------" << std::endl;
+							if (CMath<TYPE>::abs(velocities[velocitiesX] - velocitiesValidation[velocitiesX]) / velocitiesValidation[velocitiesX] > std::numeric_limits<TYPE>::epsilon() ||
+									CMath<TYPE>::abs(velocities[velocitiesY] - velocitiesValidation[velocitiesY]) / velocitiesValidation[velocitiesY] > std::numeric_limits<TYPE>::epsilon() ||
+									CMath<TYPE>::abs(velocities[velocitiesZ] - velocitiesValidation[velocitiesZ]) / velocitiesValidation[velocitiesZ] > std::numeric_limits<TYPE>::epsilon())
+							{
+								if (validationFile.is_open())
+								{
+									validationFile << "[" << i << "," << j << "," << k << "]: ";
+									validationFile << "[" << velocities[velocitiesX] << ", " << velocities[velocitiesY] << ", " << velocities[velocitiesZ] << "] vs. ";
+									validationFile << "[" << velocitiesValidation[velocitiesX] << ", " << velocitiesValidation[velocitiesY] << ", " << velocitiesValidation[velocitiesZ] << "]" << std::endl;
+								} else {
+									std::cerr << "----- main() -----" << std::endl;
+									std::cerr << "There is no open file to write validation results." << std::endl;
+									std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+									std::cerr << "------------------" << std::endl;
 
-            									exit (EXIT_FAILURE);
-            								}
+									exit (EXIT_FAILURE);
+								}
 
-            								numOfInequalities++;
-            						}
-            					}
-            				}
+								numOfInequalities++;
             			}
             		}
             	}
