@@ -131,6 +131,14 @@ void CLbmVisualizationNetCDF<T>::defineData()
     nc_put_att_text(fileId, velocitiesVarId[1], "units", VELOCITY_UNIT.length(), VELOCITY_UNIT.c_str());
     nc_put_att_text(fileId, velocitiesVarId[2], "units", VELOCITY_UNIT.length(), VELOCITY_UNIT.c_str());
 
+    /*
+    nc_def_var_deflate(fileId, flagsVarId, NC_SHUFFLE, true, DEFLATE_LEVEL);
+    nc_def_var_deflate(fileId, densitiesVarId, NC_SHUFFLE, true, DEFLATE_LEVEL);
+    nc_def_var_deflate(fileId, velocitiesVarId[0], NC_SHUFFLE, true, DEFLATE_LEVEL);
+    nc_def_var_deflate(fileId, velocitiesVarId[1], NC_SHUFFLE, true, DEFLATE_LEVEL);
+    nc_def_var_deflate(fileId, velocitiesVarId[2], NC_SHUFFLE, true, DEFLATE_LEVEL);
+    */
+
     nc_set_fill(fileId, NC_NOFILL, &oldFill);
 
     nc_enddef(fileId);
@@ -147,7 +155,7 @@ void CLbmVisualizationNetCDF<T>::defineData()
 template <class T>
 void CLbmVisualizationNetCDF<T>::writeData()
 {
-	if (id == 0)
+    if (id == 0)
     {
 #ifdef PAR_NETCDF
         T x[numOfSubdomains[0] * solver->getDomain()->getSize()[0]];
@@ -214,12 +222,12 @@ void CLbmVisualizationNetCDF<T>::writeData()
 
     if (typeid(T) == typeid(double))
     {
-    	// nc_put_vara_double(fileId, densitiesVarId, start, count, (double*)densities);
+        // nc_put_vara_double(fileId, densitiesVarId, start, count, (double*)densities);
         nc_put_vara_double(fileId, velocitiesVarId[0], start, count, (double*)&(velocities[0]));
         nc_put_vara_double(fileId, velocitiesVarId[1], start, count, (double*)&(velocities[solver->getDomain()->getNumOfCells()]));
         nc_put_vara_double(fileId, velocitiesVarId[2], start, count, (double*)&(velocities[2 * solver->getDomain()->getNumOfCells()]));
     } else if(typeid(T) == typeid(float)) {
-    	// nc_put_vara_float(fileId, densitiesVarId, start, count, (float*)densities);
+        // nc_put_vara_float(fileId, densitiesVarId, start, count, (float*)densities);
         nc_put_vara_float(fileId, velocitiesVarId[0], start, count, (float*)&(velocities[0]));
         nc_put_vara_float(fileId, velocitiesVarId[1], start, count, (float*)&(velocities[solver->getDomain()->getNumOfCells()]));
         nc_put_vara_float(fileId, velocitiesVarId[2], start, count, (float*)&(velocities[2 * solver->getDomain()->getNumOfCells()]));

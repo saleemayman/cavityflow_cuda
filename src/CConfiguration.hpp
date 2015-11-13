@@ -59,8 +59,8 @@ public:
     CVector<3, T> velocity;
     CVector<3, T> acceleration;
     T viscosity;
-	T maxVelocityDimLess;
-	T maxAccelerationDimLess;
+    T maxVelocityDimLess;
+    T maxAccelerationDimLess;
 
     /*
      * grid configuration data

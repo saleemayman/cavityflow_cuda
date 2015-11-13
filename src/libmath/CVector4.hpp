@@ -42,7 +42,7 @@ public:
     CVector(const T v[4]);
 
     void setZero();
-	int getGlobalIdx(CVector<4, T>& size);
+    int getGlobalIdx(CVector<4, T>& size);
     T length();
     T length2();
 

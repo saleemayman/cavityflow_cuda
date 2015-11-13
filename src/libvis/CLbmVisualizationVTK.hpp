@@ -41,16 +41,16 @@ private:
 
     void openFile(int iteration);
     void closeFile();
-	void writeHeader();
-	void writeDataset();
-	void writeFlags();
-	void writeDensities();
-	void writeVelocities();
+    void writeHeader();
+    void writeDataset();
+    void writeFlags();
+    void writeDensities();
+    void writeVelocities();
 
 public:
-	CLbmVisualizationVTK(int id, int visualizationRate, CLbmSolver<T>* solver, std::string filePath);
+    CLbmVisualizationVTK(int id, int visualizationRate, CLbmSolver<T>* solver, std::string filePath);
 
-	void render(int iteration);
+    void render(int iteration);
 };
 
 #endif

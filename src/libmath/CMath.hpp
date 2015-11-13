@@ -23,56 +23,56 @@
 #include <iostream>
 
 /**
- * \brief	math handler to use same function names for different types
+ * \brief    math handler to use same function names for different types
  */
 template <typename T>
 class CMath
 {
 public:
-	T value;	///< the value itself!
+    T value;    ///< the value itself!
 
-	CMath();
-	CMath(T a);
+    CMath();
+    CMath(T a);
 
-	/// return PI
-	static T PI();
-	static T MAX();
-	static T MIN();
-	static T INF();
+    /// return PI
+    static T PI();
+    static T MAX();
+    static T MIN();
+    static T INF();
 
-	static T abs(T a);
-	static T pow(T base, T exp);
-	static T floor(T a);
-	static T ceil(T a);
-	static T ceil2(T a);
-	static T sqrt(T a);
-	static T round(T a);
-	static T digits2(T a);
-	static T exp(T a);
-	static T sin(T a);
-	static T cos(T a);
-	static T tan(T a);
-	static T max(T a, T b);
-	static T min(T a, T b);
-	static T aton(const char *s);
-	static T gcd(T a, T b);
+    static T abs(T a);
+    static T pow(T base, T exp);
+    static T floor(T a);
+    static T ceil(T a);
+    static T ceil2(T a);
+    static T sqrt(T a);
+    static T round(T a);
+    static T digits2(T a);
+    static T exp(T a);
+    static T sin(T a);
+    static T cos(T a);
+    static T tan(T a);
+    static T max(T a, T b);
+    static T min(T a, T b);
+    static T aton(const char *s);
+    static T gcd(T a, T b);
 
-	CMath operator+(const CMath &a);
-	CMath operator-(const CMath &a);
-	CMath operator*(const CMath a);
-	CMath operator/(const CMath &a);
-	CMath& operator+=(const CMath &a);
-	CMath& operator-=(const CMath &a);
-	CMath& operator*=(const CMath &a);
-	CMath& operator/=(const CMath &a);
-	CMath operator+(const T a);
-	CMath operator-(const T a);
-	CMath operator*(const T a);
-	CMath operator/(const T a);
-	CMath& operator+=(const T a);
-	CMath& operator-=(const T a);
-	CMath& operator*=(const T a);
-	CMath& operator/=(const T a);
+    CMath operator+(const CMath &a);
+    CMath operator-(const CMath &a);
+    CMath operator*(const CMath a);
+    CMath operator/(const CMath &a);
+    CMath& operator+=(const CMath &a);
+    CMath& operator-=(const CMath &a);
+    CMath& operator*=(const CMath &a);
+    CMath& operator/=(const CMath &a);
+    CMath operator+(const T a);
+    CMath operator-(const T a);
+    CMath operator*(const T a);
+    CMath operator/(const T a);
+    CMath& operator+=(const T a);
+    CMath& operator-=(const T a);
+    CMath& operator*=(const T a);
+    CMath& operator/=(const T a);
 };
 
 template <typename T>

@@ -78,10 +78,10 @@ void CVector<4, T>::setZero()
 template <class T>
 int CVector<4, T>::getGlobalIdx(CVector<4, T>& size)
 {
-	assert(data[0] < size[0]);
-	assert(data[1] < size[1]);
-	assert(data[2] < size[2]);
-	assert(data[3] < size[3]);
+    assert(data[0] < size[0]);
+    assert(data[1] < size[1]);
+    assert(data[2] < size[2]);
+    assert(data[3] < size[3]);
 
     return (data[3] * size[1] * size[2] * size[3] + data[2] * size[1] * size[2] + data[1] * size[0] + data[0]);
 }

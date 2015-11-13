@@ -26,30 +26,30 @@ template <typename T>
 class CLbmVisualization
 {
 protected:
-	int id;
-	int visualizationRate;
-	Flag* flags;
-	T* densities;
-	T* velocities;
-	CLbmSolver<T>* solver;
+    int id;
+    int visualizationRate;
+    Flag* flags;
+    T* densities;
+    T* velocities;
+    CLbmSolver<T>* solver;
 
 public:
-	CLbmVisualization(int id, int visualizationRate, CLbmSolver<T>* solver) :
-		id(id), visualizationRate(visualizationRate), solver(solver)
-	{
-		// flags = new Flag[this->solver->getDomain()->getNumOfCells()];
-		// densities = new T[this->solver->getDomain()->getNumOfCells()];
-		velocities = new T[3 * this->solver->getDomain()->getNumOfCells()];
-	}
+    CLbmVisualization(int id, int visualizationRate, CLbmSolver<T>* solver) :
+        id(id), visualizationRate(visualizationRate), solver(solver)
+    {
+        // flags = new Flag[this->solver->getDomain()->getNumOfCells()];
+        // densities = new T[this->solver->getDomain()->getNumOfCells()];
+        velocities = new T[3 * this->solver->getDomain()->getNumOfCells()];
+    }
 
     virtual ~CLbmVisualization()
     {
-		delete[] velocities;
-		// delete[] densities;
-		// delete[] flags;
+        delete[] velocities;
+        // delete[] densities;
+        // delete[] flags;
     };
 
-	virtual void render(int iteration = -1) = 0;
+    virtual void render(int iteration = -1) = 0;
 };
 
 #endif

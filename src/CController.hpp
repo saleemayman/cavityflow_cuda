@@ -56,11 +56,11 @@ private:
 
 public:
     CController(
-    		int id,
-    		CDomain<T> domain,
-    		std::vector<Flag> boundaryConditions,
-    		std::vector<CComm<T> > communication,
-    		CConfiguration<T>* configuration);
+            int id,
+            CDomain<T> domain,
+            std::vector<Flag> boundaryConditions,
+            std::vector<CComm<T> > communication,
+            CConfiguration<T>* configuration);
     ~CController();
 
     void setDrivenCavitySzenario();

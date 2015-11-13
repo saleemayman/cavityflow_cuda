@@ -77,7 +77,7 @@ __global__ void lbm_init(
 
     Flag flag = FLUID;
 
-	/*
+    /*
     if(pos.x == 0)
         flag = boundaryConditionRight;
     else if(pos.x == domainCells_x-1)

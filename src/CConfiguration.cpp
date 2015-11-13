@@ -95,7 +95,7 @@ void CConfiguration<T>::interpretGridData(const tinyxml2::XMLNode* root)
 template <class T>
 void CConfiguration<T>::interpretSimulationData(const tinyxml2::XMLNode* root)
 {
-	const tinyxml2::XMLNode* simulationChild = root->FirstChildElement(TAG_NAME_CHILD_SIMULATION);
+    const tinyxml2::XMLNode* simulationChild = root->FirstChildElement(TAG_NAME_CHILD_SIMULATION);
 
     loops = atoi(simulationChild->FirstChildElement("loops")->GetText());
     timestep = atof(simulationChild->FirstChildElement("timestep")->GetText());
@@ -118,9 +118,9 @@ void CConfiguration<T>::interpretSimulationData(const tinyxml2::XMLNode* root)
 template <class T>
 void CConfiguration<T>::interpretDeviceData(const tinyxml2::XMLNode* root)
 {
-	const tinyxml2::XMLNode* deviceChild = root->FirstChildElement(TAG_NAME_CHILD_DEVICE);
+    const tinyxml2::XMLNode* deviceChild = root->FirstChildElement(TAG_NAME_CHILD_DEVICE);
 
-	dim3 configuration;
+    dim3 configuration;
     configuration.x = atoi(deviceChild->FirstChildElement("grid-configuration")->FirstChildElement("init-grid-configuration")->FirstChildElement("x")->GetText());
     configuration.y = atoi(deviceChild->FirstChildElement("grid-configuration")->FirstChildElement("init-grid-configuration")->FirstChildElement("y")->GetText());
     configuration.z = atoi(deviceChild->FirstChildElement("grid-configuration")->FirstChildElement("init-grid-configuration")->FirstChildElement("z")->GetText());
@@ -207,7 +207,7 @@ void CConfiguration<T>::print()
 template <class T>
 void CConfiguration<T>::serialize()
 {
-	numOfSubdomains[0] = numOfSubdomains[1] = numOfSubdomains[2] = 1;
+    numOfSubdomains[0] = numOfSubdomains[1] = numOfSubdomains[2] = 1;
 }
 
 template class CConfiguration<double>;

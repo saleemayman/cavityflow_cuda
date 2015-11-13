@@ -24,7 +24,7 @@
 
 template<typename T>
 __global__ void lbm_init(
-		T *global_dd,           // density distributions
+        T *global_dd,           // density distributions
         Flag *flags,            // flags
         T *velocity_array,      // velocity array (first all x components, then all y components, then z...)
         T *density,             // densities

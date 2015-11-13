@@ -44,10 +44,10 @@ CLbmSolver<T>::CLbmSolver(
         maxVelocityDimLess(maxVelocityDimLess), maxAccelerationDimLess(maxAccelerationDimLess),
         storeDensities(storeDensities), storeVelocities(storeVelocities), doLogging(doLogging)
 {
-	bool limitedByVelocity = false;
-	bool limitedByAcceleration = false;
-	T cellLength = domain.getLength()[0] / (T)domain.getSize()[0];
-	T oldTimestepSize;
+    bool limitedByVelocity = false;
+    bool limitedByAcceleration = false;
+    T cellLength = domain.getLength()[0] / (T)domain.getSize()[0];
+    T oldTimestepSize;
 
     if (this->doLogging)
     {
@@ -56,138 +56,138 @@ CLbmSolver<T>::CLbmSolver(
         std::cout << "---------------------------------------" << std::endl;
     }
 
-	/*
-	 * If no viscosity was passed to this program, a default viscosity
-	 * basing on a predefined reynolds number is set. This artificial
-	 * viscosity can be further adapted if the timestep size has to adapted.
-	 * The predefined reynolds number is always kept and stays constant.
-	 */
-	if (this->viscosity <= (T)0)
-	{
-		if (this->doLogging)
-		{
-			std::cout << "No viscosity has been passed!" << std::endl;
-			std::cout << "Artificial viscosity is set!" << std::endl;
-		}
+    /*
+     * If no viscosity was passed to this program, a default viscosity
+     * basing on a predefined reynolds number is set. This artificial
+     * viscosity can be further adapted if the timestep size has to adapted.
+     * The predefined reynolds number is always kept and stays constant.
+     */
+    if (this->viscosity <= (T)0)
+    {
+        if (this->doLogging)
+        {
+            std::cout << "No viscosity has been passed!" << std::endl;
+            std::cout << "Artificial viscosity is set!" << std::endl;
+        }
 
-		// definition reynolds number
-		this->viscosity = this->globalLength.max() * this->velocity[0] / REYNOLDS_DEFAULT;
+        // definition reynolds number
+        this->viscosity = this->globalLength.max() * this->velocity[0] / REYNOLDS_DEFAULT;
 
-		if (this->doLogging)
-		{
-			std::cout << "viscosity:         " << this->viscosity << std::endl;
-			std::cout << "---------------------------------------" << std::endl;
-		}
-	}
+        if (this->doLogging)
+        {
+            std::cout << "viscosity:         " << this->viscosity << std::endl;
+            std::cout << "---------------------------------------" << std::endl;
+        }
+    }
 
     while (true)
     {
-		if (this->doLogging)
-		{
-			std::cout << "New iteration of finding timestep size started." << std::endl;
-			std::cout << "---------------------------------------" << std::endl;
+        if (this->doLogging)
+        {
+            std::cout << "New iteration of finding timestep size started." << std::endl;
+            std::cout << "---------------------------------------" << std::endl;
         }
 
-    	// (4.11)
-		velocityDimLess = this->velocity * (this->timestepSize / cellLength);
-		accelerationDimLess = this->acceleration * ((this->timestepSize * this->timestepSize) / cellLength);
-		// (4.9)
-		viscosityDimLess = this->viscosity * (this->timestepSize / (cellLength * cellLength));
+        // (4.11)
+        velocityDimLess = this->velocity * (this->timestepSize / cellLength);
+        accelerationDimLess = this->acceleration * ((this->timestepSize * this->timestepSize) / cellLength);
+        // (4.9)
+        viscosityDimLess = this->viscosity * (this->timestepSize / (cellLength * cellLength));
 
-		/*
-		 * If the dimension less velocity is larger than the specified maximum
-		 * value, the simulation becomes unstable. In such a case, the timestep
-		 * size is adapted accordingly and a valid dimension less velocity is
-		 * set in the next iteration of this loop.
-		 */
-		if (velocityDimLess.length() > this->maxVelocityDimLess + std::numeric_limits<T>::epsilon())
-		{
-			limitedByVelocity= true;
-			oldTimestepSize = this->timestepSize;
-	        this->timestepSize = (this->maxVelocityDimLess * cellLength) / this->velocity.length();
+        /*
+         * If the dimension less velocity is larger than the specified maximum
+         * value, the simulation becomes unstable. In such a case, the timestep
+         * size is adapted accordingly and a valid dimension less velocity is
+         * set in the next iteration of this loop.
+         */
+        if (velocityDimLess.length() > this->maxVelocityDimLess + std::numeric_limits<T>::epsilon())
+        {
+            limitedByVelocity= true;
+            oldTimestepSize = this->timestepSize;
+            this->timestepSize = (this->maxVelocityDimLess * cellLength) / this->velocity.length();
 
-			if (this->doLogging)
-			{
-				std::cout << "Velocity (dimension less) is too large so the simulation could get unstable!" << std::endl;
-				std::cout << "Timestep size is adapted!" << std::endl;
-				std::cout << "old timestep size: " << oldTimestepSize << std::endl;
-		        std::cout << "new timestep size: " << this->timestepSize << std::endl;
-				std::cout << "---------------------------------------" << std::endl;
-	        }
+            if (this->doLogging)
+            {
+                std::cout << "Velocity (dimension less) is too large so the simulation could get unstable!" << std::endl;
+                std::cout << "Timestep size is adapted!" << std::endl;
+                std::cout << "old timestep size: " << oldTimestepSize << std::endl;
+                std::cout << "new timestep size: " << this->timestepSize << std::endl;
+                std::cout << "---------------------------------------" << std::endl;
+            }
 
-			continue;
-		}
+            continue;
+        }
 
-		/*
-		 * If the dimension less acceleration is larger than the specified
-		 * maximum value, the simulation becomes unstable. In such a case, the
-		 * timestep size is adapted accordingly and a valid dimension less
-		 * acceleration is set in the next iteration of this loop.
-		 */
-		if (accelerationDimLess.length() > this->maxAccelerationDimLess + std::numeric_limits<T>::epsilon())
-		{
-			limitedByAcceleration = true;
-			oldTimestepSize = this->timestepSize;
-	        // (4.12)
-	        this->timestepSize = CMath<T>::sqrt((this->maxAccelerationDimLess * cellLength) / this->acceleration.length());
+        /*
+         * If the dimension less acceleration is larger than the specified
+         * maximum value, the simulation becomes unstable. In such a case, the
+         * timestep size is adapted accordingly and a valid dimension less
+         * acceleration is set in the next iteration of this loop.
+         */
+        if (accelerationDimLess.length() > this->maxAccelerationDimLess + std::numeric_limits<T>::epsilon())
+        {
+            limitedByAcceleration = true;
+            oldTimestepSize = this->timestepSize;
+            // (4.12)
+            this->timestepSize = CMath<T>::sqrt((this->maxAccelerationDimLess * cellLength) / this->acceleration.length());
 
-			if (this->doLogging)
-			{
-				std::cout << "Acceleration (dimension less) is too large so the simulation could get unstable!" << std::endl;
-				std::cout << "Timestep size is adapted!" << std::endl;
-				std::cout << "old timestep size: " << oldTimestepSize << std::endl;
-		        std::cout << "new timestep size: " << this->timestepSize << std::endl;
-				std::cout << "---------------------------------------" << std::endl;
-	        }
+            if (this->doLogging)
+            {
+                std::cout << "Acceleration (dimension less) is too large so the simulation could get unstable!" << std::endl;
+                std::cout << "Timestep size is adapted!" << std::endl;
+                std::cout << "old timestep size: " << oldTimestepSize << std::endl;
+                std::cout << "new timestep size: " << this->timestepSize << std::endl;
+                std::cout << "---------------------------------------" << std::endl;
+            }
 
-			continue;
-		}
+            continue;
+        }
 
-		// (4.7)
-		tau = (T)0.5 * ((T)6 * viscosityDimLess + (T)1);
+        // (4.7)
+        tau = (T)0.5 * ((T)6 * viscosityDimLess + (T)1);
 
-		/*
-		 * If tau is not within a certain range, the simulation becomes
-		 * unstable. In such a case, the timestep size is adapted accordingly
-		 * and a valid tau is set in the next iteration of this loop.
-		 */
-		if (tau - std::numeric_limits<T>::epsilon() < (T)TAU_LOWER_LIMIT || tau + std::numeric_limits<T>::epsilon() > (T)TAU_UPPER_LIMIT)
-		{
-			oldTimestepSize = this->timestepSize;
-			// 4.9 & 4.10
-	        this->timestepSize = (cellLength * cellLength) * (((T)2 * TAU_DEFAULT - (T)1) / ((T)6 * this->viscosity));
+        /*
+         * If tau is not within a certain range, the simulation becomes
+         * unstable. In such a case, the timestep size is adapted accordingly
+         * and a valid tau is set in the next iteration of this loop.
+         */
+        if (tau - std::numeric_limits<T>::epsilon() < (T)TAU_LOWER_LIMIT || tau + std::numeric_limits<T>::epsilon() > (T)TAU_UPPER_LIMIT)
+        {
+            oldTimestepSize = this->timestepSize;
+            // 4.9 & 4.10
+            this->timestepSize = (cellLength * cellLength) * (((T)2 * TAU_DEFAULT - (T)1) / ((T)6 * this->viscosity));
 
-			if (this->doLogging)
-			{
-				std::cout << "Tau " << tau << " not within the range [" << TAU_LOWER_LIMIT <<"; " << TAU_UPPER_LIMIT << "]." << std::endl;
-				std::cout << "Timestep size is adapted!" << std::endl;
-				std::cout << "old timestep size: " << oldTimestepSize << std::endl;
-				std::cout << "new timestep size: " << this->timestepSize << std::endl;
-				std::cout << "---------------------------------------" << std::endl;
-	        }
+            if (this->doLogging)
+            {
+                std::cout << "Tau " << tau << " not within the range [" << TAU_LOWER_LIMIT <<"; " << TAU_UPPER_LIMIT << "]." << std::endl;
+                std::cout << "Timestep size is adapted!" << std::endl;
+                std::cout << "old timestep size: " << oldTimestepSize << std::endl;
+                std::cout << "new timestep size: " << this->timestepSize << std::endl;
+                std::cout << "---------------------------------------" << std::endl;
+            }
 
-			if ((limitedByVelocity || limitedByAcceleration) && this->timestepSize > oldTimestepSize) {
-		        std::cerr << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
-		        std::cerr << "No valid timestep size could be determined which satisfies" << std::endl;
-		        std::cerr << "- viscosity:                         " << this->viscosity << std::endl;
-		        std::cerr << "- max velocity (dimension less):     " << this->maxVelocityDimLess << std::endl;
-		        std::cerr << "- max acceleration (dimension less): " << this->maxAccelerationDimLess << std::endl;
-		        std::cerr << "- tau:                               " << tau << std::endl;
-		        std::cerr << "so the simulation stays stable!" << std::endl;
+            if ((limitedByVelocity || limitedByAcceleration) && this->timestepSize > oldTimestepSize) {
+                std::cerr << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
+                std::cerr << "No valid timestep size could be determined which satisfies" << std::endl;
+                std::cerr << "- viscosity:                         " << this->viscosity << std::endl;
+                std::cerr << "- max velocity (dimension less):     " << this->maxVelocityDimLess << std::endl;
+                std::cerr << "- max acceleration (dimension less): " << this->maxAccelerationDimLess << std::endl;
+                std::cerr << "- tau:                               " << tau << std::endl;
+                std::cerr << "so the simulation stays stable!" << std::endl;
 
-		        exit (EXIT_FAILURE);
-			} else {
-				continue;
-			}
-		}
+                exit (EXIT_FAILURE);
+            } else {
+                continue;
+            }
+        }
 
-		break;
+        break;
     }
 
     tauInv = (T)1 / tau;
     // tauInv = (T)1 / ((T)0.5 + (T)3 / ((T)16 * tau - (T)8));
 
-    int reynolds = this->domain.getLength()[0] * this->velocity[0] / this->viscosity;
+    int reynolds = this->globalLength.max() * this->velocity[0] / this->viscosity;
 
     if (this->doLogging)
     {

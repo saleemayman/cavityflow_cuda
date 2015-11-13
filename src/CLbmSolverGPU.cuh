@@ -57,17 +57,17 @@ public:
             int id,
             std::vector<dim3> threadsPerBlock,
             CVector<3, T> &globalLength,
-			CDomain<T> &domain,
-			std::vector<Flag> boundaryConditions,
-			T timestepSize,
-			CVector<3, T> &velocity,
-			CVector<3, T> &acceleration,
-			T viscosity,
-			T maxVelocityDimLess,
-			T maxAccelerationDimLess,
-			bool storeDensities,
-			bool storeVelocities,
-			bool doLogging);
+            CDomain<T> &domain,
+            std::vector<Flag> boundaryConditions,
+            T timestepSize,
+            CVector<3, T> &velocity,
+            CVector<3, T> &acceleration,
+            T viscosity,
+            T maxVelocityDimLess,
+            T maxAccelerationDimLess,
+            bool storeDensities,
+            bool storeVelocities,
+            bool doLogging);
     ~CLbmSolverGPU();
 
     void simulationStepAlpha();

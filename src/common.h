@@ -115,11 +115,11 @@ inline dim3 getBlocksPerGrid(int dim, CVector<3,int> size, dim3 threadsPerBlock)
 
 inline unsigned int getSize(dim3 size)
 {
-	return (size.x * size.y * size.z);
+    return (size.x * size.y * size.z);
 }
 
 inline int isPowerOfTwo(int x) {
-	return (!(x == 0) && !(x & (x - 1)));
+    return (!(x == 0) && !(x & (x - 1)));
 }
 
 /*

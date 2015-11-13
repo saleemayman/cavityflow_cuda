@@ -53,10 +53,10 @@ CVector<3, T> CDomain<T>::getLength() const
 template <class T>
 CVector<3, T> CDomain<T>::getLengthWithHalo() const
 {
-	CVector<3, T> lengthWithHalo(
-			length.data[0] * ((T)(size.data[0] + 2) / (T)size.data[0]),
-			length.data[1] * ((T)(size.data[1] + 2) / (T)size.data[1]),
-			length.data[2] * ((T)(size.data[2] + 2) / (T)size.data[2]));
+    CVector<3, T> lengthWithHalo(
+            length.data[0] * ((T)(size.data[0] + 2) / (T)size.data[0]),
+            length.data[1] * ((T)(size.data[1] + 2) / (T)size.data[1]),
+            length.data[2] * ((T)(size.data[2] + 2) / (T)size.data[2]));
 
     return lengthWithHalo;
 }
@@ -82,12 +82,12 @@ CVector<3, int> CDomain<T>::getOrigin() const
 template <class T>
 CVector<3, int> CDomain<T>::getOriginWithHalo() const
 {
-	CVector<3, int> originWithHalo(
-			origin.data[0] - 1,
-			origin.data[1] - 1,
-			origin.data[2] - 1);
+    CVector<3, int> originWithHalo(
+            origin.data[0] - 1,
+            origin.data[1] - 1,
+            origin.data[2] - 1);
 
-	return originWithHalo;
+    return originWithHalo;
 }
 
 template <class T>
@@ -99,12 +99,12 @@ CVector<3, int> CDomain<T>::getSize() const
 template <class T>
 CVector<3, int> CDomain<T>::getSizeWithHalo() const
 {
-	CVector<3, int> sizeWithHalo(
-			size.data[0] + 2,
-			size.data[1] + 2,
-			size.data[2] + 2);
+    CVector<3, int> sizeWithHalo(
+            size.data[0] + 2,
+            size.data[1] + 2,
+            size.data[2] + 2);
 
-	return sizeWithHalo;
+    return sizeWithHalo;
 }
 
 template class CDomain<double>;

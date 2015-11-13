@@ -41,6 +41,6 @@ __global__ void lbm_kernel_beta(
         const bool isDomainPowOfTwo,
         const bool isLocalPowOfTwo,
         const bool storeDensities,
-		const bool storeVelocities);
+        const bool storeVelocities);
 
 #endif

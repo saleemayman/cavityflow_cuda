@@ -43,9 +43,9 @@ CController<T>::CController(
         communication(communication),
         simulationStepCounter(0)
 {
-	CDomain<T> domainGPU = decomposeSubdomain();
+    CDomain<T> domainGPU = decomposeSubdomain();
 
-	solverGPU = new CLbmSolverGPU<T>(
+    solverGPU = new CLbmSolverGPU<T>(
             this->id,
             this->configuration->threadsPerBlock,
             this->configuration->domainLength,
@@ -80,17 +80,17 @@ CController<T>::CController(
     if (this->configuration->doVisualization)
 #ifdef PAR_NETCDF
         visualization = new CLbmVisualizationNetCDF<T>(
-        		id,
-        		this->configuration->visualizationRate,
-        		getSolver(),
-        		this->configuration->numOfSubdomains,
-        		this->configuration->visualizationOutputDir);
+                id,
+                this->configuration->visualizationRate,
+                getSolver(),
+                this->configuration->numOfSubdomains,
+                this->configuration->visualizationOutputDir);
 #else
         visualization = new CLbmVisualizationVTK<T>(
-        		id,
-        		this->configuration->visualizationRate,
-        		getSolver(),
-        		this->configuration->visualizationOutputDir);
+                id,
+                this->configuration->visualizationRate,
+                getSolver(),
+                this->configuration->visualizationOutputDir);
 #endif
 }
 
@@ -107,17 +107,17 @@ CController<T>::~CController()
 template<class T>
 CDomain<T> CController<T>::decomposeSubdomain()
 {
-	CVector<3, int> sizeGPU(
-			configuration->CPUSubdomainRatio[0] * domain.getSize()[0],
-			configuration->CPUSubdomainRatio[1] * domain.getSize()[1],
-			configuration->CPUSubdomainRatio[2] * domain.getSize()[2]);
-	CVector<3, int> originGPU(domain.getOrigin() + ((domain.getSize() - sizeGPU) / 2));
-	CVector<3, T> lengthGPU(
-			domain.getLength()[0] * (T)sizeGPU[0] / (T)domain.getSize()[0],
-			domain.getLength()[1] * (T)sizeGPU[1] / (T)domain.getSize()[1],
-			domain.getLength()[2] * (T)sizeGPU[2] / (T)domain.getSize()[2]);
+    CVector<3, int> sizeGPU(
+            configuration->CPUSubdomainRatio[0] * domain.getSize()[0],
+            configuration->CPUSubdomainRatio[1] * domain.getSize()[1],
+            configuration->CPUSubdomainRatio[2] * domain.getSize()[2]);
+    CVector<3, int> originGPU(domain.getOrigin() + ((domain.getSize() - sizeGPU) / 2));
+    CVector<3, T> lengthGPU(
+            domain.getLength()[0] * (T)sizeGPU[0] / (T)domain.getSize()[0],
+            domain.getLength()[1] * (T)sizeGPU[1] / (T)domain.getSize()[1],
+            domain.getLength()[2] * (T)sizeGPU[2] / (T)domain.getSize()[2]);
 
-	CDomain<T> domainGPU(id, sizeGPU, originGPU, lengthGPU);
+    CDomain<T> domainGPU(id, sizeGPU, originGPU, lengthGPU);
 
     if (configuration->doLogging)
     {
@@ -134,7 +134,7 @@ CDomain<T> CController<T>::decomposeSubdomain()
         std::cout << "------------------------------------------------" << std::endl;
     }
 
-	return domainGPU;
+    return domainGPU;
 }
 
 

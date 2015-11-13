@@ -53,7 +53,7 @@ __global__ void lbm_kernel_beta(
         const bool isDomainPowOfTwo,
         const bool isLocalPowOfTwo,
         const bool storeDensities,
-		const bool storeVelocities)
+        const bool storeVelocities)
 {
     //const size_t gid = get_global_id(0);
     const int DOMAIN_CELLS_X = domainCells_x;
@@ -656,12 +656,12 @@ __global__ void lbm_kernel_beta(
         case OBSTACLE: // in case of an obstacle, we bounce back the values
             // set to zero velocity and no fluid density
 
-        	if (storeVelocities)
-        	{
+            if (storeVelocities)
+            {
                 velocity_x = (T)0;
                 velocity_y = (T)0;
                 velocity_z = (T)0;
-        	}
+            }
 
             // use simple bounce back
             vela2 = dd1;    dd1 = dd0;      dd0 = vela2;
@@ -949,7 +949,7 @@ template __global__ void lbm_kernel_beta<float>(
         const bool isDomainPowOfTwo,
         const bool isLocalPowOfTwo,
         const bool storeDensities,
-		const bool storeVelocities);
+        const bool storeVelocities);
 template __global__ void lbm_kernel_beta<double>(
         double *global_dd,
         const Flag *flag_array,
@@ -967,4 +967,4 @@ template __global__ void lbm_kernel_beta<double>(
         const bool isDomainPowOfTwo,
         const bool isLocalPowOfTwo,
         const bool storeDensities,
-		const bool storeVelocities);
+        const bool storeVelocities);
