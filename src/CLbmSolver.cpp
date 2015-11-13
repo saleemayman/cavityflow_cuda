@@ -30,20 +30,22 @@ CLbmSolver<T>::CLbmSolver(
         CDomain<T> &domain,
         std::vector<Flag> boundaryConditions,
         T timestepSize,
-        CVector<3, T> &gravitation,
-        CVector<3, T> &drivenCavityVelocity,
+        CVector<3, T> &velocity,
+        CVector<3, T> &acceleration,
         T viscosity,
-        T maxGravitationDimLess,
+        T maxVelocityDimLess,
+        T maxAccelerationDimLess,
         bool storeDensities,
         bool storeVelocities,
         bool doLogging) :
         id(id), globalLength(globalLength),
         domain(domain), boundaryConditions(boundaryConditions),
-        timestepSize(timestepSize), gravitation(gravitation), drivenCavityVelocity(drivenCavityVelocity),
-        viscosity(viscosity), maxGravitationDimLess(maxGravitationDimLess),
+        timestepSize(timestepSize), velocity(velocity), acceleration(acceleration), viscosity(viscosity),
+        maxVelocityDimLess(maxVelocityDimLess), maxAccelerationDimLess(maxAccelerationDimLess),
         storeDensities(storeDensities), storeVelocities(storeVelocities), doLogging(doLogging)
 {
-	bool limitedByGravitation = false;
+	bool limitedByVelocity = false;
+	bool limitedByAcceleration = false;
 	T cellLength = domain.getLength()[0] / (T)domain.getSize()[0];
 	T oldTimestepSize;
 
@@ -69,7 +71,7 @@ CLbmSolver<T>::CLbmSolver(
 		}
 
 		// definition reynolds number
-		this->viscosity = this->globalLength.max() * this->drivenCavityVelocity[0] / REYNOLDS_DEFAULT;
+		this->viscosity = this->globalLength.max() * this->velocity[0] / REYNOLDS_DEFAULT;
 
 		if (this->doLogging)
 		{
@@ -87,27 +89,51 @@ CLbmSolver<T>::CLbmSolver(
         }
 
     	// (4.11)
-		gravitationDimLess = this->gravitation * ((this->timestepSize * this->timestepSize) / cellLength);
-		drivenCavityVelocityDimLess = this->drivenCavityVelocity * (this->timestepSize / cellLength);
+		velocityDimLess = this->velocity * (this->timestepSize / cellLength);
+		accelerationDimLess = this->acceleration * ((this->timestepSize * this->timestepSize) / cellLength);
 		// (4.9)
 		viscosityDimLess = this->viscosity * (this->timestepSize / (cellLength * cellLength));
 
 		/*
-		 * If the dimension less gravity is larger than the specified maximum
+		 * If the dimension less velocity is larger than the specified maximum
 		 * value, the simulation becomes unstable. In such a case, the timestep
-		 * size is adapted accordingly and a valid dimension less gravity is set
-		 * in the next iteration of this loop.
+		 * size is adapted accordingly and a valid dimension less velocity is
+		 * set in the next iteration of this loop.
 		 */
-		if (gravitationDimLess.length() > this->maxGravitationDimLess + std::numeric_limits<T>::epsilon())
+		if (velocityDimLess.length() > this->maxVelocityDimLess + std::numeric_limits<T>::epsilon())
 		{
-	        limitedByGravitation = true;
+			limitedByVelocity= true;
 			oldTimestepSize = this->timestepSize;
-	        // (4.12)
-	        this->timestepSize = CMath<T>::sqrt((this->maxGravitationDimLess * cellLength) / this->gravitation.length());
+	        this->timestepSize = (this->maxVelocityDimLess * cellLength) / this->velocity.length();
 
 			if (this->doLogging)
 			{
-				std::cout << "Gravitation (dimension less) is too large so the simulation could get unstable!" << std::endl;
+				std::cout << "Velocity (dimension less) is too large so the simulation could get unstable!" << std::endl;
+				std::cout << "Timestep size is adapted!" << std::endl;
+				std::cout << "old timestep size: " << oldTimestepSize << std::endl;
+		        std::cout << "new timestep size: " << this->timestepSize << std::endl;
+				std::cout << "---------------------------------------" << std::endl;
+	        }
+
+			continue;
+		}
+
+		/*
+		 * If the dimension less acceleration is larger than the specified
+		 * maximum value, the simulation becomes unstable. In such a case, the
+		 * timestep size is adapted accordingly and a valid dimension less
+		 * acceleration is set in the next iteration of this loop.
+		 */
+		if (accelerationDimLess.length() > this->maxAccelerationDimLess + std::numeric_limits<T>::epsilon())
+		{
+			limitedByAcceleration = true;
+			oldTimestepSize = this->timestepSize;
+	        // (4.12)
+	        this->timestepSize = CMath<T>::sqrt((this->maxAccelerationDimLess * cellLength) / this->acceleration.length());
+
+			if (this->doLogging)
+			{
+				std::cout << "Acceleration (dimension less) is too large so the simulation could get unstable!" << std::endl;
 				std::cout << "Timestep size is adapted!" << std::endl;
 				std::cout << "old timestep size: " << oldTimestepSize << std::endl;
 		        std::cout << "new timestep size: " << this->timestepSize << std::endl;
@@ -140,12 +166,13 @@ CLbmSolver<T>::CLbmSolver(
 				std::cout << "---------------------------------------" << std::endl;
 	        }
 
-			if (limitedByGravitation && this->timestepSize > oldTimestepSize) {
+			if ((limitedByVelocity || limitedByAcceleration) && this->timestepSize > oldTimestepSize) {
 		        std::cerr << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
 		        std::cerr << "No valid timestep size could be determined which satisfies" << std::endl;
-		        std::cerr << "- viscosity:              " << this->viscosity << std::endl;
-		        std::cerr << "- max gravitation length: " << this->maxGravitationDimLess << std::endl;
-		        std::cerr << "- tau:                    " << tau << std::endl;
+		        std::cerr << "- viscosity:                         " << this->viscosity << std::endl;
+		        std::cerr << "- max velocity (dimension less):     " << this->maxVelocityDimLess << std::endl;
+		        std::cerr << "- max acceleration (dimension less): " << this->maxAccelerationDimLess << std::endl;
+		        std::cerr << "- tau:                               " << tau << std::endl;
 		        std::cerr << "so the simulation stays stable!" << std::endl;
 
 		        exit (EXIT_FAILURE);
@@ -158,35 +185,35 @@ CLbmSolver<T>::CLbmSolver(
     }
 
     tauInv = (T)1 / tau;
-    tauInvTrt = (T)1 / ((T)0.5 + (T)3 / ((T)16 * tau - (T)8));
+    // tauInv = (T)1 / ((T)0.5 + (T)3 / ((T)16 * tau - (T)8));
 
-    int reynolds = this->domain.getLength()[0] * this->drivenCavityVelocity[0] / this->viscosity;
+    int reynolds = this->domain.getLength()[0] * this->velocity[0] / this->viscosity;
 
     if (this->doLogging)
     {
-        std::cout << "global length (without halo):            " << this->globalLength << std::endl;
+        std::cout << "global length (without halo):      " << this->globalLength << std::endl;
         std::cout << "---------------------------------------" << std::endl;
-        std::cout << "domain size (without halo):              " << this->domain.getSize() << std::endl;
-        std::cout << "domain length (without halo):            " << this->domain.getLength() << std::endl;
-        std::cout << "domain origin (without halo):            " << this->domain.getOrigin() << std::endl;
+        std::cout << "domain size (without halo):        " << this->domain.getSize() << std::endl;
+        std::cout << "domain length (without halo):      " << this->domain.getLength() << std::endl;
+        std::cout << "domain origin (without halo):      " << this->domain.getOrigin() << std::endl;
         std::cout << "---------------------------------------" << std::endl;
-        std::cout << "timestep size:                           " << this->timestepSize << std::endl;
+        std::cout << "timestep size:                     " << this->timestepSize << std::endl;
         std::cout << "---------------------------------------" << std::endl;
-        std::cout << "gravitation:                             " << this->gravitation << std::endl;
-        std::cout << "gravitation (dimension less):            " << gravitationDimLess << std::endl;
-        std::cout << "driven cavity velocity:                  " << this->drivenCavityVelocity << std::endl;
-        std::cout << "driven cavity velocity (dimension less): " << drivenCavityVelocityDimLess << std::endl;
+        std::cout << "velocity:                          " << this->velocity << std::endl;
+        std::cout << "velocity (dimension less):         " << velocityDimLess << std::endl;
+        std::cout << "acceleration:                      " << this->acceleration << std::endl;
+        std::cout << "acceleration (dimension less):     " << accelerationDimLess << std::endl;
         std::cout << "---------------------------------------" << std::endl;
-        std::cout << "viscosity:                               " << this->viscosity << std::endl;
-        std::cout << "viscosity (dimension less):              " << viscosityDimLess << std::endl;
-        std::cout << "tau:                                     " << this->tau << std::endl;
-        std::cout << "reynolds number (dimension less):        " << reynolds << std::endl;
-        std::cout << "max gravitation length (dimension less): " << this->maxGravitationDimLess << std::endl;
-        std::cout << "inv tau:                                 " << this->tauInv << std::endl;
-        std::cout << "inv trt tau:                             " << this->tauInvTrt << std::endl;
+        std::cout << "viscosity:                         " << this->viscosity << std::endl;
+        std::cout << "viscosity (dimension less):        " << viscosityDimLess << std::endl;
+        std::cout << "tau:                               " << this->tau << std::endl;
+        std::cout << "reynolds number (dimension less):  " << reynolds << std::endl;
+        std::cout << "max velocity (dimension less):     " << this->maxVelocityDimLess << std::endl;
+        std::cout << "max acceleration (dimension less): " << this->maxAccelerationDimLess << std::endl;
+        std::cout << "inv tau:                           " << this->tauInv << std::endl;
         std::cout << "---------------------------------------" << std::endl;
-        std::cout << "store densities:                         " << this->storeDensities << std::endl;
-        std::cout << "store velocities:                        " << this->storeVelocities << std::endl;
+        std::cout << "store densities:                   " << this->storeDensities << std::endl;
+        std::cout << "store velocities:                  " << this->storeVelocities << std::endl;
         std::cout << "---------------------------------------" << std::endl;
     }
 }

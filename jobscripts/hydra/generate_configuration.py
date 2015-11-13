@@ -8,16 +8,17 @@ grid       = ET.SubElement(root, "grid")
 simulation = ET.SubElement(root, "simulation")
 device     = ET.SubElement(root, "device")
 
-gravitation = ET.SubElement(physics, "gravitation")
-ET.SubElement(gravitation, "x").text = "0"
-ET.SubElement(gravitation, "y").text = "-9.81"
-ET.SubElement(gravitation, "z").text = "0"
-cavityvelocity = ET.SubElement(physics, "cavity-velocity")
-ET.SubElement(cavityvelocity, "x").text = "10.0"
-ET.SubElement(cavityvelocity, "y").text = "0"
-ET.SubElement(cavityvelocity, "z").text = "0"
+velocity = ET.SubElement(physics, "velocity")
+ET.SubElement(velocity, "x").text = "1.0"
+ET.SubElement(velocity, "y").text = "0"
+ET.SubElement(velocity, "z").text = "0"
+acceleration = ET.SubElement(physics, "acceleration")
+ET.SubElement(acceleration, "x").text = "0"
+ET.SubElement(acceleration, "y").text = "-9.81"
+ET.SubElement(acceleration, "z").text = "0"
 ET.SubElement(physics, "viscosity").text = "-1"
-ET.SubElement(physics, "max-gravitation").text = "0.00001"
+ET.SubElement(physics, "max-velocity").text = "0.1"
+ET.SubElement(physics, "max-acceleration").text = "0.1"
 
 domainsize = ET.SubElement(grid, "domain-size")
 ET.SubElement(domainsize, "x").text = "2048"

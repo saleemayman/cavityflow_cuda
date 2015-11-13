@@ -21,23 +21,24 @@
 
 template <class T>
 CLbmSolverCPU<T>::CLbmSolverCPU(
-        int id,
-        CVector<3, T> &globalLength,
-        CDomain<T> &domain,
-        std::vector<Flag> boundaryConditions,
-        CLbmSolverGPU<T>* solverGPU,
-        T timestepSize,
-        CVector<3, T>& gravitation,
-        CVector<3, T>& drivenCavityVelocity,
-        T viscocity,
-        T maxGravitationDimLess,
-        bool storeDensities,
-        bool storeVelocities,
-        bool doLogging) :
+		int id,
+		CVector<3, T> &globalLength,
+		CDomain<T> &domain,
+		std::vector<Flag> boundaryConditions,
+		CLbmSolverGPU<T>* solverGPU,
+		T timestepSize,
+		CVector<3, T>& velocity,
+		CVector<3, T>& acceleration,
+		T viscocity,
+		T maxVelocityDimLess,
+		T maxAccelerationDimLess,
+		bool storeDensities,
+		bool storeVelocities,
+		bool doLogging) :
         CLbmSolver<T>(id, globalLength,
         		domain, boundaryConditions,
-                timestepSize, gravitation, drivenCavityVelocity,
-                viscocity, maxGravitationDimLess,
+                timestepSize, velocity, acceleration,
+                viscocity, maxVelocityDimLess, maxAccelerationDimLess,
                 storeDensities, storeVelocities, doLogging),
         solverGPU(solverGPU)
 {

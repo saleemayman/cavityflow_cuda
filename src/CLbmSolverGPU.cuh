@@ -29,10 +29,10 @@ private:
     using CLbmSolver<T>::id;
     using CLbmSolver<T>::globalLength;
     using CLbmSolver<T>::domain;
-    using CLbmSolver<T>::gravitation;
-    using CLbmSolver<T>::gravitationDimLess;
-    using CLbmSolver<T>::drivenCavityVelocity;
-    using CLbmSolver<T>::drivenCavityVelocityDimLess;
+    using CLbmSolver<T>::velocity;
+    using CLbmSolver<T>::velocityDimLess;
+    using CLbmSolver<T>::acceleration;
+    using CLbmSolver<T>::accelerationDimLess;
     using CLbmSolver<T>::storeDensities;
     using CLbmSolver<T>::storeVelocities;
     using CLbmSolver<T>::doLogging;
@@ -60,10 +60,11 @@ public:
 			CDomain<T> &domain,
 			std::vector<Flag> boundaryConditions,
 			T timestepSize,
-			CVector<3, T> &gravitation,
-			CVector<3, T> &drivenCavityVelocity,
+			CVector<3, T> &velocity,
+			CVector<3, T> &acceleration,
 			T viscosity,
-			T maxGravitationDimLess,
+			T maxVelocityDimLess,
+			T maxAccelerationDimLess,
 			bool storeDensities,
 			bool storeVelocities,
 			bool doLogging);

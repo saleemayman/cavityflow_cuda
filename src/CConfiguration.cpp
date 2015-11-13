@@ -56,16 +56,18 @@ void CConfiguration<T>::interpretPhysiscsData(const tinyxml2::XMLNode* root)
 {
     const tinyxml2::XMLNode* physicsChild = root->FirstChildElement(TAG_NAME_CHILD_PHYSICS);
 
-    gravitation[0] = atof(physicsChild->FirstChildElement("gravitation")->FirstChildElement("x")->GetText());
-    gravitation[1] = atof(physicsChild->FirstChildElement("gravitation")->FirstChildElement("y")->GetText());
-    gravitation[2] = atof(physicsChild->FirstChildElement("gravitation")->FirstChildElement("z")->GetText());
+    velocity[0] = atof(physicsChild->FirstChildElement("velocity")->FirstChildElement("x")->GetText());
+    velocity[1] = atof(physicsChild->FirstChildElement("velocity")->FirstChildElement("y")->GetText());
+    velocity[2] = atof(physicsChild->FirstChildElement("velocity")->FirstChildElement("z")->GetText());
 
-    cavityVelocity[0] = atof(physicsChild->FirstChildElement("cavity-velocity")->FirstChildElement("x")->GetText());
-    cavityVelocity[1] = atof(physicsChild->FirstChildElement("cavity-velocity")->FirstChildElement("y")->GetText());
-    cavityVelocity[2] = atof(physicsChild->FirstChildElement("cavity-velocity")->FirstChildElement("z")->GetText());
+    acceleration[0] = atof(physicsChild->FirstChildElement("acceleration")->FirstChildElement("x")->GetText());
+    acceleration[1] = atof(physicsChild->FirstChildElement("acceleration")->FirstChildElement("y")->GetText());
+    acceleration[2] = atof(physicsChild->FirstChildElement("acceleration")->FirstChildElement("z")->GetText());
 
     viscosity = atof(physicsChild->FirstChildElement("viscosity")->GetText());
-    maxGravitationDimLess = atof(physicsChild->FirstChildElement("max-gravitation")->GetText());
+
+    maxVelocityDimLess = atof(physicsChild->FirstChildElement("max-velocity")->GetText());
+    maxAccelerationDimLess = atof(physicsChild->FirstChildElement("max-acceleration")->GetText());
 }
 
 template <class T>
@@ -150,7 +152,8 @@ template <class T>
 void CConfiguration<T>::checkParameters()
 {
     assert(timestep > (T)0);
-    assert(maxGravitationDimLess > (T)0);
+    assert(maxVelocityDimLess > (T)0);
+    assert(maxAccelerationDimLess > (T)0);
     assert(domainSize[0] > 0 && domainSize[1] > 0 && domainSize[2] > 0);
     assert(domainLength[0] > (T)0 && domainLength[1] > (T)0 && domainLength[2] > (T)0);
     assert(numOfSubdomains[0] > 0 && numOfSubdomains[1] > 0 && numOfSubdomains[2] > 0);
@@ -173,29 +176,31 @@ template <class T>
 void CConfiguration<T>::print()
 {
     std::cout << "----- CConfiguration<T>::print() -----" << std::endl;
-    std::cout << "viscosity:                " << viscosity << std::endl;
-    std::cout << "gravitation:              " << gravitation << std::endl;
-    std::cout << "cavity velocity:          " << cavityVelocity << std::endl;
+    std::cout << "acceleration:                      " << acceleration << std::endl;
+    std::cout << "velocity:                          " << velocity << std::endl;
+    std::cout << "viscosity:                         " << viscosity << std::endl;
+    std::cout << "max velocity (dimension less):     " << maxVelocityDimLess << std::endl;
+    std::cout << "max acceleration (dimension less): " << maxAccelerationDimLess << std::endl;
     std::cout << "--------------------------------------" << std::endl;
-    std::cout << "domain size:              " << domainSize << std::endl;
-    std::cout << "domain length:            " << domainLength << std::endl;
-    std::cout << "number of subdomains:     " << numOfSubdomains << std::endl;
-    std::cout << "cpu/subdomain ratio:      " << CPUSubdomainRatio << std::endl;
+    std::cout << "domain size:                       " << domainSize << std::endl;
+    std::cout << "domain length:                     " << domainLength << std::endl;
+    std::cout << "number of subdomains:              " << numOfSubdomains << std::endl;
+    std::cout << "cpu/subdomain ratio:               " << CPUSubdomainRatio << std::endl;
     std::cout << "--------------------------------------" << std::endl;
-    std::cout << "loops:                    " << loops << std::endl;
-    std::cout << "timestep:                 " << timestep << std::endl;
-    std::cout << "do benchmark:             " << doBenchmark << std::endl;
-    std::cout << "do logging:               " << doLogging << std::endl;
-    std::cout << "do validation:            " << doValidation << std::endl;
-    std::cout << "do visualization:         " << doVisualization << std::endl;
-    std::cout << "benchmark directory:      " << benchmarkOutputDir << std::endl;
-    std::cout << "validation directory:     " << validationOutputDir << std::endl;
-    std::cout << "visualization directory:  " << visualizationOutputDir << std::endl;
-    std::cout << "visualization rate:       " << visualizationRate << std::endl;
+    std::cout << "loops:                             " << loops << std::endl;
+    std::cout << "timestep:                          " << timestep << std::endl;
+    std::cout << "do benchmark:                      " << doBenchmark << std::endl;
+    std::cout << "do logging:                        " << doLogging << std::endl;
+    std::cout << "do validation:                     " << doValidation << std::endl;
+    std::cout << "do visualization:                  " << doVisualization << std::endl;
+    std::cout << "benchmark directory:               " << benchmarkOutputDir << std::endl;
+    std::cout << "validation directory:              " << validationOutputDir << std::endl;
+    std::cout << "visualization directory:           " << visualizationOutputDir << std::endl;
+    std::cout << "visualization rate:                " << visualizationRate << std::endl;
     std::cout << "--------------------------------------" << std::endl;
-    std::cout << "init grid configuration:  [" << threadsPerBlock[0].x << ", " << threadsPerBlock[0].y << ", " << threadsPerBlock[0].z << "]" << std::endl;
-    std::cout << "alpha grid configuration: [" << threadsPerBlock[1].x << ", " << threadsPerBlock[1].y << ", " << threadsPerBlock[1].z << "]" << std::endl;
-    std::cout << "beta grid configuration:  [" << threadsPerBlock[2].x << ", " << threadsPerBlock[2].y << ", " << threadsPerBlock[2].z << "]" << std::endl;
+    std::cout << "init grid configuration:           [" << threadsPerBlock[0].x << ", " << threadsPerBlock[0].y << ", " << threadsPerBlock[0].z << "]" << std::endl;
+    std::cout << "alpha grid configuration:          [" << threadsPerBlock[1].x << ", " << threadsPerBlock[1].y << ", " << threadsPerBlock[1].z << "]" << std::endl;
+    std::cout << "beta grid configuration:           [" << threadsPerBlock[2].x << ", " << threadsPerBlock[2].y << ", " << threadsPerBlock[2].z << "]" << std::endl;
     std::cout << "--------------------------------------" << std::endl;
 }
 

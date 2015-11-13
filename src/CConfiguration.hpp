@@ -56,10 +56,11 @@ public:
     /*
      * physics configuration data
      */
-    CVector<3, T> gravitation;
-    CVector<3, T> cavityVelocity;
+    CVector<3, T> velocity;
+    CVector<3, T> acceleration;
     T viscosity;
-	T maxGravitationDimLess;
+	T maxVelocityDimLess;
+	T maxAccelerationDimLess;
 
     /*
      * grid configuration data
