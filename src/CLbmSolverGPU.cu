@@ -166,6 +166,12 @@ void CLbmSolverGPU<T>::simulationStepAlpha()
 template <class T>
 void CLbmSolverGPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, int> size)
 {
+    assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
+    assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
+    assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
+    assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
+
     dim3 blocksPerGrid = getBlocksPerGrid(3, size, threadsPerBlock[1]);
 
     if (doLogging)
@@ -257,6 +263,12 @@ void CLbmSolverGPU<T>::simulationStepBeta()
 template <class T>
 void CLbmSolverGPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int> size)
 {
+    assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
+    assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
+    assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
+    assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
+
     dim3 blocksPerGrid = getBlocksPerGrid(3, size, threadsPerBlock[2]);
     size_t sMemSize = 12 * sizeof(T) * getSize(threadsPerBlock[2]);
 
