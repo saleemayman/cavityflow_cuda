@@ -46,6 +46,9 @@ __global__ void lbm_kernel_beta(
         const T gravitation_y,
         const T gravitation_z,
         const T drivenCavityVelocity, // velocity parameters for modification of density distributions
+        const int originX,
+        const int originY,
+        const int originZ,
         const int domainCells_x,
         const int domainCells_y,
         const int domainCells_z,
@@ -293,22 +296,8 @@ __global__ void lbm_kernel_beta(
     int pos_x_wrap = LOCAL_WORK_GROUP_WRAP(lid + 1, LOCAL_WORK_GROUP_SIZE, isLocalPowOfTwo);
     int neg_x_wrap = LOCAL_WORK_GROUP_WRAP(lid + (LOCAL_WORK_GROUP_SIZE - 1), LOCAL_WORK_GROUP_SIZE, isLocalPowOfTwo);
 
-    bool local_to_global = ((LOCAL_WORK_GROUP_SIZE/DOMAIN_CELLS_X) * DOMAIN_CELLS_X == LOCAL_WORK_GROUP_SIZE);
-//#if (LOCAL_WORK_GROUP_SIZE/DOMAIN_CELLS_X)*DOMAIN_CELLS_X == LOCAL_WORK_GROUP_SIZE
-#if local_to_global 
-    /*
-     * handle domain x-sizes specially if LOCAL_WORK_GROUP_SIZE is a multiple of DOMAIN_CELLS_X
-     * in this case, we dont have to read unaligned data!!!
-     */
-    int read_delta_neg_x = gid;
-    int read_delta_pos_x = gid;
-#else
-    /*
-     * cache variables for speedup
-     */
     int read_delta_neg_x = DOMAIN_WRAP(gid - lid + pos_x_wrap + DELTA_NEG_X, DOMAIN_CELLS, isDomainPowOfTwo);
     int read_delta_pos_x = DOMAIN_WRAP(gid - lid + neg_x_wrap + DELTA_POS_X, DOMAIN_CELLS, isDomainPowOfTwo);
-#endif
 
     /*
      * +++++++++++
@@ -942,6 +931,9 @@ template __global__ void lbm_kernel_beta<float>(
         const float gravitation_y,
         const float gravitation_z,
         const float drivenCavityVelocity,
+        const int originX,
+        const int originY,
+        const int originZ,
         const int domainCells_x,
         const int domainCells_y,
         const int domainCells_z,
@@ -960,6 +952,9 @@ template __global__ void lbm_kernel_beta<double>(
         const double gravitation_y,
         const double gravitation_z,
         const double drivenCavityVelocity,
+        const int originX,
+        const int originY,
+        const int originZ,
         const int domainCells_x,
         const int domainCells_y,
         const int domainCells_z,

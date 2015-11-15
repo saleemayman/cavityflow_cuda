@@ -71,9 +71,9 @@ public:
     ~CLbmSolverGPU();
 
     void simulationStepAlpha();
-    void simulationStepAlphaRect(CVector<3, int> origin, CVector<3, int> size);
+    void simulationStepAlpha(CVector<3, int> origin, CVector<3, int> size);
     void simulationStepBeta();
-    void simulationStepBetaRect(CVector<3, int> origin, CVector<3, int> size);
+    void simulationStepBeta(CVector<3, int> origin, CVector<3, int> size);
     void getDensityDistributions(CVector<3, int>& origin, CVector<3, int>& size, T* hDensityDistributions);
     void getDensityDistributions(T* hDensityDistributions);
     void setDensityDistributions(CVector<3, int>& origin, CVector<3, int>& size, Direction direction, T* hDensityDistributions);

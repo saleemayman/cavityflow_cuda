@@ -124,19 +124,19 @@ CLbmSolverGPU<T>::~CLbmSolverGPU()
 template <class T>
 void CLbmSolverGPU<T>::simulationStepAlpha()
 {
-    dim3 blocksPerGrid = getBlocksPerGrid(3, this->domain.getSizeWithHalo(), this->threadsPerBlock[1]);
+    dim3 blocksPerGrid = getBlocksPerGrid(3, domain.getSizeWithHalo(), threadsPerBlock[1]);
 
     if (doLogging)
     {
         std::cout << "----- CLbmSolverGPU<T>::simulationStepAlpha() -----" << std::endl;
         std::cout << "id:                " << id << std::endl;
         std::cout << "---------------------------------------------------" << std::endl;
-        std::cout << "threads per block: [" << this->threadsPerBlock[1].x << ", " << this->threadsPerBlock[1].y << ", " << this->threadsPerBlock[1].z << "]" << std::endl;
+        std::cout << "threads per block: [" << threadsPerBlock[1].x << ", " << threadsPerBlock[1].y << ", " << threadsPerBlock[1].z << "]" << std::endl;
         std::cout << "blocks per grid:   [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
         std::cout << "---------------------------------------------------" << std::endl;
     }
 
-    lbm_kernel_alpha<T><<<blocksPerGrid, this->threadsPerBlock[1]>>>(
+    lbm_kernel_alpha<T><<<blocksPerGrid, threadsPerBlock[1]>>>(
             densityDistributions,
             flags,
             velocities,
@@ -146,6 +146,9 @@ void CLbmSolverGPU<T>::simulationStepAlpha()
             accelerationDimLess[1],
             accelerationDimLess[2],
             velocityDimLess[0],
+            0,
+            0,
+            0,
             domain.getSizeWithHalo()[0],
             domain.getSizeWithHalo()[1],
             domain.getSizeWithHalo()[2],
@@ -161,11 +164,47 @@ void CLbmSolverGPU<T>::simulationStepAlpha()
 }
 
 template <class T>
-void CLbmSolverGPU<T>::simulationStepAlphaRect(CVector<3, int> origin, CVector<3, int> size)
+void CLbmSolverGPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, int> size)
 {
-    /*
-     * TODO
-     */
+    dim3 blocksPerGrid = getBlocksPerGrid(3, size, threadsPerBlock[1]);
+
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverGPU<T>::simulationStepAlpha() -----" << std::endl;
+        std::cout << "id:                " << id << std::endl;
+        std::cout << "---------------------------------------------------" << std::endl;
+        std::cout << "threads per block: [" << threadsPerBlock[1].x << ", " << threadsPerBlock[1].y << ", " << threadsPerBlock[1].z << "]" << std::endl;
+        std::cout << "blocks per grid:   [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+        std::cout << "---------------------------------------------------" << std::endl;
+    }
+
+    lbm_kernel_alpha<T><<<blocksPerGrid, threadsPerBlock[1]>>>(
+            densityDistributions,
+            flags,
+            velocities,
+            densities,
+            tauInv,
+            accelerationDimLess[0],
+            accelerationDimLess[1],
+            accelerationDimLess[2],
+            velocityDimLess[0],
+            origin[0],
+            origin[1],
+            origin[2],
+            size[0],
+            size[1],
+            size[2],
+            storeDensities,
+            storeVelocities);
+    GPU_ERROR_CHECK(cudaPeekAtLastError())
+
+    if (doLogging)
+    {
+        std::cout << "Alpha kernel was successfully executed on the following subdomain:" << std::endl;
+        std::cout << "origin:            " << origin << std::endl;
+        std::cout << "size:              " << size << std::endl;
+        std::cout << "---------------------------------------------------" << std::endl;
+    }
 }
 
 template <class T>
@@ -179,7 +218,7 @@ void CLbmSolverGPU<T>::simulationStepBeta()
         std::cout << "----- CLbmSolverGPU<T>::simulationStepBeta() -----" << std::endl;
         std::cout << "id:                 " << id << std::endl;
         std::cout << "--------------------------------------------------" << std::endl;
-        std::cout << "threads per block:  [" << this->threadsPerBlock[2].x << ", " << this->threadsPerBlock[2].y << ", " << this->threadsPerBlock[2].z << "]" << std::endl;
+        std::cout << "threads per block:  [" << threadsPerBlock[2].x << ", " << threadsPerBlock[2].y << ", " << threadsPerBlock[2].z << "]" << std::endl;
         std::cout << "blocks per grid:    [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
         std::cout << "shared memory size: " << ((T)sMemSize / (T)(1<<10)) << " KB" << std::endl;
         std::cout << "--------------------------------------------------" << std::endl;
@@ -195,6 +234,9 @@ void CLbmSolverGPU<T>::simulationStepBeta()
             accelerationDimLess[1],
             accelerationDimLess[2],
             velocityDimLess[0],
+            0,
+            0,
+            0,
             domain.getSizeWithHalo()[0],
             domain.getSizeWithHalo()[1],
             domain.getSizeWithHalo()[2],
@@ -213,11 +255,52 @@ void CLbmSolverGPU<T>::simulationStepBeta()
 }
 
 template <class T>
-void CLbmSolverGPU<T>::simulationStepBetaRect(CVector<3, int> origin, CVector<3, int> size)
+void CLbmSolverGPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int> size)
 {
-    /*
-     * TODO
-     */
+    dim3 blocksPerGrid = getBlocksPerGrid(3, size, threadsPerBlock[2]);
+    size_t sMemSize = 12 * sizeof(T) * getSize(threadsPerBlock[2]);
+
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverGPU<T>::simulationStepBeta() -----" << std::endl;
+        std::cout << "id:                 " << id << std::endl;
+        std::cout << "--------------------------------------------------" << std::endl;
+        std::cout << "threads per block:  [" << threadsPerBlock[2].x << ", " << threadsPerBlock[2].y << ", " << threadsPerBlock[2].z << "]" << std::endl;
+        std::cout << "blocks per grid:    [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+        std::cout << "shared memory size: " << ((T)sMemSize / (T)(1<<10)) << " KB" << std::endl;
+        std::cout << "--------------------------------------------------" << std::endl;
+    }
+
+    lbm_kernel_beta<T><<<blocksPerGrid, threadsPerBlock[2], sMemSize>>>(
+            densityDistributions,
+            flags,
+            velocities,
+            densities,
+            tauInv,
+            accelerationDimLess[0],
+            accelerationDimLess[1],
+            accelerationDimLess[2],
+            velocityDimLess[0],
+            origin[0],
+            origin[1],
+            origin[2],
+            domain.getSizeWithHalo()[0],
+            domain.getSizeWithHalo()[1],
+            domain.getSizeWithHalo()[2],
+            getSize(threadsPerBlock[2]),
+            isPowerOfTwo(domain.getNumOfCellsWithHalo()),
+            isPowerOfTwo(getSize(threadsPerBlock[2])),
+            storeDensities,
+            storeVelocities);
+    GPU_ERROR_CHECK(cudaPeekAtLastError())
+
+    if (doLogging)
+    {
+        std::cout << "Beta kernel was successfully executed on the following subdomain." << std::endl;
+        std::cout << "origin:             " << origin << std::endl;
+        std::cout << "size:               " << size << std::endl;
+        std::cout << "--------------------------------------------------" << std::endl;
+    }
 }
 
 template <class T>

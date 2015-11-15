@@ -22,7 +22,7 @@
 template<typename T>
 __global__ void lbm_kernel_alpha(
         T* global_dd,                 // density distributions
-        const Flag* flag_array,        // flags
+        const Flag* flag_array,       // flags
         T* velocity,                  // velocities
         T* density,                   // densities
         const T inv_tau,
@@ -30,6 +30,9 @@ __global__ void lbm_kernel_alpha(
         const T gravitation_y,
         const T gravitation_z,
         const T drivenCavityVelocity, // velocity parameters for modification of density distributions
+        const int originX,
+        const int originY,
+        const int originZ,
         const int domainCellsX,
         const int domainCellsY,
         const int domainCellsZ,
@@ -531,6 +534,9 @@ template __global__ void lbm_kernel_alpha<float>(
         const float gravitation_y,
         const float gravitation_z,
         const float drivenCavityVelocity,
+        const int originX,
+        const int originY,
+        const int originZ,
         const int domainCellsX,
         const int domainCellsY,
         const int domainCellsZ,
@@ -546,6 +552,9 @@ template __global__ void lbm_kernel_alpha<double>(
         const double gravitation_y,
         const double gravitation_z,
         const double drivenCavityVelocity,
+        const int originX,
+        const int originY,
+        const int originZ,
         const int domainCellsX,
         const int domainCellsY,
         const int domainCellsZ,
