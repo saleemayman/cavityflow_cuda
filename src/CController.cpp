@@ -37,10 +37,10 @@ CController<T>::CController(
         std::vector<CComm<T> > communication,
         CConfiguration<T>* configuration) :
         id(id),
-        configuration(configuration),
         domain(domain),
         boundaryConditions(boundaryConditions),
         communication(communication),
+        configuration(configuration),
         simulationStepCounter(0)
 {
     CDomain<T> domainGPU = decomposeSubdomain();
@@ -77,6 +77,22 @@ CController<T>::CController(
             this->configuration->doValidation || this->configuration->doVisualization,
             this->configuration->doLogging);
 
+    sendBuffers = new std::vector<T*>();
+    recvBuffers = new std::vector<T*>();
+    sendRequests = new MPI_Request[communication.size()];
+    recvRequests = new MPI_Request[communication.size()];
+    streams = new std::vector<cudaStream_t>(communication.size());
+    events = new std::vector<cudaEvent_t>(communication.size());
+    GPU_ERROR_CHECK(cudaStreamCreate(&defaultStream))
+
+    for (int i = 0; i < communication.size(); i++)
+    {
+    	sendBuffers->push_back(new T[NUM_LATTICE_VECTORS * communication[i].getSendSize().elements()]);
+    	recvBuffers->push_back(new T[NUM_LATTICE_VECTORS * communication[i].getRecvSize().elements()]);
+    	GPU_ERROR_CHECK(cudaStreamCreate(&streams->at(i)))
+    	GPU_ERROR_CHECK(cudaEventCreate(&events->at(i)))
+    }
+
     if (this->configuration->doVisualization)
 #ifdef PAR_NETCDF
         visualization = new CLbmVisualizationNetCDF<T>(
@@ -99,6 +115,23 @@ CController<T>::~CController()
 {
     if (configuration->doVisualization)
         delete visualization;
+
+    GPU_ERROR_CHECK(cudaStreamDestroy(defaultStream))
+
+    for (int i = communication.size() - 1; i >= 0; i--)
+    {
+    	GPU_ERROR_CHECK(cudaEventDestroy(events->at(i)))
+    	GPU_ERROR_CHECK(cudaStreamDestroy(streams->at(i)))
+    	delete[] recvBuffers->at(i);
+    	delete[] sendBuffers->at(i);
+    }
+
+    delete events;
+    delete streams;
+    delete[] recvRequests;
+    delete[] sendRequests;
+    delete recvBuffers;
+    delete sendBuffers;
 
     delete solverCPU;
     delete solverGPU;
@@ -137,6 +170,88 @@ CDomain<T> CController<T>::decomposeSubdomain()
     return domainGPU;
 }
 
+template <class T>
+void CController<T>::stepAlpha()
+{
+    CVector<3, int> origin(1), sendOrigin, recvOrigin;
+    CVector<3, int> size(domain.getSize() - 2), sendSize, recvSize;
+
+	/*
+	 *
+	 */
+	for (int i = 0; i < communication.size(); i++)
+	{
+		MPI_Irecv(
+			recvBuffers->at(i),
+			NUM_LATTICE_VECTORS * communication[i].getRecvSize().elements(),
+            ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+            communication[i].getDstId(),
+            MPI_TAG_ALPHA_SYNC,
+            MPI_COMM_WORLD,
+            &recvRequests[i]);
+	}
+
+	/*
+	 *
+	 */
+	for (int i = 0; i < communication.size(); i++)
+	{
+		sendOrigin = communication[i].getSendOrigin();
+		sendSize = communication[i].getSendSize();
+
+		solverGPU->simulationStepAlpha(sendOrigin, sendSize, streams->at(i));
+		cudaEventRecord(events->at(i), streams->at(i));
+		solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(i), streams->at(i));
+	}
+
+	/*
+	 *
+	 */
+	for (int i = 0; i < communication.size(); i++)
+	{
+		GPU_ERROR_CHECK(cudaEventSynchronize(events->at(i)))
+	}
+	solverGPU->simulationStepAlpha(origin, size, defaultStream);
+
+	/*
+	 *
+	 */
+	for (int i = 0; i < communication.size(); i++)
+	{
+		GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(i)))
+		MPI_Isend(
+        		sendBuffers->at(i),
+        		NUM_LATTICE_VECTORS * communication[i].getSendSize().elements(),
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                communication[i].getDstId(),
+                MPI_TAG_ALPHA_SYNC,
+                MPI_COMM_WORLD,
+                &sendRequests[i]);
+	}
+
+	/*
+	 *
+	 */
+	for (int i = 0; i < communication.size(); i++)
+	{
+		MPI_Wait(&recvRequests[i], MPI_STATUS_IGNORE);
+
+		recvOrigin = communication[i].getRecvOrigin();
+		recvSize = communication[i].getRecvSize();
+
+		solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(i), streams->at(i));
+	}
+
+	MPI_Waitall(communication.size(), sendRequests, MPI_STATUS_IGNORE);
+	GPU_ERROR_CHECK(cudaStreamSynchronize(defaultStream))
+}
+
+template <class T>
+void CController<T>::stepBeta()
+{
+    solverGPU->simulationStepBeta(defaultStream);
+    syncBeta();
+}
 
 template <class T>
 void CController<T>::syncAlpha()
@@ -253,7 +368,7 @@ void CController<T>::syncBeta()
             std::cout << "--------------------------------------" << std::endl;
         }
 
-        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffer);
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffer, defaultStream);
 
         MPI_Isend(
                 sendBuffer,
@@ -279,7 +394,7 @@ void CController<T>::syncBeta()
             std::cout << "--------------------------------------" << std::endl;
         }
 
-        solverGPU->setDensityDistributions(recvOrigin, recvSize, it->getDirection(), recvBuffer);
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, it->getDirection(), recvBuffer, defaultStream);
 
         delete[] recvBuffer;
         delete[] sendBuffer;
@@ -290,11 +405,9 @@ template <class T>
 void CController<T>::computeNextStep()
 {
     if (simulationStepCounter & 1) {
-        solverGPU->simulationStepBeta();
-        syncBeta();
+    	stepBeta();
     } else {
-        solverGPU->simulationStepAlpha();
-        syncAlpha();
+    	stepAlpha();
     }
     simulationStepCounter++;
 }

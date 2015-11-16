@@ -122,7 +122,7 @@ CLbmSolverGPU<T>::~CLbmSolverGPU()
 }
 
 template <class T>
-void CLbmSolverGPU<T>::simulationStepAlpha()
+void CLbmSolverGPU<T>::simulationStepAlpha(cudaStream_t& stream)
 {
     dim3 blocksPerGrid = getBlocksPerGrid(3, domain.getSizeWithHalo(), threadsPerBlock[1]);
 
@@ -136,7 +136,7 @@ void CLbmSolverGPU<T>::simulationStepAlpha()
         std::cout << "---------------------------------------------------" << std::endl;
     }
 
-    lbm_kernel_alpha<T><<<blocksPerGrid, threadsPerBlock[1]>>>(
+    lbm_kernel_alpha<T><<<blocksPerGrid, threadsPerBlock[1], 0, stream>>>(
             densityDistributions,
             flags,
             velocities,
@@ -164,9 +164,9 @@ void CLbmSolverGPU<T>::simulationStepAlpha()
 }
 
 template <class T>
-void CLbmSolverGPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, int> size)
+void CLbmSolverGPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, int> size, cudaStream_t& stream)
 {
-    assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
+	assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
     assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
     assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
@@ -184,7 +184,7 @@ void CLbmSolverGPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, in
         std::cout << "---------------------------------------------------" << std::endl;
     }
 
-    lbm_kernel_alpha<T><<<blocksPerGrid, threadsPerBlock[1]>>>(
+    lbm_kernel_alpha<T><<<blocksPerGrid, threadsPerBlock[1], 0, stream>>>(
             densityDistributions,
             flags,
             velocities,
@@ -214,7 +214,7 @@ void CLbmSolverGPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, in
 }
 
 template <class T>
-void CLbmSolverGPU<T>::simulationStepBeta()
+void CLbmSolverGPU<T>::simulationStepBeta(cudaStream_t& stream)
 {
     dim3 blocksPerGrid = getBlocksPerGrid(3, domain.getSizeWithHalo(), threadsPerBlock[2]);
     size_t sMemSize = 12 * sizeof(T) * getSize(threadsPerBlock[2]);
@@ -230,7 +230,7 @@ void CLbmSolverGPU<T>::simulationStepBeta()
         std::cout << "--------------------------------------------------" << std::endl;
     }
 
-    lbm_kernel_beta<T><<<blocksPerGrid, threadsPerBlock[2], sMemSize>>>(
+    lbm_kernel_beta<T><<<blocksPerGrid, threadsPerBlock[2], sMemSize, stream>>>(
             densityDistributions,
             flags,
             velocities,
@@ -261,7 +261,7 @@ void CLbmSolverGPU<T>::simulationStepBeta()
 }
 
 template <class T>
-void CLbmSolverGPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int> size)
+void CLbmSolverGPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int> size, cudaStream_t& stream)
 {
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
@@ -283,7 +283,7 @@ void CLbmSolverGPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int
         std::cout << "--------------------------------------------------" << std::endl;
     }
 
-    lbm_kernel_beta<T><<<blocksPerGrid, threadsPerBlock[2], sMemSize>>>(
+    lbm_kernel_beta<T><<<blocksPerGrid, threadsPerBlock[2], sMemSize, stream>>>(
             densityDistributions,
             flags,
             velocities,
@@ -316,7 +316,7 @@ void CLbmSolverGPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int
 }
 
 template <class T>
-void CLbmSolverGPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* hDensityDistributions)
+void CLbmSolverGPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* hDensityDistributions, cudaStream_t& stream)
 {
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
@@ -353,7 +353,7 @@ void CLbmSolverGPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<
         params.extent = make_cudaExtent(size[0] * (sizeof(T) / sizeof(unsigned char)), size[1], size[2]);
         params.kind = cudaMemcpyDeviceToHost;
 
-        GPU_ERROR_CHECK(cudaMemcpy3D(&params))
+        GPU_ERROR_CHECK(cudaMemcpy3DAsync(&params, stream))
     }
 
     if (doLogging)
@@ -364,16 +364,16 @@ void CLbmSolverGPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<
 }
 
 template <class T>
-void CLbmSolverGPU<T>::getDensityDistributions(T* hDensityDistributions)
+void CLbmSolverGPU<T>::getDensityDistributions(T* hDensityDistributions, cudaStream_t& stream)
 {
     CVector<3, int> origin(1);
     CVector<3, int> size(domain.getSize());
 
-    getDensityDistributions(origin, size, hDensityDistributions);
+    getDensityDistributions(origin, size, hDensityDistributions, stream);
 }
 
 template <class T>
-void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, Direction direction, T* hDensityDistributions)
+void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, Direction direction, T* hDensityDistributions, cudaStream_t& stream)
 {
     assert(0 <= direction < 6);
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
@@ -436,7 +436,7 @@ void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
             params.extent = make_cudaExtent(size[0] * (sizeof(T) / sizeof(unsigned char)), size[1], size[2]);
             params.kind = cudaMemcpyHostToDevice;
 
-            GPU_ERROR_CHECK(cudaMemcpy3D(&params))
+            GPU_ERROR_CHECK(cudaMemcpy3DAsync(&params, stream))
         }
     }
 
@@ -447,7 +447,7 @@ void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
 }
 
 template <class T>
-void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* hDensityDistributions)
+void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* hDensityDistributions, cudaStream_t& stream)
 {
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
@@ -486,7 +486,7 @@ void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
         params.extent = make_cudaExtent(size[0] * (sizeof(T) / sizeof(unsigned char)), size[1], size[2]);
         params.kind = cudaMemcpyHostToDevice;
 
-        GPU_ERROR_CHECK(cudaMemcpy3D(&params))
+        GPU_ERROR_CHECK(cudaMemcpy3DAsync(&params, stream))
     }
 
     if (doLogging)
@@ -497,12 +497,12 @@ void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
 }
 
 template <class T>
-void CLbmSolverGPU<T>::setDensityDistributions(T* hDensityDistributions)
+void CLbmSolverGPU<T>::setDensityDistributions(T* hDensityDistributions, cudaStream_t& stream)
 {
     CVector<3, int> origin(1);
     CVector<3, int> size(domain.getSize());
 
-    setDensityDistributions(origin, size, hDensityDistributions);
+    setDensityDistributions(origin, size, hDensityDistributions, stream);
 }
 
 template <class T>

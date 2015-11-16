@@ -25,21 +25,21 @@
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-      <x>211</x>
-      <y>211</y>
-      <z>211</z>
+      <x>48</x>
+      <y>32</y>
+      <z>32</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
-      <x>1.0</x>
+      <x>1.5</x>
       <y>1.0</y>
       <z>1.0</z>
     </domian-length>
     <!-- number of subdomains in x, y and z direction (unit: scalar) -->
     <subdomain-num>
-      <x>1</x>
-      <y>1</y>
-      <z>1</z>
+      <x>3</x>
+      <y>2</y>
+      <z>2</z>
     </subdomain-num>
     <!-- ratio in x, y and z direction of subdomain cells which are processed by the CPU ([0.0, 1.0]) (unit: scalar factor) -->
     <cpu-subdomain-ratio>
@@ -50,26 +50,26 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>126602</loops>
+    <loops>100</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>0.01</timestep>
     <!--  -->
     <benchmark>
-      <do>1</do>
+      <do>0</do>
       <output-dir>/work_fast/riesinge/workspace/lbm/benchmark</output-dir>
     </benchmark>
     <!--  -->
     <logging>
-      <do>0</do>
+      <do>1</do>
     </logging>
     <!--  -->
     <validation>
-      <do>0</do>
+      <do>1</do>
       <output-dir>/work_fast/riesinge/workspace/lbm/validation</output-dir>
     </validation>
     <!--  -->
     <visualization>
-      <do>1</do>
+      <do>0</do>
       <rate>2110</rate>
       <output-dir>/work_fast/riesinge/workspace/lbm/visualization</output-dir>
     </visualization>
