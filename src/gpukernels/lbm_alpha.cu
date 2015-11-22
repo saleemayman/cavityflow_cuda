@@ -42,8 +42,8 @@ __global__ void lbm_kernel_alpha(
     size_t DOMAIN_CELLS = domainCellsX * domainCellsY * domainCellsZ;
 
     // get unique global thread ID
-    size_t blockId = blockIdx.x + (size_t)(blockIdx.y * gridDim.x) + (size_t)(gridDim.x * gridDim.y * blockIdx.z);
-    size_t gid = blockId * (size_t)(blockDim.x * blockDim.y * blockDim.z) + (size_t)(threadIdx.z * (blockDim.x * blockDim.y)) + (size_t)(threadIdx.y * blockDim.x) + threadIdx.x;
+    size_t blockId = (blockIdx.x + originX / blockDim.x) + ((blockIdx.y + originY / blockDim.y) * gridDim.x) + ((blockIdx.z + originZ / blockDim.z) * gridDim.x * gridDim.y);
+    size_t gid = blockId * (blockDim.x * blockDim.y * blockDim.z) + ((threadIdx.z + originZ % blockDim.z) * blockDim.x * blockDim.y) + ((threadIdx.y + originY % blockDim.y) * blockDim.x) + (threadIdx.x + originX % blockDim.x);
 
     if (gid >= DOMAIN_CELLS)
         return;

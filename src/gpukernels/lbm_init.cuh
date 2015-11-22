@@ -37,6 +37,8 @@ __global__ void lbm_init(
         T drivenCavityVelocity, // velocity parameters for modification of density distributions
         const int domainCells_x,
         const int domainCells_y,
-        const int domainCells_z);
+        const int domainCells_z,
+        const bool storeDensities,
+        const bool storeVelocities);
 
 #endif

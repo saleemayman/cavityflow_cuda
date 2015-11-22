@@ -19,6 +19,7 @@
 
 #include "CController.hpp"
 
+#include <cassert>
 #include <fstream>
 #include <sstream>
 #include <typeinfo>
@@ -77,18 +78,18 @@ CController<T>::CController(
             this->configuration->doValidation || this->configuration->doVisualization,
             this->configuration->doLogging);
 
-    sendBuffers = new std::vector<T*>();
-    recvBuffers = new std::vector<T*>();
-    sendRequests = new MPI_Request[communication.size()];
-    recvRequests = new MPI_Request[communication.size()];
-    streams = new std::vector<cudaStream_t>(communication.size());
-    events = new std::vector<cudaEvent_t>(communication.size());
+    sendBuffers = new std::vector<T*>(this->communication.size());
+    recvBuffers = new std::vector<T*>(this->communication.size());
+    sendRequests = new MPI_Request[this->communication.size()];
+    recvRequests = new MPI_Request[this->communication.size()];
+    streams = new std::vector<cudaStream_t>(this->communication.size());
+    events = new std::vector<cudaEvent_t>(this->communication.size());
     GPU_ERROR_CHECK(cudaStreamCreate(&defaultStream))
 
-    for (int i = 0; i < communication.size(); i++)
+    for (int i = 0; i < this->communication.size(); i++)
     {
-    	sendBuffers->push_back(new T[NUM_LATTICE_VECTORS * communication[i].getSendSize().elements()]);
-    	recvBuffers->push_back(new T[NUM_LATTICE_VECTORS * communication[i].getRecvSize().elements()]);
+    	sendBuffers->at(i) = new T[NUM_LATTICE_VECTORS * communication[i].getSendSize().elements()];
+    	recvBuffers->at(i) = new T[NUM_LATTICE_VECTORS * communication[i].getRecvSize().elements()];
     	GPU_ERROR_CHECK(cudaStreamCreate(&streams->at(i)))
     	GPU_ERROR_CHECK(cudaEventCreate(&events->at(i)))
     }
@@ -116,8 +117,6 @@ CController<T>::~CController()
     if (configuration->doVisualization)
         delete visualization;
 
-    GPU_ERROR_CHECK(cudaStreamDestroy(defaultStream))
-
     for (int i = communication.size() - 1; i >= 0; i--)
     {
     	GPU_ERROR_CHECK(cudaEventDestroy(events->at(i)))
@@ -126,6 +125,7 @@ CController<T>::~CController()
     	delete[] sendBuffers->at(i);
     }
 
+    GPU_ERROR_CHECK(cudaStreamDestroy(defaultStream))
     delete events;
     delete streams;
     delete[] recvRequests;
@@ -173,83 +173,70 @@ CDomain<T> CController<T>::decomposeSubdomain()
 template <class T>
 void CController<T>::stepAlpha()
 {
-    CVector<3, int> origin(1), sendOrigin, recvOrigin;
-    CVector<3, int> size(domain.getSize() - 2), sendSize, recvSize;
+	CVector<3, int> boundaryOrigin, innerOrigin(0), sendOrigin, recvOrigin;
+    CVector<3, int> boundarySize, innerSize(domain.getSizeWithHalo()), sendSize, recvSize;
 
-	/*
-	 *
-	 */
-	for (int i = 0; i < communication.size(); i++)
-	{
-		MPI_Irecv(
-			recvBuffers->at(i),
-			NUM_LATTICE_VECTORS * communication[i].getRecvSize().elements(),
-            ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
-            communication[i].getDstId(),
-            MPI_TAG_ALPHA_SYNC,
-            MPI_COMM_WORLD,
-            &recvRequests[i]);
-	}
+    for (int i = 0; i < communication.size(); i++)
+    {
+    	MPI_Irecv(
+    			recvBuffers->at(i),
+    			NUM_LATTICE_VECTORS * communication[i].getRecvSize().elements(),
+    			((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+    			communication[i].getDstId(),
+    			simulationStepCounter,
+    			MPI_COMM_WORLD,
+    			&recvRequests[i]);
+    }
 
-	/*
-	 *
-	 */
-	for (int i = 0; i < communication.size(); i++)
-	{
-		sendOrigin = communication[i].getSendOrigin();
-		sendSize = communication[i].getSendSize();
+    solverGPU->simulationStepAlpha(innerOrigin, innerSize);
+    GPU_ERROR_CHECK(cudaDeviceSynchronize())
 
-		solverGPU->simulationStepAlpha(sendOrigin, sendSize, streams->at(i));
-		cudaEventRecord(events->at(i), streams->at(i));
-		solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(i), streams->at(i));
-	}
+    for (int i = 0; i < communication.size(); i++)
+    {
+    	sendOrigin = communication[i].getSendOrigin();
+    	sendSize = communication[i].getSendSize();
 
-	/*
-	 *
-	 */
-	for (int i = 0; i < communication.size(); i++)
-	{
-		GPU_ERROR_CHECK(cudaEventSynchronize(events->at(i)))
-	}
-	solverGPU->simulationStepAlpha(origin, size, defaultStream);
+    	solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(i));
+    }
+    GPU_ERROR_CHECK(cudaDeviceSynchronize())
 
-	/*
-	 *
-	 */
-	for (int i = 0; i < communication.size(); i++)
-	{
-		GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(i)))
-		MPI_Isend(
-        		sendBuffers->at(i),
-        		NUM_LATTICE_VECTORS * communication[i].getSendSize().elements(),
-                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
-                communication[i].getDstId(),
-                MPI_TAG_ALPHA_SYNC,
-                MPI_COMM_WORLD,
-                &sendRequests[i]);
-	}
+    for (int i = 0; i < communication.size(); i++)
+    {
+    	MPI_Isend(
+    			sendBuffers->at(i),
+    			NUM_LATTICE_VECTORS * communication[i].getSendSize().elements(),
+    			((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+    			communication[i].getDstId(),
+    			simulationStepCounter,
+    			MPI_COMM_WORLD,
+    			&sendRequests[i]);
+    }
+    MPI_Waitall(communication.size(), sendRequests, MPI_STATUS_IGNORE);
 
-	/*
-	 *
-	 */
-	for (int i = 0; i < communication.size(); i++)
-	{
-		MPI_Wait(&recvRequests[i], MPI_STATUS_IGNORE);
+    MPI_Waitall(communication.size(), recvRequests, MPI_STATUS_IGNORE);
+    for (int i = 0; i < communication.size(); i++)
+    {
+    	recvOrigin = communication[i].getRecvOrigin();
+    	recvSize = communication[i].getRecvSize();
 
-		recvOrigin = communication[i].getRecvOrigin();
-		recvSize = communication[i].getRecvSize();
-
-		solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(i), streams->at(i));
-	}
-
-	MPI_Waitall(communication.size(), sendRequests, MPI_STATUS_IGNORE);
-	GPU_ERROR_CHECK(cudaStreamSynchronize(defaultStream))
+    	solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(i));
+    }
+    GPU_ERROR_CHECK(cudaDeviceSynchronize())
 }
+
+/*
+template <class T>
+void CController<T>::stepAlpha()
+{
+    solverGPU->simulationStepAlpha();
+    syncAlpha();
+}
+*/
 
 template <class T>
 void CController<T>::stepBeta()
 {
-    solverGPU->simulationStepBeta(defaultStream);
+    solverGPU->simulationStepBeta();
     syncBeta();
 }
 
@@ -260,7 +247,6 @@ void CController<T>::syncAlpha()
     CVector<3, int> sendOrigin, recvOrigin;
     int dstId;
     MPI_Request request[2];
-    MPI_Status status[2];
     int sendBufferSize, recvBufferSize;
     T* sendBuffer;
     T* recvBuffer;
@@ -301,7 +287,7 @@ void CController<T>::syncAlpha()
                 sendBufferSize,
                 ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
                 dstId,
-                MPI_TAG_ALPHA_SYNC,
+                simulationStepCounter,
                 MPI_COMM_WORLD,
                 &request[0]);
         MPI_Irecv(
@@ -309,10 +295,10 @@ void CController<T>::syncAlpha()
                 recvBufferSize,
                 ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
                 dstId,
-                MPI_TAG_ALPHA_SYNC,
+                simulationStepCounter,
                 MPI_COMM_WORLD,
                 &request[1]);
-        MPI_Waitall(2, request, status);
+        MPI_Waitall(2, request, MPI_STATUS_IGNORE);
 
         if (configuration->doLogging)
         {
@@ -334,7 +320,6 @@ void CController<T>::syncBeta()
     CVector<3, int> sendOrigin, recvOrigin;
     int dstId;
     MPI_Request request[2];
-    MPI_Status status[2];
     int sendBufferSize, recvBufferSize;
     T* sendBuffer;
     T* recvBuffer;
@@ -368,14 +353,14 @@ void CController<T>::syncBeta()
             std::cout << "--------------------------------------" << std::endl;
         }
 
-        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffer, defaultStream);
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffer);
 
         MPI_Isend(
                 sendBuffer,
                 sendBufferSize,
                 ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
                 dstId,
-                MPI_TAG_BETA_SYNC,
+                simulationStepCounter,
                 MPI_COMM_WORLD,
                 &request[0]);
         MPI_Irecv(
@@ -383,10 +368,10 @@ void CController<T>::syncBeta()
                 recvBufferSize,
                 ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
                 dstId,
-                MPI_TAG_BETA_SYNC,
+                simulationStepCounter,
                 MPI_COMM_WORLD,
                 &request[1]);
-        MPI_Waitall(2, request, status);
+        MPI_Waitall(2, request, MPI_STATUS_IGNORE);
 
         if (configuration->doLogging)
         {
@@ -394,7 +379,7 @@ void CController<T>::syncBeta()
             std::cout << "--------------------------------------" << std::endl;
         }
 
-        solverGPU->setDensityDistributions(recvOrigin, recvSize, it->getDirection(), recvBuffer, defaultStream);
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, it->getDirection(), recvBuffer);
 
         delete[] recvBuffer;
         delete[] sendBuffer;
@@ -485,6 +470,9 @@ void CController<T>::run()
             usedDataSize += 4 * sizeof(T);
     }
 
+    if (configuration->doVisualization)
+        visualization->render(0);
+
     if (configuration->doBenchmark)
         gettimeofday(&start, NULL);
 
@@ -495,7 +483,7 @@ void CController<T>::run()
         computeNextStep();
 
         if (configuration->doVisualization)
-            visualization->render(i);
+            visualization->render(simulationStepCounter);
     }
 
     if (configuration->doBenchmark)

@@ -65,8 +65,8 @@ __global__ void lbm_kernel_beta(
     size_t LOCAL_WORK_GROUP_SIZE = localWorkGroup;
 #endif
 
-    size_t DOMAIN_CELLS = DOMAIN_CELLS_X * domainCells_y * domainCells_z;
-    size_t DOMAIN_SLICE_CELLS = DOMAIN_CELLS_X * domainCells_y;
+    size_t DOMAIN_CELLS = domainCells_x * domainCells_y * domainCells_z;
+    size_t DOMAIN_SLICE_CELLS = domainCells_x * domainCells_y;
 
     int DELTA_POS_X = 1;
     size_t DELTA_NEG_X = DOMAIN_CELLS - 1;
@@ -76,8 +76,8 @@ __global__ void lbm_kernel_beta(
     size_t DELTA_NEG_Z = DOMAIN_CELLS - DOMAIN_SLICE_CELLS;
 
     // get unique thread id
-    size_t blockId = blockIdx.x + (size_t)(blockIdx.y * gridDim.x) + (size_t)(gridDim.x * gridDim.y * blockIdx.z);
-    size_t gid = blockId * (size_t)(blockDim.x * blockDim.y * blockDim.z) + (size_t)(threadIdx.z * (blockDim.x * blockDim.y)) + (size_t)(threadIdx.y * blockDim.x) + threadIdx.x;
+    size_t blockId = (blockIdx.x + originX / blockDim.x) + ((blockIdx.y + originY / blockDim.y) * gridDim.x) + ((blockIdx.z + originZ / blockDim.z) * gridDim.x * gridDim.y);
+    size_t gid = blockId * (blockDim.x * blockDim.y * blockDim.z) + ((threadIdx.z + originZ % blockDim.z) * blockDim.x * blockDim.y) + ((threadIdx.y + originY % blockDim.y) * blockDim.x) + (threadIdx.x + originX % blockDim.x);
 
     if (gid >= DOMAIN_CELLS)
         return;

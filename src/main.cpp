@@ -227,11 +227,11 @@ int main(int argc, char** argv)
             validationFileName << configuration->validationOutputDir << "/validation.txt";
             std::ofstream validationFile(validationFileName.str().c_str(), std::ios::out);
 
-            for (int i = 0; i < domainSize[0] / subdomainSize[0]; i++)
+            for (int i = 0; i < domainSize[0]; i++)
                 {
-                    for (int j = 0; j < domainSize[1] / subdomainSize[1]; j++)
+                    for (int j = 0; j < domainSize[1]; j++)
                     {
-                        for (int k = 0; k < domainSize[2] / subdomainSize[2]; k++)
+                        for (int k = 0; k < domainSize[2]; k++)
                         {
                             globalIdx = k * domainSize[1] * domainSize[2] + j * domainSize[1] + i;
                             velocitiesX = globalIdx;
