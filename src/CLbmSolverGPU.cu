@@ -63,7 +63,7 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
         std::cout << "---------------------------------------------" << std::endl;
     }
 
-    GPU_ERROR_CHECK(cudaMalloc(&densityDistributions, this->domain.getNumOfCellsWithHalo() * NUM_LATTICE_VECTORS * sizeof(T)))
+    GPU_ERROR_CHECK(cudaMalloc(&densityDistributions, NUM_LATTICE_VECTORS * this->domain.getNumOfCellsWithHalo() * sizeof(T)))
     GPU_ERROR_CHECK(cudaMalloc(&flags, this->domain.getNumOfCellsWithHalo() * sizeof(Flag)))
     if(this->storeDensities)
         GPU_ERROR_CHECK(cudaMalloc(&densities, this->domain.getNumOfCellsWithHalo() * sizeof(T)))
@@ -71,7 +71,7 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
         GPU_ERROR_CHECK(cudaMalloc(&velocities, 3 * this->domain.getNumOfCellsWithHalo() * sizeof(T)))
 
     if (doLogging) {
-        std::cout << "size of allocated memory for density distributions: " << ((T)(this->domain.getNumOfCellsWithHalo() * NUM_LATTICE_VECTORS * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+        std::cout << "size of allocated memory for density distributions: " << ((T)(NUM_LATTICE_VECTORS * this->domain.getNumOfCellsWithHalo() * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
         std::cout << "size of allocated memory for flags:                 " << ((T)(this->domain.getNumOfCellsWithHalo() * sizeof(Flag)) / (T)(1<<20)) << " MBytes" << std::endl;
         if(this->storeDensities)
             std::cout << "size of allocated memory for velocities:            " << ((T)(3 * this->domain.getNumOfCellsWithHalo() * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;

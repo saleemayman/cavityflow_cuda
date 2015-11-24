@@ -38,8 +38,8 @@ class CLbmVisualizationNetCDF : public virtual CLbmVisualization<T>
 private:
     using CLbmVisualization<T>::id;
     using CLbmVisualization<T>::visualizationRate;
-    // using CLbmVisualization<T>::flags;
-    // using CLbmVisualization<T>::densities;
+    using CLbmVisualization<T>::flags;
+    using CLbmVisualization<T>::densities;
     using CLbmVisualization<T>::velocities;
     using CLbmVisualization<T>::solver;
 

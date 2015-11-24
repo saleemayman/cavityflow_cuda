@@ -173,40 +173,52 @@ CDomain<T> CController<T>::decomposeSubdomain()
 template <class T>
 void CController<T>::stepAlpha()
 {
+	int dstId;
 	CVector<3, int> boundaryOrigin, innerOrigin(0), sendOrigin, recvOrigin;
     CVector<3, int> boundarySize, innerSize(domain.getSizeWithHalo()), sendSize, recvSize;
+    T* sendBuffer;
+    T* recvBuffer;
 
     for (int i = 0; i < communication.size(); i++)
     {
+    	dstId = communication[i].getDstId();
+    	recvSize = communication[i].getRecvSize();
+    	recvBuffer = recvBuffers->at(i);
+
     	MPI_Irecv(
-    			recvBuffers->at(i),
-    			NUM_LATTICE_VECTORS * communication[i].getRecvSize().elements(),
+    			recvBuffer,
+    			NUM_LATTICE_VECTORS * recvSize.elements(),
     			((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
-    			communication[i].getDstId(),
+    			dstId,
     			simulationStepCounter,
     			MPI_COMM_WORLD,
     			&recvRequests[i]);
     }
 
-    solverGPU->simulationStepAlpha(innerOrigin, innerSize);
+    solverGPU->simulationStepAlpha();
     GPU_ERROR_CHECK(cudaDeviceSynchronize())
 
     for (int i = 0; i < communication.size(); i++)
     {
     	sendOrigin = communication[i].getSendOrigin();
     	sendSize = communication[i].getSendSize();
+    	sendBuffer = sendBuffers->at(i);
 
-    	solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(i));
+    	solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffer);
     }
     GPU_ERROR_CHECK(cudaDeviceSynchronize())
 
     for (int i = 0; i < communication.size(); i++)
     {
+    	dstId = communication[i].getDstId();
+    	sendSize = communication[i].getSendSize();
+    	sendBuffer = sendBuffers->at(i);
+
     	MPI_Isend(
-    			sendBuffers->at(i),
-    			NUM_LATTICE_VECTORS * communication[i].getSendSize().elements(),
+    			sendBuffer,
+    			NUM_LATTICE_VECTORS * sendSize.elements(),
     			((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
-    			communication[i].getDstId(),
+    			dstId,
     			simulationStepCounter,
     			MPI_COMM_WORLD,
     			&sendRequests[i]);
@@ -218,8 +230,9 @@ void CController<T>::stepAlpha()
     {
     	recvOrigin = communication[i].getRecvOrigin();
     	recvSize = communication[i].getRecvSize();
+    	recvBuffer = recvBuffers->at(i);
 
-    	solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(i));
+    	solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffer);
     }
     GPU_ERROR_CHECK(cudaDeviceSynchronize())
 }

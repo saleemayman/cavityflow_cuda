@@ -116,8 +116,8 @@ void CLbmVisualizationNetCDF<T>::defineData()
     nc_def_var(fileId, "x", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 1, &dimIds[2], &dimVarIds[2]);
     nc_def_var(fileId, "y", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 1, &dimIds[1], &dimVarIds[1]);
     nc_def_var(fileId, "z", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 1, &dimIds[0], &dimVarIds[0]);
-    // nc_def_var(fileId, "flags", NC_INT, 3, dimIds, &flagsVarId);
-    // nc_def_var(fileId, "densities", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 3, dimIds, &densitiesVarId);
+    nc_def_var(fileId, "flags", NC_INT, 3, dimIds, &flagsVarId);
+    nc_def_var(fileId, "densities", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 3, dimIds, &densitiesVarId);
     nc_def_var(fileId, "velocities_x", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 3, dimIds, &velocitiesVarId[0]);
     nc_def_var(fileId, "velocities_y", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 3, dimIds, &velocitiesVarId[1]);
     nc_def_var(fileId, "velocities_z", ((typeid(T) == typeid(float)) ? NC_FLOAT : NC_DOUBLE), 3, dimIds, &velocitiesVarId[2]);
@@ -125,8 +125,8 @@ void CLbmVisualizationNetCDF<T>::defineData()
     nc_put_att_text(fileId, dimVarIds[0], "units", DIM_UNIT.length(), DIM_UNIT.c_str());
     nc_put_att_text(fileId, dimVarIds[1], "units", DIM_UNIT.length(), DIM_UNIT.c_str());
     nc_put_att_text(fileId, dimVarIds[2], "units", DIM_UNIT.length(), DIM_UNIT.c_str());
-    // nc_put_att_text(fileId, flagsVarId, "units", FLAG_UNIT.length(), FLAG_UNIT.c_str());
-    // nc_put_att_text(fileId, densitiesVarId, "units", DENSITY_UNIT.length(), DENSITY_UNIT.c_str());
+    nc_put_att_text(fileId, flagsVarId, "units", FLAG_UNIT.length(), FLAG_UNIT.c_str());
+    nc_put_att_text(fileId, densitiesVarId, "units", DENSITY_UNIT.length(), DENSITY_UNIT.c_str());
     nc_put_att_text(fileId, velocitiesVarId[0], "units", VELOCITY_UNIT.length(), VELOCITY_UNIT.c_str());
     nc_put_att_text(fileId, velocitiesVarId[1], "units", VELOCITY_UNIT.length(), VELOCITY_UNIT.c_str());
     nc_put_att_text(fileId, velocitiesVarId[2], "units", VELOCITY_UNIT.length(), VELOCITY_UNIT.c_str());
@@ -144,8 +144,8 @@ void CLbmVisualizationNetCDF<T>::defineData()
     nc_enddef(fileId);
 
 #ifdef PAR_NETCDF
-    // nc_var_par_access(fileId, flagsVarId, NC_INDEPENDENT);
-    // nc_var_par_access(fileId, densitiesVarId, NC_INDEPENDENT);
+    nc_var_par_access(fileId, flagsVarId, NC_INDEPENDENT);
+    nc_var_par_access(fileId, densitiesVarId, NC_INDEPENDENT);
     nc_var_par_access(fileId, velocitiesVarId[0], NC_INDEPENDENT);
     nc_var_par_access(fileId, velocitiesVarId[1], NC_INDEPENDENT);
     nc_var_par_access(fileId, velocitiesVarId[2], NC_INDEPENDENT);
@@ -211,23 +211,23 @@ void CLbmVisualizationNetCDF<T>::writeData()
         }
     }
 
-    // solver->getFlags(flags);
-    // solver->getDensities(densities);
+    solver->getFlags(flags);
+    solver->getDensities(densities);
     solver->getVelocities(velocities);
 
     size_t start[3] = {static_cast<size_t>(solver->getDomain()->getOrigin()[2]), static_cast<size_t>(solver->getDomain()->getOrigin()[1]), static_cast<size_t>(solver->getDomain()->getOrigin()[0])};
     size_t count[3] = {static_cast<size_t>(solver->getDomain()->getSize()[2]), static_cast<size_t>(solver->getDomain()->getSize()[1]), static_cast<size_t>(solver->getDomain()->getSize()[0])};
 
-    // nc_put_vara_int(fileId, flagsVarId, start, count, (int*)flags);
+    nc_put_vara_int(fileId, flagsVarId, start, count, (int*)flags);
 
     if (typeid(T) == typeid(double))
     {
-        // nc_put_vara_double(fileId, densitiesVarId, start, count, (double*)densities);
+        nc_put_vara_double(fileId, densitiesVarId, start, count, (double*)densities);
         nc_put_vara_double(fileId, velocitiesVarId[0], start, count, (double*)&(velocities[0]));
         nc_put_vara_double(fileId, velocitiesVarId[1], start, count, (double*)&(velocities[solver->getDomain()->getNumOfCells()]));
         nc_put_vara_double(fileId, velocitiesVarId[2], start, count, (double*)&(velocities[2 * solver->getDomain()->getNumOfCells()]));
     } else if(typeid(T) == typeid(float)) {
-        // nc_put_vara_float(fileId, densitiesVarId, start, count, (float*)densities);
+        nc_put_vara_float(fileId, densitiesVarId, start, count, (float*)densities);
         nc_put_vara_float(fileId, velocitiesVarId[0], start, count, (float*)&(velocities[0]));
         nc_put_vara_float(fileId, velocitiesVarId[1], start, count, (float*)&(velocities[solver->getDomain()->getNumOfCells()]));
         nc_put_vara_float(fileId, velocitiesVarId[2], start, count, (float*)&(velocities[2 * solver->getDomain()->getNumOfCells()]));
