@@ -33,25 +33,32 @@ __global__ void lbm_kernel_alpha(
         const int originX,
         const int originY,
         const int originZ,
+        const int sizeX,
+        const int sizeY,
+        const int sizeZ,
         const int domainCellsX,
         const int domainCellsY,
         const int domainCellsZ,
         const bool storeDensities,
         const bool storeVelocities)
 {
-    size_t DOMAIN_CELLS = domainCellsX * domainCellsY * domainCellsZ;
+    const unsigned int DOMAIN_CELLS = domainCellsX * domainCellsY * domainCellsZ;
 
-    // get unique global thread ID
-    size_t blockId = (blockIdx.x + originX / blockDim.x) + ((blockIdx.y + originY / blockDim.y) * gridDim.x) + ((blockIdx.z + originZ / blockDim.z) * gridDim.x * gridDim.y);
-    size_t gid = blockId * (blockDim.x * blockDim.y * blockDim.z) + ((threadIdx.z + originZ % blockDim.z) * blockDim.x * blockDim.y) + ((threadIdx.y + originY % blockDim.y) * blockDim.x) + (threadIdx.x + originX % blockDim.x);
+    const unsigned int X = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned int Y = blockIdx.y * blockDim.y + threadIdx.y;
+    const unsigned int Z = blockIdx.z * blockDim.z + threadIdx.z;
+    const unsigned int gid = (originZ + Z) * (domainCellsX * domainCellsY) + (originY + Y) * domainCellsX + (originX + X);
 
     if (gid >= DOMAIN_CELLS)
         return;
 
-    // load cell type flag
-    int flag = flag_array[gid];
+    if (X > sizeX || Y > sizeY || Z > sizeZ)
+        return;
+
+    Flag flag = flag_array[gid];
     if  (flag == GHOST_LAYER)
         return;
+
     /**
      * we use a pointer instead of accessing the array directly
      * first this reduces the number of use registers (according to profiling information)
@@ -511,9 +518,9 @@ __global__ void lbm_kernel_alpha(
     {
         // store velocity
         current_dds = &velocity[gid];
-        *current_dds = velocity_x;  current_dds += DOMAIN_CELLS;
-        *current_dds = velocity_y;  current_dds += DOMAIN_CELLS;
-        *current_dds = velocity_z;
+        *current_dds = (T)1;  current_dds += DOMAIN_CELLS;
+        *current_dds = (T)1;  current_dds += DOMAIN_CELLS;
+        *current_dds = (T)1;
     }
 
     if (storeDensities)
@@ -537,6 +544,9 @@ template __global__ void lbm_kernel_alpha<float>(
         const int originX,
         const int originY,
         const int originZ,
+        const int sizeX,
+        const int sizeY,
+        const int sizeZ,
         const int domainCellsX,
         const int domainCellsY,
         const int domainCellsZ,
@@ -555,6 +565,9 @@ template __global__ void lbm_kernel_alpha<double>(
         const int originX,
         const int originY,
         const int originZ,
+        const int sizeX,
+        const int sizeY,
+        const int sizeZ,
         const int domainCellsX,
         const int domainCellsY,
         const int domainCellsZ,

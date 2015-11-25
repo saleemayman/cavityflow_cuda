@@ -38,7 +38,7 @@
     <!-- number of subdomains in x, y and z direction (unit: scalar) -->
     <subdomain-num>
       <x>1</x>
-      <y>4</y>
+      <y>1</y>
       <z>2</z>
     </subdomain-num>
     <!-- ratio in x, y and z direction of subdomain cells which are processed by the CPU ([0.0, 1.0]) (unit: scalar factor) -->
@@ -50,7 +50,7 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>1280</loops>
+    <loops>1</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>0.01</timestep>
     <!--  -->
@@ -70,7 +70,7 @@
     <!--  -->
     <visualization>
       <do>1</do>
-      <rate>1280</rate>
+      <rate>1</rate>
       <output-dir>/work_fast/riesinge/workspace/lbm/visualization</output-dir>
     </visualization>
   </simulation>

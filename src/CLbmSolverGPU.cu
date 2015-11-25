@@ -154,6 +154,9 @@ void CLbmSolverGPU<T>::simulationStepAlpha(cudaStream_t* stream)
             domain.getSizeWithHalo()[0],
             domain.getSizeWithHalo()[1],
             domain.getSizeWithHalo()[2],
+            domain.getSizeWithHalo()[0],
+            domain.getSizeWithHalo()[1],
+            domain.getSizeWithHalo()[2],
             storeDensities,
             storeVelocities);
     GPU_ERROR_CHECK(cudaPeekAtLastError())
@@ -168,13 +171,13 @@ void CLbmSolverGPU<T>::simulationStepAlpha(cudaStream_t* stream)
 template <class T>
 void CLbmSolverGPU<T>::simulationStepAlpha()
 {
-	simulationStepAlpha(NULL);
+    simulationStepAlpha(NULL);
 }
 
 template <class T>
 void CLbmSolverGPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, int> size, cudaStream_t* stream)
 {
-	assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
+    assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
     assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
     assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
@@ -205,6 +208,9 @@ void CLbmSolverGPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, in
             origin[0],
             origin[1],
             origin[2],
+            size[0],
+            size[1],
+            size[2],
             domain.getSizeWithHalo()[0],
             domain.getSizeWithHalo()[1],
             domain.getSizeWithHalo()[2],
@@ -224,7 +230,7 @@ void CLbmSolverGPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, in
 template <class T>
 void CLbmSolverGPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, int> size)
 {
-	simulationStepAlpha(origin, size, NULL);
+    simulationStepAlpha(origin, size, NULL);
 }
 
 template <class T>
@@ -277,7 +283,7 @@ void CLbmSolverGPU<T>::simulationStepBeta(cudaStream_t* stream)
 template <class T>
 void CLbmSolverGPU<T>::simulationStepBeta()
 {
-	simulationStepBeta(NULL);
+    simulationStepBeta(NULL);
 }
 
 template <class T>
@@ -338,7 +344,7 @@ void CLbmSolverGPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int
 template <class T>
 void CLbmSolverGPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int> size)
 {
-	simulationStepBeta(origin, size, NULL);
+    simulationStepBeta(origin, size, NULL);
 }
 
 template <class T>
@@ -392,7 +398,7 @@ void CLbmSolverGPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<
 template <class T>
 void CLbmSolverGPU<T>::getDensityDistributions(CVector<3, int>& origin, CVector<3, int>& size, T* hDensityDistributions)
 {
-	getDensityDistributions(origin, size, hDensityDistributions, NULL);
+    getDensityDistributions(origin, size, hDensityDistributions, NULL);
 }
 
 template <class T>
@@ -407,7 +413,7 @@ void CLbmSolverGPU<T>::getDensityDistributions(T* hDensityDistributions, cudaStr
 template <class T>
 void CLbmSolverGPU<T>::getDensityDistributions(T* hDensityDistributions)
 {
-	getDensityDistributions(hDensityDistributions, NULL);
+    getDensityDistributions(hDensityDistributions, NULL);
 }
 
 template <class T>
@@ -487,7 +493,7 @@ void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
 template <class T>
 void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int>& origin, CVector<3, int>& size, Direction direction, T* hDensityDistributions)
 {
-	setDensityDistributions(origin, size, direction, hDensityDistributions, NULL);
+    setDensityDistributions(origin, size, direction, hDensityDistributions, NULL);
 }
 
 template <class T>
@@ -543,7 +549,7 @@ void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
 template <class T>
 void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int>& origin, CVector<3, int>& size, T* hDensityDistributions)
 {
-	setDensityDistributions(origin, size, hDensityDistributions, NULL);
+    setDensityDistributions(origin, size, hDensityDistributions, NULL);
 }
 
 template <class T>
@@ -558,7 +564,7 @@ void CLbmSolverGPU<T>::setDensityDistributions(T* hDensityDistributions, cudaStr
 template <class T>
 void CLbmSolverGPU<T>::setDensityDistributions(T* hDensityDistributions)
 {
-	setDensityDistributions(hDensityDistributions, NULL);
+    setDensityDistributions(hDensityDistributions, NULL);
 }
 
 template <class T>
