@@ -52,7 +52,7 @@ __global__ void lbm_kernel_alpha(
     if (gid >= DOMAIN_CELLS)
         return;
 
-    if (X > sizeX || Y > sizeY || Z > sizeZ)
+    if (X >= sizeX || Y >= sizeY || Z >= sizeZ)
         return;
 
     Flag flag = flag_array[gid];
@@ -518,9 +518,9 @@ __global__ void lbm_kernel_alpha(
     {
         // store velocity
         current_dds = &velocity[gid];
-        *current_dds = (T)1;  current_dds += DOMAIN_CELLS;
-        *current_dds = (T)1;  current_dds += DOMAIN_CELLS;
-        *current_dds = (T)1;
+        *current_dds += (T)1;  current_dds += DOMAIN_CELLS;
+        *current_dds += (T)1;  current_dds += DOMAIN_CELLS;
+        *current_dds += (T)1;
     }
 
     if (storeDensities)

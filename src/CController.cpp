@@ -231,20 +231,10 @@ void CController<T>::stepAlpha()
         }
 
         solverGPU->simulationStepAlpha(boundaryOrigin, boundarySize, &streams->at(i));
-
-        std::cerr << "id:             " << id << std::endl;
-        std::cerr << "direction:      " << communication[i].getDirection() << std::endl;
-        std::cerr << "boundaryOrigin: " << boundaryOrigin << std::endl;
-        std::cerr << "boundarySize:   " << boundarySize << std::endl;
     }
     GPU_ERROR_CHECK(cudaDeviceSynchronize())
 
-    std::cerr << "id:          " << id << std::endl;
-    std::cerr << "innerOrigin: " << innerOrigin << std::endl;
-    std::cerr << "innerSize:   " << innerSize << std::endl;
-
     solverGPU->simulationStepAlpha(innerOrigin, innerSize, &defaultStream);
-    GPU_ERROR_CHECK(cudaDeviceSynchronize())
 
     for (unsigned int i = 0; i < communication.size(); i++)
     {
@@ -272,7 +262,7 @@ void CController<T>::stepAlpha()
     }
 
     MPI_Waitall(communication.size(), sendRequests, MPI_STATUS_IGNORE);
-    GPU_ERROR_CHECK(cudaDeviceSynchronize())
+    GPU_ERROR_CHECK(cudaStreamSynchronize(defaultStream))
 }
 
 /*
