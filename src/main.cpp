@@ -23,7 +23,9 @@
 #include <sstream>
 #include <typeinfo>
 
+#ifdef USE_MPI
 #include <mpi.h>
+#endif
 
 #include "libmath/CMath.hpp"
 #include "CConfiguration.hpp"
@@ -39,9 +41,6 @@ CVector<3,int> lbm_units[] = {
 
 int main(int argc, char** argv)
 {
-    /*
-     * TODO
-     */
     if (argc != 2)
     {
         std::cerr << "----- main() -----" << std::endl;
@@ -63,6 +62,7 @@ int main(int argc, char** argv)
         configuration->print();
     }
 
+#ifdef USE_MPI
     /*
      * Setup MPI environment
      */
@@ -99,11 +99,17 @@ int main(int argc, char** argv)
 
         exit (EXIT_FAILURE);
     }
+#endif
 
+#ifdef USE_MPI
     CManager<TYPE>* manager = new CManager<TYPE>(rank, configuration);
+#else
+    CManager<TYPE>* manager = new CManager<TYPE>(0, configuration);
+#endif
 
     manager->run();
 
+#ifdef USE_MPI
     /*
      * Validation performs a comparison between the velocities results computed
      * on multiple ranks and the results computed on one single rank. Results
@@ -279,13 +285,16 @@ int main(int argc, char** argv)
             delete[] velocities;
         }
     }
+#endif
 
     delete manager;
 
+#ifdef USE_MPI
     /*
      * Tear down MPI environment
      */
     MPI_Finalize();
+#endif
 
     delete configuration;
 

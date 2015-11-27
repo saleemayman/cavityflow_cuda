@@ -21,6 +21,19 @@ CUDALIB				:=
 COMPUTE_CAPABILITY	:=	20
 
 ################################################################################
+# source files
+################################################################################
+
+# c/c++ source files (compiled with $(CC))
+CCFILES				:=	
+
+# c/c++ source files (compiled with $(CXX))
+CXXFILES			:=	src/libvis/CLbmVisualizationNetCDF.cpp \
+
+# cuda source files (compiled with $(NVCC))
+CUDAFILES			:=	
+
+################################################################################
 # compilers and linkers
 ################################################################################
 
@@ -36,9 +49,11 @@ NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 
 CCFLAGS				:=	-O3 \
 						-D PAR_NETCDF \
+						-D USE_MPI \
 #						-std=c0x
 CXXFLAGS			:=	-O3 \
 						-D PAR_NETCDF \
+						-D USE_MPI \
 #						-std=c++0x
 
 # arch: specifies the compatibility from source code to PTX stage. Can be a
@@ -51,6 +66,7 @@ CXXFLAGS			:=	-O3 \
 NVCCFLAGS			:=	-O3 \
 						-gencode arch=compute_$(COMPUTE_CAPABILITY),code=sm_$(COMPUTE_CAPABILITY) \
 						-D PAR_NETCDF \
+						-D USE_MPI \
 #						-Xcompiler "-std=c++0x"
 
 ################################################################################

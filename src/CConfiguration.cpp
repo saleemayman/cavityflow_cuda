@@ -83,9 +83,13 @@ void CConfiguration<T>::interpretGridData(const tinyxml2::XMLNode* root)
     domainLength[1] = atof(gridChild->FirstChildElement("domian-length")->FirstChildElement("y")->GetText());
     domainLength[2] = atof(gridChild->FirstChildElement("domian-length")->FirstChildElement("z")->GetText());
 
+#ifdef USE_MPI
     numOfSubdomains[0] = atoi(gridChild->FirstChildElement("subdomain-num")->FirstChildElement("x")->GetText());
     numOfSubdomains[1] = atoi(gridChild->FirstChildElement("subdomain-num")->FirstChildElement("y")->GetText());
     numOfSubdomains[2] = atoi(gridChild->FirstChildElement("subdomain-num")->FirstChildElement("z")->GetText());
+#else
+    numOfSubdomains.set(1, 1, 1);
+#endif
 
     CPUSubdomainRatio[0] = atof(gridChild->FirstChildElement("cpu-subdomain-ratio")->FirstChildElement("x")->GetText());
     CPUSubdomainRatio[1] = atof(gridChild->FirstChildElement("cpu-subdomain-ratio")->FirstChildElement("y")->GetText());

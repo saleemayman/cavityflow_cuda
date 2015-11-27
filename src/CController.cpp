@@ -25,10 +25,11 @@
 #include <typeinfo>
 #include <sys/time.h>
 
-#include <mpi.h>
-
+#ifdef PAR_NETCDF
 #include "libvis/CLbmVisualizationNetCDF.hpp"
+#else
 #include "libvis/CLbmVisualizationVTK.hpp"
+#endif
 
 template <class T>
 CController<T>::CController(
@@ -78,21 +79,23 @@ CController<T>::CController(
             this->configuration->doValidation || this->configuration->doVisualization,
             this->configuration->doLogging);
 
+#ifdef USE_MPI
     sendBuffers = new std::vector<T*>(this->communication.size());
     recvBuffers = new std::vector<T*>(this->communication.size());
     sendRequests = new MPI_Request[this->communication.size()];
     recvRequests = new MPI_Request[this->communication.size()];
     streams = new std::vector<cudaStream_t>(this->communication.size());
-    events = new std::vector<cudaEvent_t>(this->communication.size());
+#endif
     GPU_ERROR_CHECK(cudaStreamCreate(&defaultStream))
 
+#ifdef USE_MPI
     for (int i = 0; i < this->communication.size(); i++)
     {
         sendBuffers->at(i) = new T[NUM_LATTICE_VECTORS * communication[i].getSendSize().elements()];
         recvBuffers->at(i) = new T[NUM_LATTICE_VECTORS * communication[i].getRecvSize().elements()];
         GPU_ERROR_CHECK(cudaStreamCreate(&streams->at(i)))
-        GPU_ERROR_CHECK(cudaEventCreate(&events->at(i)))
     }
+#endif
 
     if (this->configuration->doVisualization)
 #ifdef PAR_NETCDF
@@ -117,21 +120,23 @@ CController<T>::~CController()
     if (configuration->doVisualization)
         delete visualization;
 
+#ifdef USE_MPI
     for (int i = communication.size() - 1; i >= 0; i--)
     {
-        GPU_ERROR_CHECK(cudaEventDestroy(events->at(i)))
         GPU_ERROR_CHECK(cudaStreamDestroy(streams->at(i)))
         delete[] recvBuffers->at(i);
         delete[] sendBuffers->at(i);
     }
+#endif
 
     GPU_ERROR_CHECK(cudaStreamDestroy(defaultStream))
-    delete events;
+#ifdef USE_MPI
     delete streams;
     delete[] recvRequests;
     delete[] sendRequests;
     delete recvBuffers;
     delete sendBuffers;
+#endif
 
     delete solverCPU;
     delete solverGPU;
@@ -173,8 +178,12 @@ CDomain<T> CController<T>::decomposeSubdomain()
 template <class T>
 void CController<T>::stepAlpha()
 {
-    CVector<3, int> boundaryOrigin, innerOrigin(0), sendOrigin, recvOrigin;
-    CVector<3, int> boundarySize, innerSize(domain.getSizeWithHalo()), sendSize, recvSize;
+    CVector<3, int> innerOrigin(0);
+    CVector<3, int> innerSize(domain.getSizeWithHalo());
+
+#ifdef USE_MPI
+    CVector<3, int> boundaryOrigin, sendOrigin, recvOrigin;
+    CVector<3, int> boundarySize, sendSize, recvSize;
 
     for (unsigned int i = 0; i < communication.size(); i++)
     {
@@ -233,9 +242,11 @@ void CController<T>::stepAlpha()
         solverGPU->simulationStepAlpha(boundaryOrigin, boundarySize, &streams->at(i));
     }
     GPU_ERROR_CHECK(cudaDeviceSynchronize())
+#endif
 
     solverGPU->simulationStepAlpha(innerOrigin, innerSize, &defaultStream);
 
+#ifdef USE_MPI
     for (unsigned int i = 0; i < communication.size(); i++)
     {
         sendOrigin = communication[i].getSendOrigin();
@@ -262,6 +273,7 @@ void CController<T>::stepAlpha()
     }
 
     MPI_Waitall(communication.size(), sendRequests, MPI_STATUS_IGNORE);
+#endif
     GPU_ERROR_CHECK(cudaStreamSynchronize(defaultStream))
 }
 
@@ -270,7 +282,9 @@ template <class T>
 void CController<T>::stepAlpha()
 {
     solverGPU->simulationStepAlpha();
+#ifdef USE_MPI
     syncAlpha();
+#endif
 }
 */
 
@@ -278,9 +292,12 @@ template <class T>
 void CController<T>::stepBeta()
 {
     solverGPU->simulationStepBeta();
+#ifdef USE_MPI
     syncBeta();
+#endif
 }
 
+#ifdef USE_MPI
 template <class T>
 void CController<T>::syncAlpha()
 {
@@ -353,7 +370,9 @@ void CController<T>::syncAlpha()
         delete[] sendBuffer;
     }
 }
+#endif
 
+#ifdef USE_MPI
 template <class T>
 void CController<T>::syncBeta()
 {
@@ -426,6 +445,7 @@ void CController<T>::syncBeta()
         delete[] sendBuffer;
     }
 }
+#endif
 
 template <class T>
 void CController<T>::computeNextStep()

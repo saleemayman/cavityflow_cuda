@@ -23,7 +23,9 @@
 #include <vector>
 
 #include <cuda_runtime.h>
+#ifdef USE_MPI
 #include <mpi.h>
+#endif
 
 #include "libvis/CLbmVisualization.hpp"
 #include "CConfiguration.hpp"
@@ -49,12 +51,13 @@ private:
     CConfiguration<T>* configuration;
     CLbmSolverCPU<T>* solverCPU;
     CLbmSolverGPU<T>* solverGPU;
+#ifdef USE_MPI
     std::vector<T*>* sendBuffers;
     std::vector<T*>* recvBuffers;
     MPI_Request* sendRequests;
     MPI_Request* recvRequests;
     std::vector<cudaStream_t>* streams;
-    std::vector<cudaEvent_t>* events;
+#endif
     CLbmVisualization<T>* visualization;
     cudaStream_t defaultStream;
     int simulationStepCounter;
@@ -63,8 +66,10 @@ private:
     void computeNextStep();
     void stepAlpha();
     void stepBeta();
+#ifdef USE_MPI
     void syncAlpha();
     void syncBeta();
+#endif
 
 public:
     CController(
