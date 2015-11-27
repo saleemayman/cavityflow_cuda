@@ -22,6 +22,9 @@
 
 #include <vector>
 
+#include <cuda_runtime.h>
+#include <mpi.h>
+
 #include "libvis/CLbmVisualization.hpp"
 #include "CConfiguration.hpp"
 #include "CDomain.hpp"
@@ -40,17 +43,26 @@ class CController
 {
 private:
     int id;
-    CConfiguration<T>* configuration;
     CDomain<T> domain;
-    CLbmSolverCPU<T> *solverCPU;
-    CLbmSolverGPU<T> *solverGPU;
-    CLbmVisualization<T>* visualization;
     std::vector<Flag> boundaryConditions;
     std::vector<CComm<T> > communication;
+    CConfiguration<T>* configuration;
+    CLbmSolverCPU<T>* solverCPU;
+    CLbmSolverGPU<T>* solverGPU;
+    std::vector<T*>* sendBuffers;
+    std::vector<T*>* recvBuffers;
+    MPI_Request* sendRequests;
+    MPI_Request* recvRequests;
+    std::vector<cudaStream_t>* streams;
+    std::vector<cudaEvent_t>* events;
+    CLbmVisualization<T>* visualization;
+    cudaStream_t defaultStream;
     int simulationStepCounter;
 
     CDomain<T> decomposeSubdomain();
     void computeNextStep();
+    void stepAlpha();
+    void stepBeta();
     void syncAlpha();
     void syncBeta();
 

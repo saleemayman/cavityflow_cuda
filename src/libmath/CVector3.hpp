@@ -41,6 +41,7 @@ public:
     CVector(const CVector<3, T>& v);
     CVector(const T v[3]);
 
+    void set(const T x, const T y, const T z);
     void setZero();
     int getGlobalIdx(CVector<3, T>& size);
     CVector<3, T> getNormal();

@@ -65,6 +65,14 @@ CVector<4, T>::CVector(const T v[4])
     data[3] = v[3];
 }
 
+template <class T>
+void CVector<4, T>::set(const T x0, const T x1, const T x2, const T x3)
+{
+    data[0] = x0;
+    data[1] = x1;
+    data[2] = x2;
+    data[3] = x3;
+}
 
 template <class T>
 void CVector<4, T>::setZero()

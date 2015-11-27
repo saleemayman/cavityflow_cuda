@@ -35,6 +35,12 @@ __global__ void lbm_kernel_alpha(
         const T gravitation_y,
         const T gravitation_z,
         const T drivenCavityVelocity, // velocity parameters for modification of density distributions
+        const int originX,
+        const int originY,
+        const int originZ,
+        const int sizeX,
+        const int sizeY,
+        const int sizeZ,
         const int domainCellsX,
         const int domainCellsY,
         const int domainCellsZ,

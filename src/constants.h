@@ -25,8 +25,8 @@
 #define NUM_LATTICE_VECTORS 19
 
 #define REYNOLDS_DEFAULT    (1000.0)
-#define TAU_DEFAULT         (0.953575)
+#define TAU_DEFAULT         (0.85)
 #define TAU_LOWER_LIMIT     (0.51)
-#define TAU_UPPER_LIMIT     (2.5)
+#define TAU_UPPER_LIMIT     (1.9)
 
 #endif

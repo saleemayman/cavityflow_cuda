@@ -77,9 +77,9 @@ public:
     virtual ~CLbmSolver() {}
     
     virtual void simulationStepAlpha() {}
-    virtual void simulationStepAlphaRect(CVector<3, int> origin, CVector<3, int> size) {}
+    virtual void simulationStepAlpha(CVector<3, int> origin, CVector<3, int> size) {}
     virtual void simulationStepBeta() {}
-    virtual void simulationStepBetaRect(CVector<3, int> origin, CVector<3, int> size) {}
+    virtual void simulationStepBeta(CVector<3, int> origin, CVector<3, int> size) {}
     CDomain<T>* getDomain();
     virtual void getDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* dst) {}
     virtual void getDensityDistributions(T* dst) {}

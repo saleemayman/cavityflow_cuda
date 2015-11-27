@@ -65,7 +65,7 @@ void CLbmSolverCPU<T>::simulationStepAlpha()
 }
 
 template <class T>
-void CLbmSolverCPU<T>::simulationStepAlphaRect(CVector<3, int> origin, CVector<3, int> size)
+void CLbmSolverCPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, int> size)
 {
 }
 
@@ -75,7 +75,7 @@ void CLbmSolverCPU<T>::simulationStepBeta()
 }
 
 template <class T>
-void CLbmSolverCPU<T>::simulationStepBetaRect(CVector<3, int> origin, CVector<3, int> size)
+void CLbmSolverCPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int> size)
 {
 }
 
