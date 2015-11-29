@@ -51,6 +51,13 @@ CVector<2, T>::CVector(const T v[2])
 }
 
 template <class T>
+void CVector<2, T>::set(const T x, const T y)
+{
+    data[0] = x;
+    data[1] = y;
+}
+
+template <class T>
 void CVector<2, T>::setZero()
 {
     data[0] = T(0);
@@ -60,8 +67,8 @@ void CVector<2, T>::setZero()
 template <class T>
 int CVector<2, T>::getGlobalIdx(CVector<2, T>& size)
 {
-	assert(data[0] < size[0]);
-	assert(data[1] < size[1]);
+    assert(data[0] < size[0]);
+    assert(data[1] < size[1]);
 
     return (data[1] * size[0] + data[0]);
 }

@@ -53,7 +53,9 @@ __global__ void lbm_init(
         T drivenCavityVelocity, // velocity parameters for modification of density distributions
         const int domainCells_x,
         const int domainCells_y,
-        const int domainCells_z)
+        const int domainCells_z,
+        const bool storeDensities,
+        const bool storeVelocities)
 {
     size_t DOMAIN_CELLS = domainCells_x * domainCells_y * domainCells_z;
 
@@ -76,21 +78,6 @@ __global__ void lbm_init(
     T velocity_z = 0;
 
     Flag flag = FLUID;
-
-	/*
-    if(pos.x == 0)
-        flag = boundaryConditionRight;
-    else if(pos.x == domainCells_x-1)
-        flag = boundaryConditionLeft;
-    else if(pos.y == 0)
-        flag = boundaryConditionTop;
-    else if(pos.y == domainCells_y-1)
-        flag = boundaryConditionBottom;
-    else if(pos.z == 0)
-        flag = boundaryConditionFront;
-    else if(pos.z == domainCells_z-1)
-        flag = boundaryConditionBack;
-    */
 
     if(pos.x == 0)
         flag = boundaryConditionRight;
@@ -208,19 +195,16 @@ __global__ void lbm_init(
     // flag
     flags[gid] = flag;
 
-#if STORE_VELOCITY
-    // store velocity
-    current_dds = &velocity_array[gid];
-    *current_dds = velocity_x;  current_dds += DOMAIN_CELLS;
-    *current_dds = velocity_y;  current_dds += DOMAIN_CELLS;
-    *current_dds = velocity_z;
-#endif
+    if (storeVelocities)
+    {
+		current_dds = &velocity_array[gid];
+		*current_dds = velocity_x;  current_dds += DOMAIN_CELLS;
+		*current_dds = velocity_y;  current_dds += DOMAIN_CELLS;
+		*current_dds = velocity_z;
+    }
 
-#if STORE_DENSITY
-    // store density
-    density[gid] = rho;
-    // density[gid] = flag;
-#endif
+    if (storeDensities)
+        density[gid] = rho;
 }
 
 template __global__ void lbm_init<double>(
@@ -237,7 +221,9 @@ template __global__ void lbm_init<double>(
         double drivenCavityVelocity,
         const int domainCells_x,
         const int domainCells_y,
-        const int domainCells_z);
+        const int domainCells_z,
+        const bool storeDensities,
+        const bool storeVelocities);
 template __global__ void lbm_init<float>(
         float *global_dd,
         Flag *flags,
@@ -252,4 +238,6 @@ template __global__ void lbm_init<float>(
         float drivenCavityVelocity,
         const int domainCells_x,
         const int domainCells_y,
-        const int domainCells_z);
+        const int domainCells_z,
+        const bool storeDensities,
+        const bool storeVelocities);

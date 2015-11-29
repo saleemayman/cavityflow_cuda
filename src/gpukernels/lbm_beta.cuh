@@ -34,6 +34,9 @@ __global__ void lbm_kernel_beta(
         const T gravitation_y,
         const T gravitation_z,
         const T drivenCavityVelocity, // velocity parameters for modification of density distributions
+        const int originX,
+        const int originY,
+        const int originZ,
         const int domainCells_x,
         const int domainCells_y,
         const int domainCells_z,
@@ -41,6 +44,6 @@ __global__ void lbm_kernel_beta(
         const bool isDomainPowOfTwo,
         const bool isLocalPowOfTwo,
         const bool storeDensities,
-		const bool storeVelocities);
+        const bool storeVelocities);
 
 #endif

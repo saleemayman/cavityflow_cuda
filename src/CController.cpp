@@ -19,15 +19,17 @@
 
 #include "CController.hpp"
 
+#include <cassert>
 #include <fstream>
 #include <sstream>
 #include <typeinfo>
 #include <sys/time.h>
 
-#include <mpi.h>
-
+#ifdef PAR_NETCDF
 #include "libvis/CLbmVisualizationNetCDF.hpp"
+#else
 #include "libvis/CLbmVisualizationVTK.hpp"
+#endif
 
 template <class T>
 CController<T>::CController(
@@ -37,15 +39,15 @@ CController<T>::CController(
         std::vector<CComm<T> > communication,
         CConfiguration<T>* configuration) :
         id(id),
-        configuration(configuration),
         domain(domain),
         boundaryConditions(boundaryConditions),
         communication(communication),
+        configuration(configuration),
         simulationStepCounter(0)
 {
-	CDomain<T> domainGPU = decomposeSubdomain();
+    CDomain<T> domainGPU = decomposeSubdomain();
 
-	solverGPU = new CLbmSolverGPU<T>(
+    solverGPU = new CLbmSolverGPU<T>(
             this->id,
             this->configuration->threadsPerBlock,
             this->configuration->domainLength,
@@ -53,10 +55,11 @@ CController<T>::CController(
             this->domain,
             this->boundaryConditions,
             this->configuration->timestep,
-            this->configuration->gravitation,
-            this->configuration->cavityVelocity,
+            this->configuration->velocity,
+            this->configuration->acceleration,
             this->configuration->viscosity,
-            this->configuration->maxGravitationDimLess,
+            this->configuration->maxVelocityDimLess,
+            this->configuration->maxAccelerationDimLess,
             this->configuration->doValidation || this->configuration->doVisualization,
             this->configuration->doValidation || this->configuration->doVisualization,
             this->configuration->doLogging);
@@ -67,28 +70,47 @@ CController<T>::CController(
             this->boundaryConditions,
             solverGPU,
             this->configuration->timestep,
-            this->configuration->gravitation,
-            this->configuration->cavityVelocity,
+            this->configuration->velocity,
+            this->configuration->acceleration,
             this->configuration->viscosity,
-            this->configuration->maxGravitationDimLess,
+            this->configuration->maxVelocityDimLess,
+            this->configuration->maxAccelerationDimLess,
             this->configuration->doValidation || this->configuration->doVisualization,
             this->configuration->doValidation || this->configuration->doVisualization,
             this->configuration->doLogging);
 
+#ifdef USE_MPI
+    sendBuffers = new std::vector<T*>(this->communication.size());
+    recvBuffers = new std::vector<T*>(this->communication.size());
+    sendRequests = new MPI_Request[this->communication.size()];
+    recvRequests = new MPI_Request[this->communication.size()];
+    streams = new std::vector<cudaStream_t>(this->communication.size());
+#endif
+    GPU_ERROR_CHECK(cudaStreamCreate(&defaultStream))
+
+#ifdef USE_MPI
+    for (int i = 0; i < this->communication.size(); i++)
+    {
+        sendBuffers->at(i) = new T[NUM_LATTICE_VECTORS * communication[i].getSendSize().elements()];
+        recvBuffers->at(i) = new T[NUM_LATTICE_VECTORS * communication[i].getRecvSize().elements()];
+        GPU_ERROR_CHECK(cudaStreamCreate(&streams->at(i)))
+    }
+#endif
+
     if (this->configuration->doVisualization)
 #ifdef PAR_NETCDF
         visualization = new CLbmVisualizationNetCDF<T>(
-        		id,
-        		this->configuration->visualizationRate,
-        		getSolver(),
-        		this->configuration->numOfSubdomains,
-        		this->configuration->visualizationOutputDir);
+                id,
+                this->configuration->visualizationRate,
+                getSolver(),
+                this->configuration->numOfSubdomains,
+                this->configuration->visualizationOutputDir);
 #else
         visualization = new CLbmVisualizationVTK<T>(
-        		id,
-        		this->configuration->visualizationRate,
-        		getSolver(),
-        		this->configuration->visualizationOutputDir);
+                id,
+                this->configuration->visualizationRate,
+                getSolver(),
+                this->configuration->visualizationOutputDir);
 #endif
 }
 
@@ -98,6 +120,24 @@ CController<T>::~CController()
     if (configuration->doVisualization)
         delete visualization;
 
+#ifdef USE_MPI
+    for (int i = communication.size() - 1; i >= 0; i--)
+    {
+        GPU_ERROR_CHECK(cudaStreamDestroy(streams->at(i)))
+        delete[] recvBuffers->at(i);
+        delete[] sendBuffers->at(i);
+    }
+#endif
+
+    GPU_ERROR_CHECK(cudaStreamDestroy(defaultStream))
+#ifdef USE_MPI
+    delete streams;
+    delete[] recvRequests;
+    delete[] sendRequests;
+    delete recvBuffers;
+    delete sendBuffers;
+#endif
+
     delete solverCPU;
     delete solverGPU;
 }
@@ -105,17 +145,17 @@ CController<T>::~CController()
 template<class T>
 CDomain<T> CController<T>::decomposeSubdomain()
 {
-	CVector<3, int> sizeGPU(
-			configuration->CPUSubdomainRatio[0] * domain.getSize()[0],
-			configuration->CPUSubdomainRatio[1] * domain.getSize()[1],
-			configuration->CPUSubdomainRatio[2] * domain.getSize()[2]);
-	CVector<3, int> originGPU(domain.getOrigin() + ((domain.getSize() - sizeGPU) / 2));
-	CVector<3, T> lengthGPU(
-			domain.getLength()[0] * (T)sizeGPU[0] / (T)domain.getSize()[0],
-			domain.getLength()[1] * (T)sizeGPU[1] / (T)domain.getSize()[1],
-			domain.getLength()[2] * (T)sizeGPU[2] / (T)domain.getSize()[2]);
+    CVector<3, int> sizeGPU(
+            configuration->CPUSubdomainRatio[0] * domain.getSize()[0],
+            configuration->CPUSubdomainRatio[1] * domain.getSize()[1],
+            configuration->CPUSubdomainRatio[2] * domain.getSize()[2]);
+    CVector<3, int> originGPU(domain.getOrigin() + ((domain.getSize() - sizeGPU) / 2));
+    CVector<3, T> lengthGPU(
+            domain.getLength()[0] * (T)sizeGPU[0] / (T)domain.getSize()[0],
+            domain.getLength()[1] * (T)sizeGPU[1] / (T)domain.getSize()[1],
+            domain.getLength()[2] * (T)sizeGPU[2] / (T)domain.getSize()[2]);
 
-	CDomain<T> domainGPU(id, sizeGPU, originGPU, lengthGPU);
+    CDomain<T> domainGPU(id, sizeGPU, originGPU, lengthGPU);
 
     if (configuration->doLogging)
     {
@@ -132,10 +172,132 @@ CDomain<T> CController<T>::decomposeSubdomain()
         std::cout << "------------------------------------------------" << std::endl;
     }
 
-	return domainGPU;
+    return domainGPU;
 }
 
+template <class T>
+void CController<T>::stepAlpha()
+{
+    CVector<3, int> innerOrigin(0);
+    CVector<3, int> innerSize(domain.getSizeWithHalo());
 
+#ifdef USE_MPI
+    CVector<3, int> boundaryOrigin, sendOrigin, recvOrigin;
+    CVector<3, int> boundarySize, sendSize, recvSize;
+
+    for (unsigned int i = 0; i < communication.size(); i++)
+    {
+        MPI_Irecv(
+                recvBuffers->at(i),
+                NUM_LATTICE_VECTORS * communication[i].getRecvSize().elements(),
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                communication[i].getDstId(),
+                simulationStepCounter,
+                MPI_COMM_WORLD,
+                &recvRequests[i]);
+    }
+
+    for (unsigned int i = 0; i < communication.size(); i++)
+    {
+        switch(communication[i].getDirection())
+        {
+        case LEFT:
+            boundaryOrigin = innerOrigin;
+            boundarySize.set(2, innerSize[1], innerSize[2]);
+            innerOrigin[0] += 2;
+            innerSize[0] -= 2;
+            break;
+        case RIGHT:
+            boundaryOrigin = innerOrigin;
+            boundaryOrigin[0] = domain.getSizeWithHalo()[0] - 2;
+            boundarySize.set(2, innerSize[1], innerSize[2]);
+            innerSize[0] -= 2;
+            break;
+        case BOTTOM:
+            boundaryOrigin = innerOrigin;
+            boundarySize.set(innerSize[0], 2, innerSize[2]);
+            innerOrigin[1] += 2;
+            innerSize[1] -= 2;
+            break;
+        case TOP:
+            boundaryOrigin = innerOrigin;
+            boundaryOrigin[1] = domain.getSizeWithHalo()[1] - 2;
+            boundarySize.set(innerSize[0], 2, innerSize[2]);
+            innerSize[1] -= 2;
+            break;
+        case BACK:
+            boundaryOrigin = innerOrigin;
+            boundarySize.set(innerSize[0], innerSize[1], 2);
+            innerOrigin[2] += 2;
+            innerSize[2] -= 2;
+            break;
+        case FRONT:
+            boundaryOrigin = innerOrigin;
+            boundaryOrigin[2] = domain.getSizeWithHalo()[2] - 2;
+            boundarySize.set(innerSize[0], innerSize[1], 2);
+            innerSize[2] -= 2;
+            break;
+        }
+
+        solverGPU->simulationStepAlpha(boundaryOrigin, boundarySize, &streams->at(i));
+    }
+    GPU_ERROR_CHECK(cudaDeviceSynchronize())
+#endif
+
+    solverGPU->simulationStepAlpha(innerOrigin, innerSize, &defaultStream);
+
+#ifdef USE_MPI
+    for (unsigned int i = 0; i < communication.size(); i++)
+    {
+        sendOrigin = communication[i].getSendOrigin();
+        sendSize = communication[i].getSendSize();
+        recvOrigin = communication[i].getRecvOrigin();
+        recvSize = communication[i].getRecvSize();
+
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(i), &streams->at(i));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(i)))
+
+        MPI_Isend(
+                sendBuffers->at(i),
+                NUM_LATTICE_VECTORS * communication[i].getSendSize().elements(),
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                communication[i].getDstId(),
+                simulationStepCounter,
+                MPI_COMM_WORLD,
+                &sendRequests[i]);
+
+        MPI_Wait(&recvRequests[i], MPI_STATUS_IGNORE);
+
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(i), &streams->at(i));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(i)))
+    }
+
+    MPI_Waitall(communication.size(), sendRequests, MPI_STATUS_IGNORE);
+#endif
+    GPU_ERROR_CHECK(cudaStreamSynchronize(defaultStream))
+}
+
+/*
+template <class T>
+void CController<T>::stepAlpha()
+{
+    solverGPU->simulationStepAlpha();
+#ifdef USE_MPI
+    syncAlpha();
+#endif
+}
+*/
+
+template <class T>
+void CController<T>::stepBeta()
+{
+    solverGPU->simulationStepBeta();
+#ifdef USE_MPI
+    syncBeta();
+#endif
+}
+
+#ifdef USE_MPI
 template <class T>
 void CController<T>::syncAlpha()
 {
@@ -143,7 +305,6 @@ void CController<T>::syncAlpha()
     CVector<3, int> sendOrigin, recvOrigin;
     int dstId;
     MPI_Request request[2];
-    MPI_Status status[2];
     int sendBufferSize, recvBufferSize;
     T* sendBuffer;
     T* recvBuffer;
@@ -184,7 +345,7 @@ void CController<T>::syncAlpha()
                 sendBufferSize,
                 ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
                 dstId,
-                MPI_TAG_ALPHA_SYNC,
+                simulationStepCounter,
                 MPI_COMM_WORLD,
                 &request[0]);
         MPI_Irecv(
@@ -192,10 +353,10 @@ void CController<T>::syncAlpha()
                 recvBufferSize,
                 ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
                 dstId,
-                MPI_TAG_ALPHA_SYNC,
+                simulationStepCounter,
                 MPI_COMM_WORLD,
                 &request[1]);
-        MPI_Waitall(2, request, status);
+        MPI_Waitall(2, request, MPI_STATUS_IGNORE);
 
         if (configuration->doLogging)
         {
@@ -209,7 +370,9 @@ void CController<T>::syncAlpha()
         delete[] sendBuffer;
     }
 }
+#endif
 
+#ifdef USE_MPI
 template <class T>
 void CController<T>::syncBeta()
 {
@@ -217,7 +380,6 @@ void CController<T>::syncBeta()
     CVector<3, int> sendOrigin, recvOrigin;
     int dstId;
     MPI_Request request[2];
-    MPI_Status status[2];
     int sendBufferSize, recvBufferSize;
     T* sendBuffer;
     T* recvBuffer;
@@ -258,7 +420,7 @@ void CController<T>::syncBeta()
                 sendBufferSize,
                 ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
                 dstId,
-                MPI_TAG_BETA_SYNC,
+                simulationStepCounter,
                 MPI_COMM_WORLD,
                 &request[0]);
         MPI_Irecv(
@@ -266,10 +428,10 @@ void CController<T>::syncBeta()
                 recvBufferSize,
                 ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
                 dstId,
-                MPI_TAG_BETA_SYNC,
+                simulationStepCounter,
                 MPI_COMM_WORLD,
                 &request[1]);
-        MPI_Waitall(2, request, status);
+        MPI_Waitall(2, request, MPI_STATUS_IGNORE);
 
         if (configuration->doLogging)
         {
@@ -283,16 +445,15 @@ void CController<T>::syncBeta()
         delete[] sendBuffer;
     }
 }
+#endif
 
 template <class T>
 void CController<T>::computeNextStep()
 {
     if (simulationStepCounter & 1) {
-        solverGPU->simulationStepBeta();
-        syncBeta();
+        stepBeta();
     } else {
-        solverGPU->simulationStepAlpha();
-        syncAlpha();
+        stepAlpha();
     }
     simulationStepCounter++;
 }
@@ -370,6 +531,9 @@ void CController<T>::run()
             usedDataSize += 4 * sizeof(T);
     }
 
+    if (configuration->doVisualization)
+        visualization->render(0);
+
     if (configuration->doBenchmark)
         gettimeofday(&start, NULL);
 
@@ -380,7 +544,7 @@ void CController<T>::run()
         computeNextStep();
 
         if (configuration->doVisualization)
-            visualization->render(i);
+            visualization->render(simulationStepCounter);
     }
 
     if (configuration->doBenchmark)

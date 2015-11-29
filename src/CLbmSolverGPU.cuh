@@ -29,10 +29,10 @@ private:
     using CLbmSolver<T>::id;
     using CLbmSolver<T>::globalLength;
     using CLbmSolver<T>::domain;
-    using CLbmSolver<T>::gravitation;
-    using CLbmSolver<T>::gravitationDimLess;
-    using CLbmSolver<T>::drivenCavityVelocity;
-    using CLbmSolver<T>::drivenCavityVelocityDimLess;
+    using CLbmSolver<T>::velocity;
+    using CLbmSolver<T>::velocityDimLess;
+    using CLbmSolver<T>::acceleration;
+    using CLbmSolver<T>::accelerationDimLess;
     using CLbmSolver<T>::storeDensities;
     using CLbmSolver<T>::storeVelocities;
     using CLbmSolver<T>::doLogging;
@@ -57,26 +57,41 @@ public:
             int id,
             std::vector<dim3> threadsPerBlock,
             CVector<3, T> &globalLength,
-			CDomain<T> &domain,
-			std::vector<Flag> boundaryConditions,
-			T timestepSize,
-			CVector<3, T> &gravitation,
-			CVector<3, T> &drivenCavityVelocity,
-			T viscosity,
-			T maxGravitationDimLess,
-			bool storeDensities,
-			bool storeVelocities,
-			bool doLogging);
+            CDomain<T> &domain,
+            std::vector<Flag> boundaryConditions,
+            T timestepSize,
+            CVector<3, T> &velocity,
+            CVector<3, T> &acceleration,
+            T viscosity,
+            T maxVelocityDimLess,
+            T maxAccelerationDimLess,
+            bool storeDensities,
+            bool storeVelocities,
+            bool doLogging);
     ~CLbmSolverGPU();
 
+    using CLbmSolver<T>::simulationStepAlpha;
+    using CLbmSolver<T>::simulationStepBeta;
+    using CLbmSolver<T>::getDensityDistributions;
+    using CLbmSolver<T>::setDensityDistributions;
+
+    void simulationStepAlpha(cudaStream_t* stream);
     void simulationStepAlpha();
-    void simulationStepAlphaRect(CVector<3, int> origin, CVector<3, int> size);
+    void simulationStepAlpha(CVector<3, int> origin, CVector<3, int> size, cudaStream_t* stream);
+    void simulationStepAlpha(CVector<3, int> origin, CVector<3, int> size);
+    void simulationStepBeta(cudaStream_t* stream);
     void simulationStepBeta();
-    void simulationStepBetaRect(CVector<3, int> origin, CVector<3, int> size);
+    void simulationStepBeta(CVector<3, int> origin, CVector<3, int> size, cudaStream_t* stream);
+    void simulationStepBeta(CVector<3, int> origin, CVector<3, int> size);
+    void getDensityDistributions(CVector<3, int>& origin, CVector<3, int>& size, T* hDensityDistributions, cudaStream_t* stream);
     void getDensityDistributions(CVector<3, int>& origin, CVector<3, int>& size, T* hDensityDistributions);
+    void getDensityDistributions(T* hDensityDistributions, cudaStream_t* stream);
     void getDensityDistributions(T* hDensityDistributions);
+    void setDensityDistributions(CVector<3, int>& origin, CVector<3, int>& size, Direction direction, T* hDensityDistributions, cudaStream_t* stream);
     void setDensityDistributions(CVector<3, int>& origin, CVector<3, int>& size, Direction direction, T* hDensityDistributions);
+    void setDensityDistributions(CVector<3, int>& origin, CVector<3, int>& size, T* hDensityDistributions, cudaStream_t* stream);
     void setDensityDistributions(CVector<3, int>& origin, CVector<3, int>& size, T* hDensityDistributions);
+    void setDensityDistributions(T* hDensityDistributions, cudaStream_t* stream);
     void setDensityDistributions(T* hDensityDistributions);
     void getFlags(CVector<3, int>& origin, CVector<3, int>& size, Flag* hFlags);
     void getFlags(Flag* hFlags);

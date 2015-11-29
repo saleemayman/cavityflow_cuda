@@ -21,7 +21,7 @@
 
 template <class T>
 CComm<T>::CComm(int dstId,
-		CVector<3, int> sendSize, CVector<3, int> recvSize,
+        CVector<3, int> sendSize, CVector<3, int> recvSize,
         CVector<3, int> sendOrigin, CVector<3, int> recvOrigin,
         Direction direction/*,
         Direction sendDirection, Direction recvDirection*/) :

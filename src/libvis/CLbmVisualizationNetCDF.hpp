@@ -30,40 +30,42 @@
 #endif
 #include <netcdf.h>
 
+#define DEFLATE_LEVEL 9
+
 template <typename T>
 class CLbmVisualizationNetCDF : public virtual CLbmVisualization<T>
 {
 private:
     using CLbmVisualization<T>::id;
     using CLbmVisualization<T>::visualizationRate;
-    // using CLbmVisualization<T>::flags;
-    // using CLbmVisualization<T>::densities;
+    using CLbmVisualization<T>::flags;
+    using CLbmVisualization<T>::densities;
     using CLbmVisualization<T>::velocities;
     using CLbmVisualization<T>::solver;
 
 #ifdef PAR_NETCDF
     CVector<3, int> numOfSubdomains;
 #endif
-	std::string filePath;
+    std::string filePath;
 
-	int fileId;
-	int dimVarIds[3];
-	int flagsVarId, densitiesVarId;
-	int velocitiesVarId[3];
+    int fileId;
+    int dimVarIds[3];
+    int flagsVarId, densitiesVarId;
+    int velocitiesVarId[3];
 
-	void openFile(int iteration);
+    void openFile(int iteration);
     void closeFile();
-	void defineData();
-	void writeData();
+    void defineData();
+    void writeData();
 
 public:
 #ifdef PAR_NETCDF
-	CLbmVisualizationNetCDF(int id, int visualizationRate, CLbmSolver<T>* solver, CVector<3, int> numOfSubdomains, std::string filePath);
+    CLbmVisualizationNetCDF(int id, int visualizationRate, CLbmSolver<T>* solver, CVector<3, int> numOfSubdomains, std::string filePath);
 #else
-	CLbmVisualizationNetCDF(int id, int visualizationRate, CLbmSolver<T>* solver, std::string filePath);
+    CLbmVisualizationNetCDF(int id, int visualizationRate, CLbmSolver<T>* solver, std::string filePath);
 #endif
 
-	void render(int iteration);
+    void render(int iteration);
 };
 
 #endif

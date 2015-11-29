@@ -18,7 +18,7 @@
  */
 
 #ifndef CVECTOR_HPP
-	#error "dont include CVector2.hpp directly!"
+    #error "dont include CVector2.hpp directly!"
 #endif
 
 #ifndef CVECTOR2_HPP
@@ -27,52 +27,53 @@
 #include <iostream>
 
 /**
- * \brief	2D Vector handler
+ * \brief    2D Vector handler
  */
 template <typename T>
 class CVector<2, T>
 {
 public:
-	T data[2];
+    T data[2];
 
-	CVector();
-	CVector(const T x0, const T x1);
-	CVector(const T x);
-	CVector(const T v[2]);
+    CVector();
+    CVector(const T x0, const T x1);
+    CVector(const T x);
+    CVector(const T v[2]);
 
-	void setZero();
-	int getGlobalIdx(CVector<2, T>& size);
-	CVector<2, T> getNormal();
-	T dotProd(const CVector<2, T>& v);
-	T crossProd(CVector<2, T> &a);
-	T elements();
-	T length();
-	T length2();
-	T dist2(const CVector<2, T>& v);
-	T dist(const CVector<2, T>& v);
-	void normalize();
-	void clamp1_1();
+    void set(const T x, const T y);
+    void setZero();
+    int getGlobalIdx(CVector<2, T>& size);
+    CVector<2, T> getNormal();
+    T dotProd(const CVector<2, T>& v);
+    T crossProd(CVector<2, T> &a);
+    T elements();
+    T length();
+    T length2();
+    T dist2(const CVector<2, T>& v);
+    T dist(const CVector<2, T>& v);
+    void normalize();
+    void clamp1_1();
 
-	CVector<2, T>& operator=(const T a[2]);
-	CVector<2, T>& operator=(CVector<2, T> const& a);
+    CVector<2, T>& operator=(const T a[2]);
+    CVector<2, T>& operator=(CVector<2, T> const& a);
     CVector<2, T> operator-();
     CVector<2, T> operator+(const T a);
-	CVector<2, T> operator-(const T a);
-	CVector<2, T> operator*(const T a);
-	CVector<2, T> operator/(const T a);
-	CVector<2, T>& operator+=(const T a);
-	CVector<2, T>& operator-=(const T a);
-	CVector<2, T>& operator*=(const T a);
-	CVector<2, T>& operator/=(const T a);
-	CVector<2, T> operator+(const CVector<2, T>& v);
-	CVector<2, T> operator-(const CVector<2, T>& v);
-	CVector<2, T> operator*(const CVector<2, T>& v);
-	CVector<2, T> operator/(const CVector<2, T>& v);
-	CVector<2, T>& operator+=(const CVector<2, T>& v);
-	CVector<2, T>& operator-=(const CVector<2, T>& v);
-	bool operator==(const CVector<2, T>& v);
-	bool operator!=(const CVector<2, T>& v);
-	T& operator[](const int i);
+    CVector<2, T> operator-(const T a);
+    CVector<2, T> operator*(const T a);
+    CVector<2, T> operator/(const T a);
+    CVector<2, T>& operator+=(const T a);
+    CVector<2, T>& operator-=(const T a);
+    CVector<2, T>& operator*=(const T a);
+    CVector<2, T>& operator/=(const T a);
+    CVector<2, T> operator+(const CVector<2, T>& v);
+    CVector<2, T> operator-(const CVector<2, T>& v);
+    CVector<2, T> operator*(const CVector<2, T>& v);
+    CVector<2, T> operator/(const CVector<2, T>& v);
+    CVector<2, T>& operator+=(const CVector<2, T>& v);
+    CVector<2, T>& operator-=(const CVector<2, T>& v);
+    bool operator==(const CVector<2, T>& v);
+    bool operator!=(const CVector<2, T>& v);
+    T& operator[](const int i);
 };
 
 template <class T>

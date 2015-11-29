@@ -23,14 +23,16 @@
 #include <sstream>
 #include <typeinfo>
 
+#ifdef USE_MPI
 #include <mpi.h>
+#endif
 
 #include "libmath/CMath.hpp"
 #include "CConfiguration.hpp"
 #include "CManager.hpp"
 
 CVector<3,int> lbm_units[] = {
-		E0, E1, E2, E3,
+        E0, E1, E2, E3,
         E4, E5, E6, E7,
         E8, E9, E10, E11,
         E12, E13, E14, E15,
@@ -39,255 +41,262 @@ CVector<3,int> lbm_units[] = {
 
 int main(int argc, char** argv)
 {
-	/*
-	 * TODO
-	 */
-	if (argc != 2)
-	{
-		std::cerr << "----- main() -----" << std::endl;
-		std::cerr << "Exactly one parameter has to be passed to this executable which specifies the location of the XML configuration file." << std::endl;
-		std::cerr << "Instead, " << argc << " parameters have been passed." << std::endl;
-		for (int i = 0; i < argc; i++) {
-			std::cerr << "argv[" << i << "] = " << argv[i] << std::endl;
-		}
-		std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
-		std::cerr << "------------------" << std::endl;
+    if (argc != 2)
+    {
+        std::cerr << "----- main() -----" << std::endl;
+        std::cerr << "Exactly one parameter has to be passed to this executable which specifies the location of the XML configuration file." << std::endl;
+        std::cerr << "Instead, " << argc << " parameters have been passed." << std::endl;
+        for (int i = 0; i < argc; i++) {
+            std::cerr << "argv[" << i << "] = " << argv[i] << std::endl;
+        }
+        std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+        std::cerr << "------------------" << std::endl;
 
-		exit (EXIT_FAILURE);
-	}
+        exit (EXIT_FAILURE);
+    }
 
-	CConfiguration<TYPE>* configuration = new CConfiguration<TYPE>(argv[1]);
+    CConfiguration<TYPE>* configuration = new CConfiguration<TYPE>(argv[1]);
 
-	if (configuration->doLogging)
-	{
-		configuration->print();
-	}
+    if (configuration->doLogging)
+    {
+        configuration->print();
+    }
 
+#ifdef USE_MPI
     /*
      * Setup MPI environment
      */
-	int rank, numOfRanks, nodeNameLength;
-	char nodeName[MPI_MAX_PROCESSOR_NAME];
+    int rank, numOfRanks, nodeNameLength;
+    char nodeName[MPI_MAX_PROCESSOR_NAME];
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &numOfRanks);
-	MPI_Get_processor_name(nodeName, &nodeNameLength);
+    MPI_Get_processor_name(nodeName, &nodeNameLength);
 
-	if (configuration->doLogging)
-	{
-		std::cout << "----- main() -----" << std::endl;
-		std::cout << "MPI has been successfully initialized." << std::endl;
-		std::cout << "------------------" << std::endl;
-		std::cout << "local rank number:     " << rank << std::endl;
-		std::cout << "total number of ranks: " << numOfRanks << std::endl;
-		std::cout << "local node name:       " << nodeName << std::endl;
-		std::cout << "------------------" << std::endl;
-	}
+    if (configuration->doLogging)
+    {
+        std::cout << "----- main() -----" << std::endl;
+        std::cout << "MPI has been successfully initialized." << std::endl;
+        std::cout << "------------------" << std::endl;
+        std::cout << "local rank number:     " << rank << std::endl;
+        std::cout << "total number of ranks: " << numOfRanks << std::endl;
+        std::cout << "local node name:       " << nodeName << std::endl;
+        std::cout << "------------------" << std::endl;
+    }
 
     /*
      * Make sure there's a dedicated MPI rank/process for every subdomain.
      */
     if(numOfRanks != configuration->numOfSubdomains.elements())
     {
-		std::cerr << "----- main() -----" << std::endl;
-		std::cerr << "Number of launched MPI ranks/processes not equal to the number of specified subdomains." << std::endl;
-		std::cerr << "number of launched MPI ranks/processes: " << numOfRanks << std::endl;
-		std::cerr << "number of specified subdomains:         " << configuration->numOfSubdomains.elements() << std::endl;
-		std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
-		std::cerr << "------------------" << std::endl;
+        std::cerr << "----- main() -----" << std::endl;
+        std::cerr << "Number of launched MPI ranks/processes not equal to the number of specified subdomains." << std::endl;
+        std::cerr << "number of launched MPI ranks/processes: " << numOfRanks << std::endl;
+        std::cerr << "number of specified subdomains:         " << configuration->numOfSubdomains.elements() << std::endl;
+        std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+        std::cerr << "------------------" << std::endl;
 
-		exit (EXIT_FAILURE);
+        exit (EXIT_FAILURE);
     }
+#endif
 
+#ifdef USE_MPI
     CManager<TYPE>* manager = new CManager<TYPE>(rank, configuration);
+#else
+    CManager<TYPE>* manager = new CManager<TYPE>(0, configuration);
+#endif
 
-	manager->run();
+    manager->run();
 
+#ifdef USE_MPI
     /*
      * Validation performs a comparison between the velocities results computed
      * on multiple ranks and the results computed on one single rank. Results
      * are compared after all iteration steps have finished.
      */
-	if (configuration->doValidation)
+    if (configuration->doValidation)
     {
-		TYPE* velocities = NULL;
-		TYPE* velocitiesLocal = NULL;
-		TYPE* velocitiesValidation = NULL;
-		CConfiguration<TYPE>* configurationValidation;
-		CManager<TYPE>* managerValidation;
+        TYPE* velocities = NULL;
+        TYPE* velocitiesLocal = NULL;
+        TYPE* velocitiesValidation = NULL;
+        CConfiguration<TYPE>* configurationValidation;
+        CManager<TYPE>* managerValidation;
 
-		int domainSize[3] = {
-				manager->getDomain()->getSize()[0],
-				manager->getDomain()->getSize()[1],
-				manager->getDomain()->getSize()[2]};
-		int subdomainSize[3] = {
-				manager->getController()->getDomain()->getSize()[0],
-				manager->getController()->getDomain()->getSize()[1],
-				manager->getController()->getDomain()->getSize()[2]};
-		int numOfDomainCells = manager->getDomain()->getSize().elements();
-		int numOfSubomainCells = manager->getController()->getDomain()->getSize().elements();
+        int domainSize[3] = {
+                manager->getDomain()->getSize()[0],
+                manager->getDomain()->getSize()[1],
+                manager->getDomain()->getSize()[2]};
+        int subdomainSize[3] = {
+                manager->getController()->getDomain()->getSize()[0],
+                manager->getController()->getDomain()->getSize()[1],
+                manager->getController()->getDomain()->getSize()[2]};
+        int numOfDomainCells = manager->getDomain()->getSize().elements();
+        int numOfSubomainCells = manager->getController()->getDomain()->getSize().elements();
 
-    	/*
-    	 * All ranks compute their local result.
-    	 */
-    	velocitiesLocal = new TYPE[3 * numOfSubomainCells];
+        /*
+         * All ranks compute their local result.
+         */
+        velocitiesLocal = new TYPE[3 * numOfSubomainCells];
 
-    	manager->getController()->getSolver()->getVelocities(velocitiesLocal);
+        manager->getController()->getSolver()->getVelocities(velocitiesLocal);
 
-		/*
-		 * Rank 0 allocates additional arrays:
-		 * - velocities stores the gathered data from all ranks
-		 * - velocitiesValidation stores data computed on one single rank
-		 * A global solution using only rank 0 is computed.
-		 */
-    	if (rank == 0)
-    	{
-			configurationValidation = new CConfiguration<TYPE>(argv[1]);
-			configurationValidation->serialize();
-			managerValidation = new CManager<TYPE>(rank, configurationValidation);
+        /*
+         * Rank 0 allocates additional arrays:
+         * - velocities stores the gathered data from all ranks
+         * - velocitiesValidation stores data computed on one single rank
+         * A global solution using only rank 0 is computed.
+         */
+        if (rank == 0)
+        {
+            configurationValidation = new CConfiguration<TYPE>(argv[1]);
+            configurationValidation->serialize();
+            managerValidation = new CManager<TYPE>(rank, configurationValidation);
 
-			managerValidation->run();
+            managerValidation->run();
 
-	    	velocities = new TYPE[3 * numOfDomainCells];
-	    	velocitiesValidation = new TYPE[3 * numOfDomainCells];
+            velocities = new TYPE[3 * numOfDomainCells];
+            velocitiesValidation = new TYPE[3 * numOfDomainCells];
 
-	    	managerValidation->getController()->getSolver()->getVelocities(velocitiesValidation);
+            managerValidation->getController()->getSolver()->getVelocities(velocitiesValidation);
 
-	    	delete managerValidation;
-			delete configurationValidation;
-    	}
+            delete managerValidation;
+            delete configurationValidation;
+        }
 
-    	/*
-    	 * Gather results.
-    	 */
-    	MPI_Datatype sendArray;
-    	MPI_Datatype recvArray;
-    	MPI_Datatype recvArrayResized;
-    	int start[3] = {0, 0, 0};
-    	int sendcounts[configuration->numOfSubdomains.elements()];
-    	int displacements[configuration->numOfSubdomains.elements()];
+        /*
+         * Gather results.
+         */
+        MPI_Datatype sendArray;
+        MPI_Datatype recvArray;
+        MPI_Datatype recvArrayResized;
+        int start[3] = {0, 0, 0};
+        int sendcounts[configuration->numOfSubdomains.elements()];
+        int displacements[configuration->numOfSubdomains.elements()];
 
-    	MPI_Type_create_subarray(3, subdomainSize, subdomainSize, start, MPI_ORDER_FORTRAN, ((typeid(TYPE) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE), &sendArray);
-    	MPI_Type_commit(&sendArray);
+        MPI_Type_create_subarray(3, subdomainSize, subdomainSize, start, MPI_ORDER_FORTRAN, ((typeid(TYPE) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE), &sendArray);
+        MPI_Type_commit(&sendArray);
 
-    	if (rank == 0)
-    	{
-    		MPI_Type_create_subarray(3, domainSize, subdomainSize, start, MPI_ORDER_FORTRAN, ((typeid(TYPE) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE), &recvArray);
-			MPI_Type_create_resized(recvArray, 0, sizeof(TYPE), &recvArrayResized);
-			MPI_Type_commit(&recvArrayResized);
+        if (rank == 0)
+        {
+            MPI_Type_create_subarray(3, domainSize, subdomainSize, start, MPI_ORDER_FORTRAN, ((typeid(TYPE) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE), &recvArray);
+            MPI_Type_create_resized(recvArray, 0, sizeof(TYPE), &recvArrayResized);
+            MPI_Type_commit(&recvArrayResized);
 
-    		int displacementIdx;
-    		int subdomainIdx;
+            int displacementIdx;
+            int subdomainIdx;
 
-			for (int i = 0; i < configuration->numOfSubdomains[0]; i++)
-			{
-				for (int j = 0; j < configuration->numOfSubdomains[1]; j++)
-				{
-					for (int k = 0; k < configuration->numOfSubdomains[2]; k++)
-					{
-						subdomainIdx = k * configuration->numOfSubdomains[0] * configuration->numOfSubdomains[1] + j * configuration->numOfSubdomains[0] + i;
-						displacementIdx = k * subdomainSize[2] * domainSize[0] * domainSize[1] + j * subdomainSize[1] * domainSize[0] + i * subdomainSize[0];
-						sendcounts[subdomainIdx] = 1;
-						displacements[subdomainIdx] = displacementIdx;
-					}
-				}
-			}
-    	}
+            for (int i = 0; i < configuration->numOfSubdomains[0]; i++)
+            {
+                for (int j = 0; j < configuration->numOfSubdomains[1]; j++)
+                {
+                    for (int k = 0; k < configuration->numOfSubdomains[2]; k++)
+                    {
+                        subdomainIdx = k * configuration->numOfSubdomains[0] * configuration->numOfSubdomains[1] + j * configuration->numOfSubdomains[0] + i;
+                        displacementIdx = k * subdomainSize[2] * domainSize[0] * domainSize[1] + j * subdomainSize[1] * domainSize[0] + i * subdomainSize[0];
+                        sendcounts[subdomainIdx] = 1;
+                        displacements[subdomainIdx] = displacementIdx;
+                    }
+                }
+            }
+        }
 
-    	MPI_Gatherv(
-    			&velocitiesLocal[0], 1, sendArray,
-    			&velocities[0], sendcounts, displacements, recvArrayResized,
-    			0, MPI_COMM_WORLD);
-    	MPI_Gatherv(
-    			&velocitiesLocal[numOfSubomainCells], 1, sendArray,
-    			&velocities[numOfDomainCells], sendcounts, displacements, recvArrayResized,
-    			0, MPI_COMM_WORLD);
-    	MPI_Gatherv(
-    			&velocitiesLocal[2 * numOfSubomainCells], 1, sendArray,
-    			&velocities[2 * numOfDomainCells], sendcounts, displacements, recvArrayResized,
-    			0, MPI_COMM_WORLD);
+        MPI_Gatherv(
+                &velocitiesLocal[0], 1, sendArray,
+                &velocities[0], sendcounts, displacements, recvArrayResized,
+                0, MPI_COMM_WORLD);
+        MPI_Gatherv(
+                &velocitiesLocal[numOfSubomainCells], 1, sendArray,
+                &velocities[numOfDomainCells], sendcounts, displacements, recvArrayResized,
+                0, MPI_COMM_WORLD);
+        MPI_Gatherv(
+                &velocitiesLocal[2 * numOfSubomainCells], 1, sendArray,
+                &velocities[2 * numOfDomainCells], sendcounts, displacements, recvArrayResized,
+                0, MPI_COMM_WORLD);
 
-    	MPI_Type_free(&sendArray);
-    	if (rank == 0)
-    		MPI_Type_free(&recvArrayResized);
-    	delete[] velocitiesLocal;
+        MPI_Type_free(&sendArray);
+        if (rank == 0)
+            MPI_Type_free(&recvArrayResized);
+        delete[] velocitiesLocal;
 
-    	/*
-    	 * Finally, rank 0 compares the parallel result in velocities with the
-    	 * serial result in velocitiesValidation and outputs information if an
-    	 * inequality is detected.
-    	 */
-    	if (rank == 0)
-    	{
-    		int numOfInequalities = 0;
-    		int globalIdx, velocitiesX, velocitiesY, velocitiesZ;
+        /*
+         * Finally, rank 0 compares the parallel result in velocities with the
+         * serial result in velocitiesValidation and outputs information if an
+         * inequality is detected.
+         */
+        if (rank == 0)
+        {
+            int numOfInequalities = 0;
+            int globalIdx, velocitiesX, velocitiesY, velocitiesZ;
 
-    		std::stringstream validationFileName;
-    		validationFileName << configuration->validationOutputDir << "/validation.txt";
+            std::stringstream validationFileName;
+            validationFileName << configuration->validationOutputDir << "/validation.txt";
             std::ofstream validationFile(validationFileName.str().c_str(), std::ios::out);
 
-            for (int i = 0; i < domainSize[0] / subdomainSize[0]; i++)
-            	{
-            		for (int j = 0; j < domainSize[1] / subdomainSize[1]; j++)
-            		{
-            			for (int k = 0; k < domainSize[2] / subdomainSize[2]; k++)
-            			{
-            				globalIdx = k * domainSize[1] * domainSize[2] + j * domainSize[1] + i;
-							velocitiesX = globalIdx;
-							velocitiesY = numOfDomainCells + globalIdx;
-							velocitiesZ = 2 * numOfDomainCells + globalIdx;
+            for (int i = 0; i < domainSize[0]; i++)
+                {
+                    for (int j = 0; j < domainSize[1]; j++)
+                    {
+                        for (int k = 0; k < domainSize[2]; k++)
+                        {
+                            globalIdx = k * domainSize[1] * domainSize[2] + j * domainSize[1] + i;
+                            velocitiesX = globalIdx;
+                            velocitiesY = numOfDomainCells + globalIdx;
+                            velocitiesZ = 2 * numOfDomainCells + globalIdx;
 
-							if (CMath<TYPE>::abs(velocities[velocitiesX] - velocitiesValidation[velocitiesX]) / velocitiesValidation[velocitiesX] > std::numeric_limits<TYPE>::epsilon() ||
-									CMath<TYPE>::abs(velocities[velocitiesY] - velocitiesValidation[velocitiesY]) / velocitiesValidation[velocitiesY] > std::numeric_limits<TYPE>::epsilon() ||
-									CMath<TYPE>::abs(velocities[velocitiesZ] - velocitiesValidation[velocitiesZ]) / velocitiesValidation[velocitiesZ] > std::numeric_limits<TYPE>::epsilon())
-							{
-								if (validationFile.is_open())
-								{
-									validationFile << "[" << i << "," << j << "," << k << "]: ";
-									validationFile << "[" << velocities[velocitiesX] << ", " << velocities[velocitiesY] << ", " << velocities[velocitiesZ] << "] vs. ";
-									validationFile << "[" << velocitiesValidation[velocitiesX] << ", " << velocitiesValidation[velocitiesY] << ", " << velocitiesValidation[velocitiesZ] << "]" << std::endl;
-								} else {
-									std::cerr << "----- main() -----" << std::endl;
-									std::cerr << "There is no open file to write validation results." << std::endl;
-									std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
-									std::cerr << "------------------" << std::endl;
+                            if (CMath<TYPE>::abs(velocities[velocitiesX] - velocitiesValidation[velocitiesX]) / velocitiesValidation[velocitiesX] > std::numeric_limits<TYPE>::epsilon() ||
+                                    CMath<TYPE>::abs(velocities[velocitiesY] - velocitiesValidation[velocitiesY]) / velocitiesValidation[velocitiesY] > std::numeric_limits<TYPE>::epsilon() ||
+                                    CMath<TYPE>::abs(velocities[velocitiesZ] - velocitiesValidation[velocitiesZ]) / velocitiesValidation[velocitiesZ] > std::numeric_limits<TYPE>::epsilon())
+                            {
+                                if (validationFile.is_open())
+                                {
+                                    validationFile << "[" << i << "," << j << "," << k << "]: ";
+                                    validationFile << "[" << velocities[velocitiesX] << ", " << velocities[velocitiesY] << ", " << velocities[velocitiesZ] << "] vs. ";
+                                    validationFile << "[" << velocitiesValidation[velocitiesX] << ", " << velocitiesValidation[velocitiesY] << ", " << velocitiesValidation[velocitiesZ] << "]" << std::endl;
+                                } else {
+                                    std::cerr << "----- main() -----" << std::endl;
+                                    std::cerr << "There is no open file to write validation results." << std::endl;
+                                    std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+                                    std::cerr << "------------------" << std::endl;
 
-									exit (EXIT_FAILURE);
-								}
+                                    exit (EXIT_FAILURE);
+                                }
 
-								numOfInequalities++;
-            			}
-            		}
-            	}
-    		}
+                                numOfInequalities++;
+                        }
+                    }
+                }
+            }
 
-			if (validationFile.is_open())
-			{
-				validationFile << "number of inequalities: " << numOfInequalities << std::endl;
-				validationFile.close();
-			} else {
-				std::cerr << "----- main() -----" << std::endl;
-				std::cerr << "There is no open validation file to close." << std::endl;
-				std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
-				std::cerr << "------------------" << std::endl;
+            if (validationFile.is_open())
+            {
+                validationFile << "number of inequalities: " << numOfInequalities << std::endl;
+                validationFile.close();
+            } else {
+                std::cerr << "----- main() -----" << std::endl;
+                std::cerr << "There is no open validation file to close." << std::endl;
+                std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+                std::cerr << "------------------" << std::endl;
 
-				exit (EXIT_FAILURE);
-			}
+                exit (EXIT_FAILURE);
+            }
 
-	    	delete[] velocitiesValidation;
-	    	delete[] velocities;
-    	}
+            delete[] velocitiesValidation;
+            delete[] velocities;
+        }
     }
+#endif
 
     delete manager;
 
+#ifdef USE_MPI
     /*
-	 * Tear down MPI environment
-	 */
-	MPI_Finalize();
+     * Tear down MPI environment
+     */
+    MPI_Finalize();
+#endif
 
-	delete configuration;
+    delete configuration;
 
-	return 0;
+    return 0;
 }

@@ -25,10 +25,10 @@ COMPUTE_CAPABILITY	:=	20
 # compilers and linkers
 ################################################################################
 
-CC					:=	mpicc
-CXX					:=	mpicxx
+CC					:=	gcc
+CXX					:=	g++
 NVCC				:=	$(CUDAINSTALLPATH)/bin/nvcc
-LINKER				:=	mpicxx
+LINKER				:=	g++
 NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 
 ################################################################################
@@ -36,10 +36,8 @@ NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 ################################################################################
 
 CCFLAGS				:=	-O3 \
-#						-D DEBUG \
 #						-std=c11
 CXXFLAGS			:=	-O3 \
-#						-D DEBUG \
 #						-std=c++11
 
 # arch: specifies the compatibility from source code to PTX stage. Can be a
@@ -51,7 +49,6 @@ CXXFLAGS			:=	-O3 \
 #       which can then be linked together.
 NVCCFLAGS			:=	-O3 \
 						-gencode arch=compute_$(COMPUTE_CAPABILITY),code=sm_$(COMPUTE_CAPABILITY) \
-#						-D DEBUG \
 #						-Xcompiler "-std=c++11"
 
 ################################################################################

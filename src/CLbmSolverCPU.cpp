@@ -27,17 +27,18 @@ CLbmSolverCPU<T>::CLbmSolverCPU(
         std::vector<Flag> boundaryConditions,
         CLbmSolverGPU<T>* solverGPU,
         T timestepSize,
-        CVector<3, T>& gravitation,
-        CVector<3, T>& drivenCavityVelocity,
+        CVector<3, T>& velocity,
+        CVector<3, T>& acceleration,
         T viscocity,
-        T maxGravitationDimLess,
+        T maxVelocityDimLess,
+        T maxAccelerationDimLess,
         bool storeDensities,
         bool storeVelocities,
         bool doLogging) :
         CLbmSolver<T>(id, globalLength,
-        		domain, boundaryConditions,
-                timestepSize, gravitation, drivenCavityVelocity,
-                viscocity, maxGravitationDimLess,
+                domain, boundaryConditions,
+                timestepSize, velocity, acceleration,
+                viscocity, maxVelocityDimLess, maxAccelerationDimLess,
                 storeDensities, storeVelocities, doLogging),
         solverGPU(solverGPU)
 {
@@ -64,7 +65,7 @@ void CLbmSolverCPU<T>::simulationStepAlpha()
 }
 
 template <class T>
-void CLbmSolverCPU<T>::simulationStepAlphaRect(CVector<3, int> origin, CVector<3, int> size)
+void CLbmSolverCPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, int> size)
 {
 }
 
@@ -74,7 +75,7 @@ void CLbmSolverCPU<T>::simulationStepBeta()
 }
 
 template <class T>
-void CLbmSolverCPU<T>::simulationStepBetaRect(CVector<3, int> origin, CVector<3, int> size)
+void CLbmSolverCPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int> size)
 {
 }
 

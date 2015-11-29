@@ -23,185 +23,185 @@
 
 template <class T>
 CLbmVisualizationVTK<T>::CLbmVisualizationVTK(
-		int id,
-		int visualizationRate,
-		CLbmSolver<T>* solver,
-		std::string filePath) :
-		CLbmVisualization<T>(id, visualizationRate, solver),
-		filePath(filePath)
+        int id,
+        int visualizationRate,
+        CLbmSolver<T>* solver,
+        std::string filePath) :
+        CLbmVisualization<T>(id, visualizationRate, solver),
+        filePath(filePath)
 {
 }
 
 template <class T>
 void CLbmVisualizationVTK<T>::openFile(int iteration)
 {
-	if (!file.is_open())
-	{
-	    std::stringstream fileName;
-	    fileName << filePath << "/visualization_" << id << "_" << iteration << ".vtk";
-	    file.open(fileName.str().c_str(), std::ios::out);
-	} else {
+    if (!file.is_open())
+    {
+        std::stringstream fileName;
+        fileName << filePath << "/visualization_" << id << "_" << iteration << ".vtk";
+        file.open(fileName.str().c_str(), std::ios::out);
+    } else {
         std::cerr << "----- CLbmVisualizationVTK<T>::openFile() -----" << std::endl;
         std::cerr << "VTK file \"visualization_" << id << "_" << iteration << ".vtk is already open." << std::endl;
         std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
         std::cerr << "-----------------------------------------------" << std::endl;
 
         exit (EXIT_FAILURE);
-	}
+    }
 }
 
 template <class T>
 void CLbmVisualizationVTK<T>::closeFile()
 {
-	if (file.is_open())
-	{
-	    file.close();
-	} else {
+    if (file.is_open())
+    {
+        file.close();
+    } else {
         std::cerr << "----- CLbmVisualizationVTK<T>::closeFile() -----" << std::endl;
         std::cerr << "There is no open VTK file to close." << std::endl;
         std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
         std::cerr << "------------------------------------------------" << std::endl;
 
         exit (EXIT_FAILURE);
-	}
+    }
 }
 
 template <class T>
 void CLbmVisualizationVTK<T>::writeHeader()
 {
-	if (file.is_open())
-	{
-		file << "# vtk DataFile Version 3.0\n";
-		file << "Heterogenous (MPI/OpenMPI) and hybrid (CPU/GPU) LBM simulation on rank " << id << "\n";
-		file << "ASCII" << std::endl;
-	} else {
+    if (file.is_open())
+    {
+        file << "# vtk DataFile Version 3.0\n";
+        file << "Heterogenous (MPI/OpenMPI) and hybrid (CPU/GPU) LBM simulation on rank " << id << "\n";
+        file << "ASCII" << std::endl;
+    } else {
         std::cerr << "----- CLbmVisualizationVTK<T>::writeHeader() -----" << std::endl;
         std::cerr << "There is no open VTK file to write header" << std::endl;
         std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
         std::cerr << "--------------------------------------------------" << std::endl;
 
         exit (EXIT_FAILURE);
-	}
+    }
 }
 
 template <class T>
 void CLbmVisualizationVTK<T>::writeDataset()
 {
-	if (file.is_open())
-	{
-		file << "DATASET STRUCTURED_GRID\n";
-		file << "DIMENSIONS " << (solver->getDomain()->getSize()[0] + 1) << " " << (solver->getDomain()->getSize()[1] + 1) << " " << (solver->getDomain()->getSize()[2] + 1) << "\n";
-		file << "POINTS " << ((solver->getDomain()->getSize()[0] + 1) * (solver->getDomain()->getSize()[1] + 1) * (solver->getDomain()->getSize()[2] + 1)) << " " << ((typeid(T) == typeid(float)) ? "float" : "double") << "\n";
+    if (file.is_open())
+    {
+        file << "DATASET STRUCTURED_GRID\n";
+        file << "DIMENSIONS " << (solver->getDomain()->getSize()[0] + 1) << " " << (solver->getDomain()->getSize()[1] + 1) << " " << (solver->getDomain()->getSize()[2] + 1) << "\n";
+        file << "POINTS " << ((solver->getDomain()->getSize()[0] + 1) * (solver->getDomain()->getSize()[1] + 1) * (solver->getDomain()->getSize()[2] + 1)) << " " << ((typeid(T) == typeid(float)) ? "float" : "double") << "\n";
 
-		for (int k = 0; k < solver->getDomain()->getSize()[2] + 1; k++) {
-			for (int j = 0; j < solver->getDomain()->getSize()[1] + 1; j++) {
-				for (int i = 0; i < solver->getDomain()->getSize()[0] + 1; i++) {
-					file << ((T)(solver->getDomain()->getOrigin()[0] + i) * solver->getDomain()->getLength()[0] / (T)solver->getDomain()->getSize()[0]) << " " <<
-							((T)(solver->getDomain()->getOrigin()[1] + j) * solver->getDomain()->getLength()[1] / (T)solver->getDomain()->getSize()[1]) << " " <<
-							((T)(solver->getDomain()->getOrigin()[2] + k) * solver->getDomain()->getLength()[2] / (T)solver->getDomain()->getSize()[2]) <<"\n";
-				}
-			}
-		}
-	} else {
+        for (int k = 0; k < solver->getDomain()->getSize()[2] + 1; k++) {
+            for (int j = 0; j < solver->getDomain()->getSize()[1] + 1; j++) {
+                for (int i = 0; i < solver->getDomain()->getSize()[0] + 1; i++) {
+                    file << ((T)(solver->getDomain()->getOrigin()[0] + i) * solver->getDomain()->getLength()[0] / (T)solver->getDomain()->getSize()[0]) << " " <<
+                            ((T)(solver->getDomain()->getOrigin()[1] + j) * solver->getDomain()->getLength()[1] / (T)solver->getDomain()->getSize()[1]) << " " <<
+                            ((T)(solver->getDomain()->getOrigin()[2] + k) * solver->getDomain()->getLength()[2] / (T)solver->getDomain()->getSize()[2]) <<"\n";
+                }
+            }
+        }
+    } else {
         std::cerr << "----- CLbmVisualizationVTK<T>::writeDataset() -----" << std::endl;
         std::cerr << "There is no open VTK file to write dataset" << std::endl;
         std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
         std::cerr << "---------------------------------------------------" << std::endl;
 
         exit (EXIT_FAILURE);
-	}
+    }
 }
 
 template <class T>
 void CLbmVisualizationVTK<T>::writeFlags()
 {
-	if (file.is_open())
-	{
-		solver->getFlags(flags);
+    if (file.is_open())
+    {
+        solver->getFlags(flags);
 
-		file << "SCALARS flags INT 1\n";
-		file << "LOOKUP_TABLE default\n";
+        file << "SCALARS flags INT 1\n";
+        file << "LOOKUP_TABLE default\n";
 
-		for (int i = 0; i < solver->getDomain()->getNumOfCells(); i++)
-		{
-			file << flags[i] << "\n";
-		}
-	} else {
+        for (int i = 0; i < solver->getDomain()->getNumOfCells(); i++)
+        {
+            file << flags[i] << "\n";
+        }
+    } else {
         std::cerr << "----- CLbmVisualizationVTK<T>::writeFlags() -----" << std::endl;
         std::cerr << "There is no open VTK file to write flags." << std::endl;
         std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
         std::cerr << "-----------------------------------------------  " << std::endl;
 
         exit (EXIT_FAILURE);
-	}
+    }
 }
 
 template <class T>
 void CLbmVisualizationVTK<T>::writeDensities()
 {
-	if (file.is_open())
-	{
-		solver->getDensities(densities);
+    if (file.is_open())
+    {
+        solver->getDensities(densities);
 
-		file << "SCALARS densities " << ((typeid(T) == typeid(float)) ? "float" : "double") << " 1\n";
-		file << "LOOKUP_TABLE default\n";
+        file << "SCALARS densities " << ((typeid(T) == typeid(float)) ? "float" : "double") << " 1\n";
+        file << "LOOKUP_TABLE default\n";
 
-		for (int i = 0; i < solver->getDomain()->getNumOfCells(); i++)
-		{
-			file << densities[i] << "\n";
-		}
-	} else {
+        for (int i = 0; i < solver->getDomain()->getNumOfCells(); i++)
+        {
+            file << densities[i] << "\n";
+        }
+    } else {
         std::cerr << "----- CLbmVisualizationVTK<T>::writeDensities() -----" << std::endl;
         std::cerr << "There is no open VTK file to write densities." << std::endl;
         std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
         std::cerr << "-----------------------------------------------------" << std::endl;
 
         exit (EXIT_FAILURE);
-	}
+    }
 }
 
 template <class T>
 void CLbmVisualizationVTK<T>::writeVelocities()
 {
-	if (file.is_open())
-	{
-		solver->getVelocities(velocities);
+    if (file.is_open())
+    {
+        solver->getVelocities(velocities);
 
-		T* velocitiesX = velocities;
-		T* velocitiesY = velocities + solver->getDomain()->getNumOfCells();
-		T* velocitiesZ = velocities + 2 * solver->getDomain()->getNumOfCells();
+        T* velocitiesX = velocities;
+        T* velocitiesY = velocities + solver->getDomain()->getNumOfCells();
+        T* velocitiesZ = velocities + 2 * solver->getDomain()->getNumOfCells();
 
-		file << "VECTORS velocities " << ((typeid(T) == typeid(float)) ? "float" : "double") << "\n";
+        file << "VECTORS velocities " << ((typeid(T) == typeid(float)) ? "float" : "double") << "\n";
 
-		for (int i = 0; i < solver->getDomain()->getNumOfCells(); i++)
-		{
-			file << velocitiesX[i] << " " << velocitiesY[i] << " " << velocitiesZ[i] << "\n";
-		}
-	} else {
+        for (int i = 0; i < solver->getDomain()->getNumOfCells(); i++)
+        {
+            file << velocitiesX[i] << " " << velocitiesY[i] << " " << velocitiesZ[i] << "\n";
+        }
+    } else {
         std::cerr << "----- CLbmVisualizationVTK<T>::writeVelocities() -----" << std::endl;
         std::cerr << "There is no open VTK file to write velocities." << std::endl;
         std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
         std::cerr << "------------------------------------------------------" << std::endl;
 
         exit (EXIT_FAILURE);
-	}
+    }
 }
 
 template <class T>
 void CLbmVisualizationVTK<T>::render(int iteration)
 {
-	if(iteration % visualizationRate == 0)
-	{
-		openFile(iteration);
-		writeHeader();
-		writeDataset();
-		file << "CELL_DATA " << solver->getDomain()->getNumOfCells() << "\n";
-		writeFlags();
-		writeDensities();
-		writeVelocities();
-		closeFile();
+    if(iteration % visualizationRate == 0)
+    {
+        openFile(iteration);
+        writeHeader();
+        writeDataset();
+        file << "CELL_DATA " << solver->getDomain()->getNumOfCells() << "\n";
+        writeFlags();
+        writeDensities();
+        writeVelocities();
+        closeFile();
 
-	}
+    }
 }
 
 template class CLbmVisualizationVTK<double>;

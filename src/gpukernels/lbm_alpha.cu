@@ -22,7 +22,7 @@
 template<typename T>
 __global__ void lbm_kernel_alpha(
         T* global_dd,                 // density distributions
-        const Flag* flag_array,        // flags
+        const Flag* flag_array,       // flags
         T* velocity,                  // velocities
         T* density,                   // densities
         const T inv_tau,
@@ -30,25 +30,35 @@ __global__ void lbm_kernel_alpha(
         const T gravitation_y,
         const T gravitation_z,
         const T drivenCavityVelocity, // velocity parameters for modification of density distributions
+        const int originX,
+        const int originY,
+        const int originZ,
+        const int sizeX,
+        const int sizeY,
+        const int sizeZ,
         const int domainCellsX,
         const int domainCellsY,
         const int domainCellsZ,
         const bool storeDensities,
         const bool storeVelocities)
 {
-    size_t DOMAIN_CELLS = domainCellsX * domainCellsY * domainCellsZ;
+    const unsigned int DOMAIN_CELLS = domainCellsX * domainCellsY * domainCellsZ;
 
-    // get unique global thread ID
-    size_t blockId = blockIdx.x + (size_t)(blockIdx.y * gridDim.x) + (size_t)(gridDim.x * gridDim.y * blockIdx.z);
-    size_t gid = blockId * (size_t)(blockDim.x * blockDim.y * blockDim.z) + (size_t)(threadIdx.z * (blockDim.x * blockDim.y)) + (size_t)(threadIdx.y * blockDim.x) + threadIdx.x;
+    const unsigned int X = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned int Y = blockIdx.y * blockDim.y + threadIdx.y;
+    const unsigned int Z = blockIdx.z * blockDim.z + threadIdx.z;
+    const unsigned int gid = (originZ + Z) * (domainCellsX * domainCellsY) + (originY + Y) * domainCellsX + (originX + X);
 
     if (gid >= DOMAIN_CELLS)
         return;
 
-    // load cell type flag
-    int flag = flag_array[gid];
+    if (X >= sizeX || Y >= sizeY || Z >= sizeZ)
+        return;
+
+    Flag flag = flag_array[gid];
     if  (flag == GHOST_LAYER)
         return;
+
     /**
      * we use a pointer instead of accessing the array directly
      * first this reduces the number of use registers (according to profiling information)
@@ -508,9 +518,9 @@ __global__ void lbm_kernel_alpha(
     {
         // store velocity
         current_dds = &velocity[gid];
-        *current_dds = velocity_x;  current_dds += DOMAIN_CELLS;
-        *current_dds = velocity_y;  current_dds += DOMAIN_CELLS;
-        *current_dds = velocity_z;
+        *current_dds += (T)1;  current_dds += DOMAIN_CELLS;
+        *current_dds += (T)1;  current_dds += DOMAIN_CELLS;
+        *current_dds += (T)1;
     }
 
     if (storeDensities)
@@ -531,6 +541,12 @@ template __global__ void lbm_kernel_alpha<float>(
         const float gravitation_y,
         const float gravitation_z,
         const float drivenCavityVelocity,
+        const int originX,
+        const int originY,
+        const int originZ,
+        const int sizeX,
+        const int sizeY,
+        const int sizeZ,
         const int domainCellsX,
         const int domainCellsY,
         const int domainCellsZ,
@@ -546,6 +562,12 @@ template __global__ void lbm_kernel_alpha<double>(
         const double gravitation_y,
         const double gravitation_z,
         const double drivenCavityVelocity,
+        const int originX,
+        const int originY,
+        const int originZ,
+        const int sizeX,
+        const int sizeY,
+        const int sizeZ,
         const int domainCellsX,
         const int domainCellsY,
         const int domainCellsZ,

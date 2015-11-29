@@ -2,30 +2,32 @@
 <lbm-configuration>
   <!-- configuration data related to physcis of the simulation -->
   <physics>
+    <!-- velocity injection vector (unit: meters * second^-1) -->
+    <velocity>
+      <x>1.0</x>
+      <y>0</y>
+      <z>0</z>
+    </velocity>
     <!-- external acceleratiopn to system (unit: meters * second^-2) -->
-    <gravitation>
+    <acceleration>
       <x>0</x>
       <y>-9.81</y>
       <z>0</z>
-    </gravitation>
-    <!-- velocity injection vector (unit: meters * second^-1) -->
-    <cavity-velocity>
-      <x>10.0</x>
-      <y>0</y>
-      <z>0</z>
-    </cavity-velocity>
+    </acceleration>
     <!-- viscosity of the fluid, -1 for automatic detection (unit: meters^2 * second^-1) -->
     <viscosity>-1</viscosity>
+    <!-- maximum external velocity to avoid instabilities (unit: meters * second^-1) -->
+    <max-velocity>0.1</max-velocity>
     <!-- maximum external acceleration to avoid instabilities (unit: meters * second^-2) -->
-    <max-gravitation>0.00001</max-gravitation>
+    <max-acceleration>0.1</max-acceleration>
   </physics>
   <!-- configuration data related to simulation grid -->
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-      <x>208</x>
-      <y>208</y>
-      <z>208</z>
+      <x>128</x>
+      <y>128</y>
+      <z>128</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
@@ -36,8 +38,8 @@
     <!-- number of subdomains in x, y and z direction (unit: scalar) -->
     <subdomain-num>
       <x>1</x>
-      <y>1</y>
-      <z>1</z>
+      <y>4</y>
+      <z>2</z>
     </subdomain-num>
     <!-- ratio in x, y and z direction of subdomain cells which are processed by the CPU ([0.0, 1.0]) (unit: scalar factor) -->
     <cpu-subdomain-ratio>
@@ -48,7 +50,7 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>857102</loops>
+    <loops>1280</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>0.01</timestep>
     <!--  -->
@@ -68,7 +70,7 @@
     <!--  -->
     <visualization>
       <do>1</do>
-      <rate>14285</rate>
+      <rate>1280</rate>
       <output-dir>/work_fast/riesinge/workspace/lbm/visualization</output-dir>
     </visualization>
   </simulation>

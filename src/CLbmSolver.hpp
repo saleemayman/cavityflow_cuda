@@ -45,17 +45,18 @@ protected:
     std::vector<Flag> boundaryConditions;
 
     T timestepSize;
-    CVector<3, T> gravitation, gravitationDimLess;
-    CVector<3, T> drivenCavityVelocity, drivenCavityVelocityDimLess;
+    CVector<3, T> velocity, velocityDimLess;
+    CVector<3, T> acceleration, accelerationDimLess;
     T viscosity, viscosityDimLess;
     T tau;
-    T maxGravitationDimLess;
+    T maxVelocityDimLess;
+    T maxAccelerationDimLess;
 
     bool storeDensities;
     bool storeVelocities;
     bool doLogging;
 
-    T tauInv, tauInvTrt;
+    T tauInv;
 
 public:
     CLbmSolver();
@@ -65,19 +66,20 @@ public:
             CDomain<T> &domain,
             std::vector<Flag> boundaryConditions,
             T timestepSize,
-            CVector<3, T> &gravitation,
-            CVector<3, T> &drivenCavityVelocity,
+            CVector<3, T> &velocity,
+            CVector<3, T> &acceleration,
             T viscosity,
-            T maxGravitationDimLess,
+            T maxVelocityDimLess,
+            T maxAccelerationDimLess,
             bool storeDensities,
             bool storeVelocities,
             bool doLogging);
     virtual ~CLbmSolver() {}
     
     virtual void simulationStepAlpha() {}
-    virtual void simulationStepAlphaRect(CVector<3, int> origin, CVector<3, int> size) {}
+    virtual void simulationStepAlpha(CVector<3, int> origin, CVector<3, int> size) {}
     virtual void simulationStepBeta() {}
-    virtual void simulationStepBetaRect(CVector<3, int> origin, CVector<3, int> size) {}
+    virtual void simulationStepBeta(CVector<3, int> origin, CVector<3, int> size) {}
     CDomain<T>* getDomain();
     virtual void getDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* dst) {}
     virtual void getDensityDistributions(T* dst) {}

@@ -46,6 +46,9 @@ __global__ void lbm_kernel_beta(
         const T gravitation_y,
         const T gravitation_z,
         const T drivenCavityVelocity, // velocity parameters for modification of density distributions
+        const int originX,
+        const int originY,
+        const int originZ,
         const int domainCells_x,
         const int domainCells_y,
         const int domainCells_z,
@@ -53,7 +56,7 @@ __global__ void lbm_kernel_beta(
         const bool isDomainPowOfTwo,
         const bool isLocalPowOfTwo,
         const bool storeDensities,
-		const bool storeVelocities)
+        const bool storeVelocities)
 {
     //const size_t gid = get_global_id(0);
     const int DOMAIN_CELLS_X = domainCells_x;
@@ -62,8 +65,8 @@ __global__ void lbm_kernel_beta(
     size_t LOCAL_WORK_GROUP_SIZE = localWorkGroup;
 #endif
 
-    size_t DOMAIN_CELLS = DOMAIN_CELLS_X * domainCells_y * domainCells_z;
-    size_t DOMAIN_SLICE_CELLS = DOMAIN_CELLS_X * domainCells_y;
+    size_t DOMAIN_CELLS = domainCells_x * domainCells_y * domainCells_z;
+    size_t DOMAIN_SLICE_CELLS = domainCells_x * domainCells_y;
 
     int DELTA_POS_X = 1;
     size_t DELTA_NEG_X = DOMAIN_CELLS - 1;
@@ -73,8 +76,8 @@ __global__ void lbm_kernel_beta(
     size_t DELTA_NEG_Z = DOMAIN_CELLS - DOMAIN_SLICE_CELLS;
 
     // get unique thread id
-    size_t blockId = blockIdx.x + (size_t)(blockIdx.y * gridDim.x) + (size_t)(gridDim.x * gridDim.y * blockIdx.z);
-    size_t gid = blockId * (size_t)(blockDim.x * blockDim.y * blockDim.z) + (size_t)(threadIdx.z * (blockDim.x * blockDim.y)) + (size_t)(threadIdx.y * blockDim.x) + threadIdx.x;
+    size_t blockId = (blockIdx.x + originX / blockDim.x) + ((blockIdx.y + originY / blockDim.y) * gridDim.x) + ((blockIdx.z + originZ / blockDim.z) * gridDim.x * gridDim.y);
+    size_t gid = blockId * (blockDim.x * blockDim.y * blockDim.z) + ((threadIdx.z + originZ % blockDim.z) * blockDim.x * blockDim.y) + ((threadIdx.y + originY % blockDim.y) * blockDim.x) + (threadIdx.x + originX % blockDim.x);
 
     if (gid >= DOMAIN_CELLS)
         return;
@@ -293,22 +296,8 @@ __global__ void lbm_kernel_beta(
     int pos_x_wrap = LOCAL_WORK_GROUP_WRAP(lid + 1, LOCAL_WORK_GROUP_SIZE, isLocalPowOfTwo);
     int neg_x_wrap = LOCAL_WORK_GROUP_WRAP(lid + (LOCAL_WORK_GROUP_SIZE - 1), LOCAL_WORK_GROUP_SIZE, isLocalPowOfTwo);
 
-    bool local_to_global = ((LOCAL_WORK_GROUP_SIZE/DOMAIN_CELLS_X) * DOMAIN_CELLS_X == LOCAL_WORK_GROUP_SIZE);
-//#if (LOCAL_WORK_GROUP_SIZE/DOMAIN_CELLS_X)*DOMAIN_CELLS_X == LOCAL_WORK_GROUP_SIZE
-#if local_to_global 
-    /*
-     * handle domain x-sizes specially if LOCAL_WORK_GROUP_SIZE is a multiple of DOMAIN_CELLS_X
-     * in this case, we dont have to read unaligned data!!!
-     */
-    int read_delta_neg_x = gid;
-    int read_delta_pos_x = gid;
-#else
-    /*
-     * cache variables for speedup
-     */
     int read_delta_neg_x = DOMAIN_WRAP(gid - lid + pos_x_wrap + DELTA_NEG_X, DOMAIN_CELLS, isDomainPowOfTwo);
     int read_delta_pos_x = DOMAIN_WRAP(gid - lid + neg_x_wrap + DELTA_POS_X, DOMAIN_CELLS, isDomainPowOfTwo);
-#endif
 
     /*
      * +++++++++++
@@ -656,12 +645,12 @@ __global__ void lbm_kernel_beta(
         case OBSTACLE: // in case of an obstacle, we bounce back the values
             // set to zero velocity and no fluid density
 
-        	if (storeVelocities)
-        	{
+            if (storeVelocities)
+            {
                 velocity_x = (T)0;
                 velocity_y = (T)0;
                 velocity_z = (T)0;
-        	}
+            }
 
             // use simple bounce back
             vela2 = dd1;    dd1 = dd0;      dd0 = vela2;
@@ -942,6 +931,9 @@ template __global__ void lbm_kernel_beta<float>(
         const float gravitation_y,
         const float gravitation_z,
         const float drivenCavityVelocity,
+        const int originX,
+        const int originY,
+        const int originZ,
         const int domainCells_x,
         const int domainCells_y,
         const int domainCells_z,
@@ -949,7 +941,7 @@ template __global__ void lbm_kernel_beta<float>(
         const bool isDomainPowOfTwo,
         const bool isLocalPowOfTwo,
         const bool storeDensities,
-		const bool storeVelocities);
+        const bool storeVelocities);
 template __global__ void lbm_kernel_beta<double>(
         double *global_dd,
         const Flag *flag_array,
@@ -960,6 +952,9 @@ template __global__ void lbm_kernel_beta<double>(
         const double gravitation_y,
         const double gravitation_z,
         const double drivenCavityVelocity,
+        const int originX,
+        const int originY,
+        const int originZ,
         const int domainCells_x,
         const int domainCells_y,
         const int domainCells_z,
@@ -967,4 +962,4 @@ template __global__ void lbm_kernel_beta<double>(
         const bool isDomainPowOfTwo,
         const bool isLocalPowOfTwo,
         const bool storeDensities,
-		const bool storeVelocities);
+        const bool storeVelocities);

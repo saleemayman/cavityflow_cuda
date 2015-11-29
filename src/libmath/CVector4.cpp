@@ -65,6 +65,14 @@ CVector<4, T>::CVector(const T v[4])
     data[3] = v[3];
 }
 
+template <class T>
+void CVector<4, T>::set(const T x0, const T x1, const T x2, const T x3)
+{
+    data[0] = x0;
+    data[1] = x1;
+    data[2] = x2;
+    data[3] = x3;
+}
 
 template <class T>
 void CVector<4, T>::setZero()
@@ -78,10 +86,10 @@ void CVector<4, T>::setZero()
 template <class T>
 int CVector<4, T>::getGlobalIdx(CVector<4, T>& size)
 {
-	assert(data[0] < size[0]);
-	assert(data[1] < size[1]);
-	assert(data[2] < size[2]);
-	assert(data[3] < size[3]);
+    assert(data[0] < size[0]);
+    assert(data[1] < size[1]);
+    assert(data[2] < size[2]);
+    assert(data[3] < size[3]);
 
     return (data[3] * size[1] * size[2] * size[3] + data[2] * size[1] * size[2] + data[1] * size[0] + data[0]);
 }

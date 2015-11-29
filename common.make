@@ -32,10 +32,10 @@ EXECUTABLE		:=	lbm
 ################################################################################
 
 # c/c++ source files (compiled with $(CC))
-CCFILES			:=	
+CCFILES			+=	
 
 # c/c++ source files (compiled with $(CXX))
-CXXFILES		:=	external/tinyxml2/tinyxml2.cpp \
+CXXFILES		+=	external/tinyxml2/tinyxml2.cpp \
 					src/cpukernels/CLbmInitCPU.cpp \
 					src/cpukernels/CLbmAlphaCPU.cpp \
 					src/cpukernels/CLbmBetaCPU.cpp \
@@ -43,7 +43,6 @@ CXXFILES		:=	external/tinyxml2/tinyxml2.cpp \
 					src/libmath/CVector2.cpp \
 					src/libmath/CVector3.cpp \
 					src/libmath/CVector4.cpp \
-					src/libvis/CLbmVisualizationNetCDF.cpp \
 					src/libvis/CLbmVisualizationVTK.cpp \
 					src/CConfiguration.cpp \
 					src/CComm.cpp \
@@ -55,7 +54,7 @@ CXXFILES		:=	external/tinyxml2/tinyxml2.cpp \
 					src/main.cpp
 
 # cuda source files (compiled with $(NVCC))
-CUDAFILES		:=	src/gpukernels/lbm_alpha.cu \
+CUDAFILES		+=	src/gpukernels/lbm_alpha.cu \
 					src/gpukernels/lbm_beta.cu \
 					src/gpukernels/lbm_init.cu \
 					src/CLbmSolverGPU.cu
