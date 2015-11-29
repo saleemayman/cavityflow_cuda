@@ -17,57 +17,60 @@
  * limitations under the License.
  */
 
-#ifndef LBM_INITCPU_HPP
-#define LBM_INITCPU_HPP
+#ifndef LBM_BETACPU_HPP
+#define LBM_BETACPU_HPP
 
 #include <vector>
+#include <algorithm>
 
+#include "../common.h"
 #include "../libmath/CVector.hpp"
 #include "../CDomain.hpp"
-#include "../common.h"
 
-template<typename T>
-class CLbmInitCPU
+template<class T>
+class CLbmBetaCPU
 {
 private:
     int domainCellsCPU;
     CVector<3, int> domainSize;
     CVector<3, int> domainSizeGPU; 
+    CVector<3, T> gravitation;
     CVector<3, int> innerCPULimit;
     CVector<3, int> outerCPULimit;
     std::vector<int> *localToGlobalIndexMap;
 
-    // declare simulation related variables
-    Flag flag;
-    Flag boundaryConditionRight;
-    Flag boundaryConditionLeft;
-    Flag boundaryConditionTop;
-    Flag boundaryConditionBottom;
-    Flag boundaryConditionFront;
-    Flag boundaryConditionBack;
+    int domainCells;
+    int domainCellsInXYPlane;
+    int deltaPosX, deltaNegX;
+    int deltaPosY, deltaNegY;
+    int deltaPosZ, deltaNegZ;
 
+    // physical variables
+    T vel2, vela2, vela_velb, vela_velb_2;
     T velocity_x, velocity_y, velocity_z;
-    T dd_param;
-    T rho;
-    T vela2;
-    T vela_velb;
-    T vela_velb_2;
+    T rho, dd_param;
+    T dd0, dd1, dd2, dd3, dd4, dd5, dd6, dd7, dd8, dd9;
+    T dd10, dd11, dd12, dd13, dd14, dd15, dd16, dd17, dd18;
 
-    void setFlags(std::vector<Flag> &flags);
-
+    int domainWrap(int A, int domainCells, bool isPowTwo);
 public:
-    CLbmInitCPU(
+    CLbmBetaCPU(
             CVector<3, int> domainSize,
             CVector<3, int> domainSizeGPU,
-            std::vector<Flag>& boundaryConditions);
-    ~CLbmInitCPU();
+            CVector<3, T> gravitation,
+            std::vector<int> *localToGlobalIndexMap);
+    ~CLbmBetaCPU();
 
-    void initLbm(
-        std::vector<T> &densityDistributions,
-        std::vector<Flag> &flags,
-        std::vector<T> &velocities,
-        std::vector<T> &densities,
-        const bool storeDensities,
-        const bool storeVelocities);
+    void betaKernelCPU(
+            std::vector<T> &densityDistributions,
+            std::vector<Flag> &flags,
+            std::vector<T> &velocities,
+            std::vector<T> &densities,
+            const T inv_tau,
+            const T drivenCavityVelocity,
+            const bool isDomainPowOfTwo,
+            const bool storeDensities,
+    		const bool storeVelocities);
+
 };
 #endif

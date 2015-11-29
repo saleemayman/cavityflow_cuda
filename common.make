@@ -38,6 +38,7 @@ CCFILES			:=
 CXXFILES		:=	external/tinyxml2/tinyxml2.cpp \
 					src/cpukernels/CLbmInitCPU.cpp \
 					src/cpukernels/CLbmAlphaCPU.cpp \
+					src/cpukernels/CLbmBetaCPU.cpp \
 					src/libmath/CMath.cpp \
 					src/libmath/CVector2.cpp \
 					src/libmath/CVector3.cpp \

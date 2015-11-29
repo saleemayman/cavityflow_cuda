@@ -31,11 +31,11 @@ CLbmAlphaCPU<T>::CLbmAlphaCPU(
     domainCellsCPU = domainSize.elements() - domainSizeGPU.elements();    
 
     // limits of the inner GPU domain w.r.t the CPU domain
-    innerCPULimit[0] = (domainSize[0] - domainSizeGPU[0]) / 2;
+    innerCPULimit[0] = (domainSize[0] - domainSizeGPU[0]) / 2 - 1;
     outerCPULimit[0] = innerCPULimit[0] + domainSizeGPU[0] + 1;
-    innerCPULimit[1] = (domainSize[1] - domainSizeGPU[1]) / 2;
+    innerCPULimit[1] = (domainSize[1] - domainSizeGPU[1]) / 2 - 1;
     outerCPULimit[1] = innerCPULimit[1] + domainSizeGPU[1] + 1;
-    innerCPULimit[2] = (domainSize[2] - domainSizeGPU[2]) / 2;
+    innerCPULimit[2] = (domainSize[2] - domainSizeGPU[2]) / 2 - 1;
     outerCPULimit[2] = innerCPULimit[2] + domainSizeGPU[2] + 1;
 }
 
