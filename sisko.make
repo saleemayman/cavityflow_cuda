@@ -8,12 +8,15 @@ CCLIBDIR			:=
 CXXLIBDIR			:= 
 CUDALIBDIR			:=	
 
-CCINCLUDES			:=	-I/usr/include \
-						-I/usr/lib/openmpi/include
-CXXINCLUDES			:=	-I/usr/include \
-						-I/usr/lib/openmpi/include
-CUDAINCLUDES		:=	-I/usr/include \
-						-I/usr/lib/openmpi/include
+CCINCLUDES			:=	
+ifeq ($(USE_MPI), 1)
+CCINCLUDES			+=	-I/usr/lib/openmpi/include
+endif
+CXXINCLUDES			:=	
+ifeq ($(USE_MPI), 1)
+CXXINCLUDES			+=	-I/usr/lib/openmpi/include
+endif
+CUDAINCLUDES		:=	
 
 CCLIB				:=	
 CXXLIB				:=	
@@ -25,10 +28,24 @@ COMPUTE_CAPABILITY	:=	20
 # compilers and linkers
 ################################################################################
 
+ifeq ($(USE_MPI), 1)
+CC					:=	mpicc
+else
 CC					:=	gcc
+endif
+
+ifeq ($(USE_MPI), 1)
+CXX					:=	mpicxx
+else
 CXX					:=	g++
+endif
 NVCC				:=	$(CUDAINSTALLPATH)/bin/nvcc
+
+ifeq ($(USE_MPI), 1)
+LINKER				:=	mpicxx
+else
 LINKER				:=	g++
+endif
 NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 
 ################################################################################
@@ -49,6 +66,7 @@ CXXFLAGS			:=	-O3 \
 #       which can then be linked together.
 NVCCFLAGS			:=	-O3 \
 						-gencode arch=compute_$(COMPUTE_CAPABILITY),code=sm_$(COMPUTE_CAPABILITY) \
+#						--ptxas-options -v
 #						-Xcompiler "-std=c++11"
 
 ################################################################################

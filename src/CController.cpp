@@ -25,11 +25,7 @@
 #include <typeinfo>
 #include <sys/time.h>
 
-#ifdef PAR_NETCDF
 #include "libvis/CLbmVisualizationNetCDF.hpp"
-#else
-#include "libvis/CLbmVisualizationVTK.hpp"
-#endif
 
 template <class T>
 CController<T>::CController(
@@ -98,20 +94,21 @@ CController<T>::CController(
 #endif
 
     if (this->configuration->doVisualization)
-#ifdef PAR_NETCDF
-        visualization = new CLbmVisualizationNetCDF<T>(
-                id,
-                this->configuration->visualizationRate,
-                getSolver(),
-                this->configuration->numOfSubdomains,
-                this->configuration->visualizationOutputDir);
-#else
+    	/*
         visualization = new CLbmVisualizationVTK<T>(
                 id,
                 this->configuration->visualizationRate,
                 getSolver(),
                 this->configuration->visualizationOutputDir);
+        */
+        visualization = new CLbmVisualizationNetCDF<T>(
+                id,
+                this->configuration->visualizationRate,
+                getSolver(),
+#if defined(USE_MPI) && defined(PAR_NETCDF)
+                this->configuration->numOfSubdomains,
 #endif
+                this->configuration->visualizationOutputDir);
 }
 
 template <class T>

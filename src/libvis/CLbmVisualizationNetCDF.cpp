@@ -22,19 +22,21 @@
 #include <cstdio>
 #include <typeinfo>
 
+#if defined(USE_MPI) && defined(PAR_NETCDF)
 #include <mpi.h>
+#endif
 
 template <class T>
 CLbmVisualizationNetCDF<T>::CLbmVisualizationNetCDF(
         int id,
         int visualizationRate,
         CLbmSolver<T>* solver,
-#ifdef PAR_NETCDF
+#if defined(USE_MPI) && defined(PAR_NETCDF)
         CVector<3, int> numOfSubdomains,
 #endif
         std::string filePath) :
         CLbmVisualization<T>(id, visualizationRate, solver),
-#ifdef PAR_NETCDF
+#if defined(USE_MPI) && defined(PAR_NETCDF)
         numOfSubdomains(numOfSubdomains),
 #endif
         filePath(filePath)
@@ -46,7 +48,7 @@ void CLbmVisualizationNetCDF<T>::openFile(int iteration)
 {
     int error;
     std::stringstream fileName;
-#ifdef PAR_NETCDF
+#if defined(USE_MPI) && defined(PAR_NETCDF)
     fileName << filePath << "/visualization_" << iteration << ".nc";
     error = nc_create_par(fileName.str().c_str(), NC_CLOBBER | NC_NETCDF4 | NC_MPIIO, MPI_COMM_WORLD, MPI_INFO_NULL, &fileId);
 #else
@@ -57,7 +59,7 @@ void CLbmVisualizationNetCDF<T>::openFile(int iteration)
     if (error)
     {
         std::cerr << "----- CLbmVisualizationNetCDF<T>::openFile() -----" << std::endl;
-#ifdef PAR_NETCDF
+#if defined(USE_MPI) && defined(PAR_NETCDF)
         std::cerr << "An error occurred while opening parallel netCDF file \"" << fileName.str() << "\"" << std::endl;std::cerr << nc_strerror(error) << std::endl;
 #else
         std::cerr << "An error occurred while opening serial netCDF file \"" << fileName.str() << "\"" << std::endl;std::cerr << nc_strerror(error) << std::endl;
@@ -103,7 +105,7 @@ void CLbmVisualizationNetCDF<T>::defineData()
      * hand, since that's exactly the way how our data is stored, no final
      * matrix inversion is necessary.
      */
-#ifdef PAR_NETCDF
+#if defined(USE_MPI) && defined(PAR_NETCDF)
     nc_def_dim(fileId, "x", numOfSubdomains[0] * solver->getDomain()->getSize()[0], &dimIds[2]);
     nc_def_dim(fileId, "y", numOfSubdomains[1] * solver->getDomain()->getSize()[1], &dimIds[1]);
     nc_def_dim(fileId, "z", numOfSubdomains[2] * solver->getDomain()->getSize()[2], &dimIds[0]);
@@ -143,7 +145,7 @@ void CLbmVisualizationNetCDF<T>::defineData()
 
     nc_enddef(fileId);
 
-#ifdef PAR_NETCDF
+#if defined(USE_MPI) && defined(PAR_NETCDF)
     nc_var_par_access(fileId, flagsVarId, NC_INDEPENDENT);
     nc_var_par_access(fileId, densitiesVarId, NC_INDEPENDENT);
     nc_var_par_access(fileId, velocitiesVarId[0], NC_INDEPENDENT);
@@ -157,7 +159,7 @@ void CLbmVisualizationNetCDF<T>::writeData()
 {
     if (id == 0)
     {
-#ifdef PAR_NETCDF
+#if defined(USE_MPI) && defined(PAR_NETCDF)
         T x[numOfSubdomains[0] * solver->getDomain()->getSize()[0]];
         T y[numOfSubdomains[1] * solver->getDomain()->getSize()[1]];
         T z[numOfSubdomains[2] * solver->getDomain()->getSize()[2]];
@@ -167,7 +169,7 @@ void CLbmVisualizationNetCDF<T>::writeData()
         T z[solver->getDomain()->getSize()[2]];
 #endif
 
-#ifdef PAR_NETCDF
+#if defined(USE_MPI) && defined(PAR_NETCDF)
         for (int i = 0; i < numOfSubdomains[0] * solver->getDomain()->getSize()[0]; i++)
 #else
         for (int i = 0; i < solver->getDomain()->getSize()[0]; i++)
@@ -175,7 +177,7 @@ void CLbmVisualizationNetCDF<T>::writeData()
         {
             x[i] = ((T)i + (T)0.5) * solver->getDomain()->getLength()[0] / (T)solver->getDomain()->getSize()[0];
         }
-#ifdef PAR_NETCDF
+#if defined(USE_MPI) && defined(PAR_NETCDF)
         for (int i = 0; i < numOfSubdomains[1] * solver->getDomain()->getSize()[1]; i++)
 #else
         for (int i = 0; i < solver->getDomain()->getSize()[1]; i++)
@@ -183,7 +185,7 @@ void CLbmVisualizationNetCDF<T>::writeData()
         {
             y[i] = ((T)i + (T)0.5) * solver->getDomain()->getLength()[1] / (T)solver->getDomain()->getSize()[1];
         }
-#ifdef PAR_NETCDF
+#if defined(USE_MPI) && defined(PAR_NETCDF)
         for (int i = 0; i < numOfSubdomains[2] * solver->getDomain()->getSize()[2]; i++)
 #else
         for (int i = 0; i < solver->getDomain()->getSize()[2]; i++)

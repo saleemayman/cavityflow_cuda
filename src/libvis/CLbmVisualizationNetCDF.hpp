@@ -25,7 +25,7 @@
 #include <fstream>
 #include <sstream>
 
-#ifdef PAR_NETCDF
+#if defined(USE_MPI) && defined(PAR_NETCDF)
 #include "netcdf_par.h"
 #endif
 #include <netcdf.h>
@@ -43,7 +43,7 @@ private:
     using CLbmVisualization<T>::velocities;
     using CLbmVisualization<T>::solver;
 
-#ifdef PAR_NETCDF
+#if defined(USE_MPI) && defined(PAR_NETCDF)
     CVector<3, int> numOfSubdomains;
 #endif
     std::string filePath;
@@ -59,7 +59,7 @@ private:
     void writeData();
 
 public:
-#ifdef PAR_NETCDF
+#if defined(USE_MPI) && defined(PAR_NETCDF)
     CLbmVisualizationNetCDF(int id, int visualizationRate, CLbmSolver<T>* solver, CVector<3, int> numOfSubdomains, std::string filePath);
 #else
     CLbmVisualizationNetCDF(int id, int visualizationRate, CLbmSolver<T>* solver, std::string filePath);

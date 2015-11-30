@@ -8,10 +8,14 @@ CCLIBDIR			:=	-L$(NETCDF_LIBDIR)
 CXXLIBDIR			:=	-L$(NETCDF_LIBDIR)
 CUDALIBDIR			:=	
 
-CCINCLUDES			:=	$(MPI_INC) \
-						$(NETCDF_INC)
-CXXINCLUDES			:=	$(MPI_INC) \
-						$(NETCDF_INC)
+CCINCLUDES			:=	$(NETCDF_INC)
+ifeq ($(USE_MPI), 1)
+CCINCLUDES			+=	$(MPI_INC)
+endif
+CXXINCLUDES			:=	$(NETCDF_INC)
+ifeq ($(USE_MPI), 1)
+CXXINCLUDES			+=	$(MPI_INC)
+endif
 CUDAINCLUDES		:=	
 
 CCLIB				:=	
@@ -21,26 +25,27 @@ CUDALIB				:=
 COMPUTE_CAPABILITY	:=	20
 
 ################################################################################
-# source files
-################################################################################
-
-# c/c++ source files (compiled with $(CC))
-CCFILES				:=	
-
-# c/c++ source files (compiled with $(CXX))
-CXXFILES			:=	src/libvis/CLbmVisualizationNetCDF.cpp \
-
-# cuda source files (compiled with $(NVCC))
-CUDAFILES			:=	
-
-################################################################################
 # compilers and linkers
 ################################################################################
 
+ifeq ($(USE_MPI), 1)
 CC					:=	mpicc
+else
+CC					:=	gcc
+endif
+
+ifeq ($(USE_MPI), 1)
 CXX					:=	mpicxx
+else
+CXX					:=	g++
+endif
 NVCC				:=	$(CUDAINSTALLPATH)/bin/nvcc
+
+ifeq ($(USE_MPI), 1)
 LINKER				:=	mpicxx
+else
+LINKER				:=	g++
+endif
 NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 
 ################################################################################
@@ -48,12 +53,8 @@ NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 ################################################################################
 
 CCFLAGS				:=	-O3 \
-						-D PAR_NETCDF \
-						-D USE_MPI \
 #						-std=c0x
 CXXFLAGS			:=	-O3 \
-						-D PAR_NETCDF \
-						-D USE_MPI \
 #						-std=c++0x
 
 # arch: specifies the compatibility from source code to PTX stage. Can be a
@@ -65,8 +66,7 @@ CXXFLAGS			:=	-O3 \
 #       which can then be linked together.
 NVCCFLAGS			:=	-O3 \
 						-gencode arch=compute_$(COMPUTE_CAPABILITY),code=sm_$(COMPUTE_CAPABILITY) \
-						-D PAR_NETCDF \
-						-D USE_MPI \
+#						--ptxas-options -v
 #						-Xcompiler "-std=c++0x"
 
 ################################################################################

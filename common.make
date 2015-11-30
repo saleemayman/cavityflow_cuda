@@ -32,10 +32,10 @@ EXECUTABLE		:=	lbm
 ################################################################################
 
 # c/c++ source files (compiled with $(CC))
-CCFILES			+=	
+CCFILES			:=	
 
 # c/c++ source files (compiled with $(CXX))
-CXXFILES		+=	external/tinyxml2/tinyxml2.cpp \
+CXXFILES		:=	external/tinyxml2/tinyxml2.cpp \
 					src/cpukernels/CLbmInitCPU.cpp \
 					src/cpukernels/CLbmAlphaCPU.cpp \
 					src/cpukernels/CLbmBetaCPU.cpp \
@@ -43,6 +43,7 @@ CXXFILES		+=	external/tinyxml2/tinyxml2.cpp \
 					src/libmath/CVector2.cpp \
 					src/libmath/CVector3.cpp \
 					src/libmath/CVector4.cpp \
+					src/libvis/CLbmVisualizationNetCDF.cpp \
 					src/libvis/CLbmVisualizationVTK.cpp \
 					src/CConfiguration.cpp \
 					src/CComm.cpp \
@@ -54,7 +55,7 @@ CXXFILES		+=	external/tinyxml2/tinyxml2.cpp \
 					src/main.cpp
 
 # cuda source files (compiled with $(NVCC))
-CUDAFILES		+=	src/gpukernels/lbm_alpha.cu \
+CUDAFILES		:=	src/gpukernels/lbm_alpha.cu \
 					src/gpukernels/lbm_beta.cu \
 					src/gpukernels/lbm_init.cu \
 					src/CLbmSolverGPU.cu
@@ -64,7 +65,20 @@ CUDAFILES		+=	src/gpukernels/lbm_alpha.cu \
 ################################################################################
 
 CCFLAGS			+=	-Wall
+ifeq ($(USE_MPI), 1)
+CCFLAGS			+=	-D USE_MPI
+endif
+ifeq ($(PAR_NETCDF), 1)
+CCFLAGS			+=	-D PAR_NETCDF
+endif
+
 CXXFLAGS		+=	-Wall
+ifeq ($(USE_MPI), 1)
+CXXFLAGS		+=	-D USE_MPI
+endif
+ifeq ($(PAR_NETCDF), 1)
+CXXFLAGS		+=	-D PAR_NETCDF
+endif
 
 # arch: specifies the compatibility from source code to PTX stage. Can be a
 #       virtual (compute_*) or real (sm_*) compatibility.
@@ -76,8 +90,13 @@ CXXFLAGS		+=	-Wall
 NVCCFLAGS		+=	-lineinfo \
 					-rdc=true \
 					-use_fast_math \
-					--compiler-options -Wall \
-#					--ptxas-options -v
+					--compiler-options -Wall
+ifeq ($(USE_MPI), 1)
+NVCCFLAGS		+=	-D USE_MPI
+endif
+ifeq ($(PAR_NETCDF), 1)
+NVCCFLAGS		+=	-D PAR_NETCDF
+endif
 
 ################################################################################
 # linker arguments and flags

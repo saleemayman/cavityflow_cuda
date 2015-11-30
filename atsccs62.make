@@ -8,10 +8,14 @@ CCLIBDIR			:=	-L/opt/netcdf/4.3.3.1/lib
 CXXLIBDIR			:=	-L/opt/netcdf/4.3.3.1/lib
 CUDALIBDIR			:=	
 
-CCINCLUDES			:=	-I/usr/lib/openmpi/include \
-						-I/opt/netcdf/4.3.3.1/include
-CXXINCLUDES			:=	-I/usr/lib/openmpi/include \
-						-I/opt/netcdf/4.3.3.1/include
+CCINCLUDES			:=	-I/opt/netcdf/4.3.3.1/include
+ifeq ($(USE_MPI), 1)
+CCINCLUDES			+=	-I/usr/lib/openmpi/include
+endif
+CXXINCLUDES			:=	-I/opt/netcdf/4.3.3.1/include
+ifeq ($(USE_MPI), 1)
+CXXINCLUDES			+=	-I/usr/lib/openmpi/include
+endif
 CUDAINCLUDES		:=	
 
 CCLIB				:=	
@@ -24,10 +28,24 @@ COMPUTE_CAPABILITY	:=	50
 # compilers and linkers
 ################################################################################
 
+ifeq ($(USE_MPI), 1)
+CC					:=	mpicc
+else
 CC					:=	gcc
+endif
+
+ifeq ($(USE_MPI), 1)
+CXX					:=	mpicxx
+else
 CXX					:=	g++
+endif
 NVCC				:=	$(CUDAINSTALLPATH)/bin/nvcc
+
+ifeq ($(USE_MPI), 1)
+LINKER				:=	mpicxx
+else
 LINKER				:=	g++
+endif
 NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 
 ################################################################################
@@ -48,6 +66,8 @@ CXXFLAGS			:=	-O3 \
 #       which can then be linked together.
 NVCCFLAGS			:=	-O3 \
 						-gencode arch=compute_$(COMPUTE_CAPABILITY),code=sm_$(COMPUTE_CAPABILITY) \
+						-maxrregcount=64 \
+#						--ptxas-options -v
 #						-Xcompiler "-std=c++11"
 
 ################################################################################
