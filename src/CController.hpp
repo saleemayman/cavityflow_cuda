@@ -33,9 +33,6 @@
 #include "CLbmSolverCPU.hpp"
 #include "CLbmSolverGPU.cuh"
 
-#define MPI_TAG_ALPHA_SYNC  0
-#define MPI_TAG_BETA_SYNC   1
-
 /*
  * Class CConroller is responsible for controlling and managing of simulation and visualization
  * of a subdomain from the whole grid.

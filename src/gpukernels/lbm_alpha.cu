@@ -208,9 +208,9 @@ __global__ void lbm_kernel_alpha(
     {
         case FLUID:    // this is the whole collision operator
             vel2 = velocity_x*velocity_x + velocity_y*velocity_y + velocity_z*velocity_z;
-            dd_param = rho - (T)(3.0f/2.0f)*(vel2);
+            dd_param = rho - ((T)3/(T)2)*vel2;
 
-            tmp = gravitation_x*(T)(1.0f/18.0f)*rho;
+            tmp = gravitation_x*((T)1/(T)18)*rho;
             vela2 = velocity_x*velocity_x;
             dd1 += inv_tau*(eq_dd_a1(velocity_x, vela2, dd_param) - dd1);
             dd1 -= tmp;
@@ -220,7 +220,7 @@ __global__ void lbm_kernel_alpha(
             dd0 += tmp;
             *current_dds = dd0;     current_dds += DOMAIN_CELLS;
 
-            tmp = gravitation_y*(T)(-1.0f/18.0f)*rho;
+            tmp = gravitation_y*((T)-1/(T)18)*rho;
             vela2 = velocity_y*velocity_y;
             dd3 += inv_tau*(eq_dd_a1(velocity_y, vela2, dd_param) - dd3);
             dd3 -= tmp;
@@ -318,7 +318,7 @@ __global__ void lbm_kernel_alpha(
              ***********************/
             vela2 = velocity_z*velocity_z;
 
-            tmp = gravitation_z*(T)(1.0f/18.0f)*rho;
+            tmp = gravitation_z*((T)1/(T)18)*rho;
             dd17 += inv_tau*(eq_dd_a1(velocity_z, vela2, dd_param) - dd17);
             dd17 -= tmp;
             *current_dds = dd17;        current_dds += DOMAIN_CELLS;
@@ -497,7 +497,7 @@ __global__ void lbm_kernel_alpha(
              ***********************/
             vela2 = velocity_z*velocity_z;
 
-            tmp = gravitation_z*(T)(1.0f/18.0f)*rho;
+            tmp = gravitation_z*((T)1/(T)18)*rho;
             dd17 = eq_dd_a1(velocity_z, vela2, dd_param);
             dd17 -= tmp;
             *current_dds = dd17;        current_dds += DOMAIN_CELLS;

@@ -30,15 +30,15 @@ __device__ size_t DOMAIN_WRAP(size_t A, size_t DOMAIN_CELLS, bool isPowTwo)
     return ( (int)isPowTwo*(A & (DOMAIN_CELLS-1)) + (int)(!isPowTwo)*(A % DOMAIN_CELLS) );
 }
 
-__device__ size_t LOCAL_WORK_GROUP_WRAP(size_t A, size_t LOCAL_WORK_GROUP_SIZE, bool isPowTwo)
+__device__ size_t LOCAL_WORK_GROUP_WRAP(size_t A, size_t localWorkGroup, bool isPowTwo)
 {
-    return ( (int)isPowTwo * (A & (LOCAL_WORK_GROUP_SIZE-1)) + (int)(!isPowTwo) * (A % LOCAL_WORK_GROUP_SIZE) );
+    return ( (int)isPowTwo * (A & (localWorkGroup-1)) + (int)(!isPowTwo) * (A % localWorkGroup) );
 }
 
 template<typename T>
 __global__ void lbm_kernel_beta(
         T *global_dd,                 // density distributions
-        const Flag *flag_array,        // flags
+        const Flag *flag_array,       // flags
         T *velocity,                  // velocities
         T *density,                   // densities
         const T inv_tau,
@@ -49,29 +49,25 @@ __global__ void lbm_kernel_beta(
         const int originX,
         const int originY,
         const int originZ,
-        const int domainCells_x,
-        const int domainCells_y,
-        const int domainCells_z,
+        const int sizeX,
+        const int sizeY,
+        const int sizeZ,
+        const int domainCellsX,
+        const int domainCellsY,
+        const int domainCellsZ,
         const size_t localWorkGroup,
         const bool isDomainPowOfTwo,
         const bool isLocalPowOfTwo,
         const bool storeDensities,
         const bool storeVelocities)
 {
-    //const size_t gid = get_global_id(0);
-    const int DOMAIN_CELLS_X = domainCells_x;
-
-#if USE_SHARED_MEMORY
-    size_t LOCAL_WORK_GROUP_SIZE = localWorkGroup;
-#endif
-
-    size_t DOMAIN_CELLS = domainCells_x * domainCells_y * domainCells_z;
-    size_t DOMAIN_SLICE_CELLS = domainCells_x * domainCells_y;
+    size_t DOMAIN_CELLS = domainCellsX * domainCellsY * domainCellsZ;
+    size_t DOMAIN_SLICE_CELLS = domainCellsX * domainCellsY;
 
     int DELTA_POS_X = 1;
     size_t DELTA_NEG_X = DOMAIN_CELLS - 1;
-    int DELTA_POS_Y = DOMAIN_CELLS_X;
-    size_t DELTA_NEG_Y = DOMAIN_CELLS - DOMAIN_CELLS_X;
+    int DELTA_POS_Y = domainCellsX;
+    size_t DELTA_NEG_Y = DOMAIN_CELLS - domainCellsX;
     size_t DELTA_POS_Z = DOMAIN_SLICE_CELLS;
     size_t DELTA_NEG_Z = DOMAIN_CELLS - DOMAIN_SLICE_CELLS;
 
@@ -84,6 +80,25 @@ __global__ void lbm_kernel_beta(
 
     // load cell type flag
     const int flag = flag_array[gid];
+
+	/*
+    const unsigned int DOMAIN_CELLS = domainCellsX * domainCellsY * domainCellsZ;
+
+    const unsigned int X = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned int Y = blockIdx.y * blockDim.y + threadIdx.y;
+    const unsigned int Z = blockIdx.z * blockDim.z + threadIdx.z;
+    const unsigned int gid = (originZ + Z) * (domainCellsX * domainCellsY) + (originY + Y) * domainCellsX + (originX + X);
+
+    if (gid >= DOMAIN_CELLS)
+        return;
+
+    if (X >= sizeX || Y >= sizeY || Z >= sizeZ)
+        return;
+
+    Flag flag = flag_array[gid];
+    if  (flag == GHOST_LAYER)
+        return;
+    */
 
     /**
      * we use a pointer instead of accessing the array directly
@@ -238,7 +253,7 @@ __global__ void lbm_kernel_beta(
     rho += dd18;
 
 #else
-    //__local T dd_buf[12][LOCAL_WORK_GROUP_SIZE];
+    //__local T dd_buf[12][localWorkGroup];
     // extern __shared__ T dd_buf[];
     SharedMemory<T> smem;
     T* dd_buf = smem.getPointer();
@@ -271,7 +286,7 @@ __global__ void lbm_kernel_beta(
      *
      * As an example, we handle the access to the density distributions with a shift of -1:
      *
-     * We use "(( (lid + 1) mod LOCAL_WORK_GROUP_SIZE) + (DOMAIN_CELLS+1)) mod DOMAIN_CELLS" as the reading index
+     * We use "(( (lid + 1) mod localWorkGroup) + (DOMAIN_CELLS+1)) mod DOMAIN_CELLS" as the reading index
      *          shift to right                              shift back
      *
      * This allows us to read almost everything (except the first thread) aligned. After that the data is stored
@@ -280,7 +295,7 @@ __global__ void lbm_kernel_beta(
      *
      * Every float is stored to a local memory array indexed by the thread id.
      * after the dd's are read from global memory, the local memory is accessed with
-     * "(lid + (LOCAL_WORK_GROUP_SIZE-1)) mod LOCAL_WORK_GROUP_SIZE"
+     * "(lid + (localWorkGroup-1)) mod localWorkGroup"
      */
 
     /*
@@ -293,8 +308,8 @@ __global__ void lbm_kernel_beta(
      * gid_pos:     0 1 2 3 4 5 ... -1   <<< !!!
      */
 
-    int pos_x_wrap = LOCAL_WORK_GROUP_WRAP(lid + 1, LOCAL_WORK_GROUP_SIZE, isLocalPowOfTwo);
-    int neg_x_wrap = LOCAL_WORK_GROUP_WRAP(lid + (LOCAL_WORK_GROUP_SIZE - 1), LOCAL_WORK_GROUP_SIZE, isLocalPowOfTwo);
+    int pos_x_wrap = LOCAL_WORK_GROUP_WRAP(lid + 1, localWorkGroup, isLocalPowOfTwo);
+    int neg_x_wrap = LOCAL_WORK_GROUP_WRAP(lid + (localWorkGroup - 1), localWorkGroup, isLocalPowOfTwo);
 
     int read_delta_neg_x = DOMAIN_WRAP(gid - lid + pos_x_wrap + DELTA_NEG_X, DOMAIN_CELLS, isDomainPowOfTwo);
     int read_delta_pos_x = DOMAIN_WRAP(gid - lid + neg_x_wrap + DELTA_POS_X, DOMAIN_CELLS, isDomainPowOfTwo);
@@ -322,13 +337,13 @@ __global__ void lbm_kernel_beta(
     //__local T *dd_buf_lid = &dd_buf[1][lid];
     //extern __shared__    T dd_buf_lid[1];
     //T *dd_buf_lid = &dd_buf[1][lid];
-    T *dd_buf_lid = &dd_buf[1 * LOCAL_WORK_GROUP_SIZE + lid];
+    T *dd_buf_lid = &dd_buf[1 * localWorkGroup + lid];
 
 #define dd_read_delta_position_0    read_delta_neg_x
 #define dd_read_delta_position_1    read_delta_pos_x
 
-    *dd_buf_lid = current_dds[dd_read_delta_position_1];        current_dds += DOMAIN_CELLS;    dd_buf_lid -= LOCAL_WORK_GROUP_SIZE;
-    *dd_buf_lid = current_dds[dd_read_delta_position_0];        current_dds += DOMAIN_CELLS;    dd_buf_lid += 5*LOCAL_WORK_GROUP_SIZE;
+    *dd_buf_lid = current_dds[dd_read_delta_position_1];        current_dds += DOMAIN_CELLS;    dd_buf_lid -= localWorkGroup;
+    *dd_buf_lid = current_dds[dd_read_delta_position_0];        current_dds += DOMAIN_CELLS;    dd_buf_lid += 5*localWorkGroup;
 #if CACHED_ACCESS
     dd_read_delta_position_3 = DOMAIN_WRAP(gid + DELTA_POS_Y, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
@@ -352,12 +367,12 @@ __global__ void lbm_kernel_beta(
     __syncthreads();
 
     //dd0 = dd_buf[0][neg_x_wrap];
-    dd0 = dd_buf[0 * LOCAL_WORK_GROUP_SIZE + neg_x_wrap];
+    dd0 = dd_buf[0 * localWorkGroup + neg_x_wrap];
     rho += dd0;
     velocity_x = dd0;
 
     //dd1 = dd_buf[1][pos_x_wrap];
-    dd1 = dd_buf[1 * LOCAL_WORK_GROUP_SIZE + pos_x_wrap];
+    dd1 = dd_buf[1 * localWorkGroup + pos_x_wrap];
     rho += dd1;
     velocity_x -= dd1;
 
@@ -373,53 +388,53 @@ __global__ void lbm_kernel_beta(
 #else
     #define dd_read_delta_position_5    DOMAIN_WRAP(read_delta_pos_x + DELTA_POS_Y, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
-    *dd_buf_lid = current_dds[dd_read_delta_position_5];    current_dds += DOMAIN_CELLS;    dd_buf_lid -= LOCAL_WORK_GROUP_SIZE;
+    *dd_buf_lid = current_dds[dd_read_delta_position_5];    current_dds += DOMAIN_CELLS;    dd_buf_lid -= localWorkGroup;
 
 #if CACHED_ACCESS
     dd_read_delta_position_4 = DOMAIN_WRAP(read_delta_neg_x + DELTA_NEG_Y, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
     #define dd_read_delta_position_4    DOMAIN_WRAP(read_delta_neg_x + DELTA_NEG_Y, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
-    *dd_buf_lid = current_dds[dd_read_delta_position_4];    current_dds += DOMAIN_CELLS;    dd_buf_lid += 3*LOCAL_WORK_GROUP_SIZE;
+    *dd_buf_lid = current_dds[dd_read_delta_position_4];    current_dds += DOMAIN_CELLS;    dd_buf_lid += 3*localWorkGroup;
 
 #if CACHED_ACCESS
     dd_read_delta_position_7 = DOMAIN_WRAP(read_delta_pos_x + DELTA_NEG_Y, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
     #define dd_read_delta_position_7    DOMAIN_WRAP(read_delta_pos_x + DELTA_NEG_Y, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
-    *dd_buf_lid = current_dds[dd_read_delta_position_7];    current_dds += DOMAIN_CELLS;    dd_buf_lid -= LOCAL_WORK_GROUP_SIZE;
+    *dd_buf_lid = current_dds[dd_read_delta_position_7];    current_dds += DOMAIN_CELLS;    dd_buf_lid -= localWorkGroup;
 
 #if CACHED_ACCESS
     dd_read_delta_position_6 = DOMAIN_WRAP(read_delta_neg_x + DELTA_POS_Y, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
     #define dd_read_delta_position_6    DOMAIN_WRAP(read_delta_neg_x + DELTA_POS_Y, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
-    *dd_buf_lid = current_dds[dd_read_delta_position_6];    current_dds += DOMAIN_CELLS;    dd_buf_lid += 3*LOCAL_WORK_GROUP_SIZE;
+    *dd_buf_lid = current_dds[dd_read_delta_position_6];    current_dds += DOMAIN_CELLS;    dd_buf_lid += 3*localWorkGroup;
 
     //barrier(CLK_LOCAL_MEM_FENCE);
     __syncthreads();
 
     //dd4 = dd_buf[4][neg_x_wrap];
-    dd4 = dd_buf[4 * LOCAL_WORK_GROUP_SIZE + neg_x_wrap];
+    dd4 = dd_buf[4 * localWorkGroup + neg_x_wrap];
     rho += dd4;
     velocity_x += dd4;
     velocity_y += dd4;
 
     //dd5 = dd_buf[5][pos_x_wrap];
-    dd5 = dd_buf[5 * LOCAL_WORK_GROUP_SIZE + pos_x_wrap];
+    dd5 = dd_buf[5 * localWorkGroup + pos_x_wrap];
     rho += dd5;
     velocity_x -= dd5;
     velocity_y -= dd5;
 
 
     //dd6 = dd_buf[6][neg_x_wrap];
-    dd6 = dd_buf[6 * LOCAL_WORK_GROUP_SIZE + neg_x_wrap];
+    dd6 = dd_buf[6 * localWorkGroup + neg_x_wrap];
     rho += dd6;
     velocity_x += dd6;
     velocity_y -= dd6;
 
     //dd7 = dd_buf[7][pos_x_wrap];
-    dd7 = dd_buf[7 * LOCAL_WORK_GROUP_SIZE + pos_x_wrap];
+    dd7 = dd_buf[7 * localWorkGroup + pos_x_wrap];
     rho += dd7;
     velocity_x -= dd7;
     velocity_y += dd7;
@@ -437,21 +452,21 @@ __global__ void lbm_kernel_beta(
 #else
     #define dd_read_delta_position_9    DOMAIN_WRAP(read_delta_pos_x + DELTA_POS_Z, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
-    *dd_buf_lid = current_dds[dd_read_delta_position_9];    current_dds += DOMAIN_CELLS;    dd_buf_lid -= LOCAL_WORK_GROUP_SIZE;
+    *dd_buf_lid = current_dds[dd_read_delta_position_9];    current_dds += DOMAIN_CELLS;    dd_buf_lid -= localWorkGroup;
 
 #if CACHED_ACCESS
     dd_read_delta_position_8 = DOMAIN_WRAP(read_delta_neg_x + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
     #define dd_read_delta_position_8    DOMAIN_WRAP(read_delta_neg_x + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
-    *dd_buf_lid = current_dds[dd_read_delta_position_8];    current_dds += DOMAIN_CELLS;    dd_buf_lid += 3*LOCAL_WORK_GROUP_SIZE;
+    *dd_buf_lid = current_dds[dd_read_delta_position_8];    current_dds += DOMAIN_CELLS;    dd_buf_lid += 3*localWorkGroup;
 
 #if CACHED_ACCESS
     dd_read_delta_position_11 = DOMAIN_WRAP(read_delta_pos_x + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo);
 #else
     #define dd_read_delta_position_11   DOMAIN_WRAP(read_delta_pos_x + DELTA_NEG_Z, DOMAIN_CELLS, isDomainPowOfTwo)
 #endif
-    *dd_buf_lid = current_dds[dd_read_delta_position_11];   current_dds += DOMAIN_CELLS;    dd_buf_lid -= LOCAL_WORK_GROUP_SIZE;
+    *dd_buf_lid = current_dds[dd_read_delta_position_11];   current_dds += DOMAIN_CELLS;    dd_buf_lid -= localWorkGroup;
 
 #if CACHED_ACCESS
     dd_read_delta_position_10 = DOMAIN_WRAP(read_delta_neg_x + DELTA_POS_Z, DOMAIN_CELLS, isDomainPowOfTwo);
@@ -465,25 +480,25 @@ __global__ void lbm_kernel_beta(
     __syncthreads();
 
     //dd8 = dd_buf[8][neg_x_wrap];
-    dd8 = dd_buf[8 * LOCAL_WORK_GROUP_SIZE + neg_x_wrap];
+    dd8 = dd_buf[8 * localWorkGroup + neg_x_wrap];
     rho += dd8;
     velocity_x += dd8;
     velocity_z = dd8;
 
     //dd9 = dd_buf[9][pos_x_wrap];
-    dd9 = dd_buf[9 * LOCAL_WORK_GROUP_SIZE + pos_x_wrap];
+    dd9 = dd_buf[9 * localWorkGroup + pos_x_wrap];
     rho += dd9;
     velocity_x -= dd9;
     velocity_z -= dd9;
 
     //dd10 = dd_buf[10][neg_x_wrap];
-    dd10 = dd_buf[10 * LOCAL_WORK_GROUP_SIZE + neg_x_wrap];
+    dd10 = dd_buf[10 * localWorkGroup + neg_x_wrap];
     rho += dd10;
     velocity_x += dd10;
     velocity_z -= dd10;
 
     //dd11 = dd_buf[11][pos_x_wrap];
-    dd11 = dd_buf[11 * LOCAL_WORK_GROUP_SIZE + pos_x_wrap];
+    dd11 = dd_buf[11 * localWorkGroup + pos_x_wrap];
     rho += dd11;
     velocity_x -= dd11;
     velocity_z += dd11;
@@ -580,7 +595,7 @@ __global__ void lbm_kernel_beta(
     {
         case FLUID:    // this is the whole collision operator
             vel2 = velocity_x*velocity_x + velocity_y*velocity_y + velocity_z*velocity_z;
-            dd_param = rho - (T)(3.0f/2.0f)*(vel2);
+            dd_param = rho - ((T)3/(T)2)*(vel2);
 
             vela2 = velocity_x*velocity_x;
             dd0 += inv_tau*(eq_dd_a0(velocity_x, vela2, dd_param) - dd0);
@@ -670,10 +685,10 @@ __global__ void lbm_kernel_beta(
             velocity_y = 0;
             velocity_z = 0;
 
-            rho = 1.0f;
+            rho = (T)1;
 
             vel2 = velocity_x*velocity_x + velocity_y*velocity_y + velocity_z*velocity_z;
-            dd_param = rho - (T)(3.0f/2.0f)*(vel2);
+            dd_param = rho - ((T)3/(T)2)*vel2;
 
             /***********************
              * DD0
@@ -751,10 +766,10 @@ __global__ void lbm_kernel_beta(
 #define tmp vela2
     if (flag != OBSTACLE)
     {
-        tmp = gravitation_x*(T)(1.0f/18.0f)*rho;
+        tmp = gravitation_x*((T)1/(T)18)*rho;
         dd0 += tmp;
         dd1 -= tmp;
-        tmp = gravitation_y*(T)(-1.0f/18.0f)*rho;
+        tmp = gravitation_y*((T)-1/(T)18)*rho;
         dd2 += tmp;
         dd3 -= tmp;
 
@@ -779,7 +794,7 @@ __global__ void lbm_kernel_beta(
         dd14 += tmp;
         dd15 -= tmp;
 
-        tmp = gravitation_z*(T)(1.0f/18.0f)*rho;
+        tmp = gravitation_z*((T)1/(T)18)*rho;
         dd16 += tmp;
         dd17 -= tmp;
     }
@@ -794,18 +809,18 @@ __global__ void lbm_kernel_beta(
 
 #if USE_SHARED_MEMORY
     //dd_buf_lid = &dd_buf[0][lid];
-    dd_buf_lid = &dd_buf[0 * LOCAL_WORK_GROUP_SIZE + lid];
+    dd_buf_lid = &dd_buf[0 * localWorkGroup + lid];
 
     /* f(1,0,0), f(-1,0,0),  f(0,1,0),  f(0,-1,0) */
     //dd_buf[0][pos_x_wrap] = dd0;
     //dd_buf[1][neg_x_wrap] = dd1;
-    dd_buf[0 * LOCAL_WORK_GROUP_SIZE + pos_x_wrap] = dd0;
-      dd_buf[1 * LOCAL_WORK_GROUP_SIZE + neg_x_wrap] = dd1;
+    dd_buf[0 * localWorkGroup + pos_x_wrap] = dd0;
+      dd_buf[1 * localWorkGroup + neg_x_wrap] = dd1;
     //barrier(CLK_LOCAL_MEM_FENCE);
     __syncthreads();
 
-    current_dds[dd_read_delta_position_1] = *dd_buf_lid;    current_dds += DOMAIN_CELLS;    dd_buf_lid += LOCAL_WORK_GROUP_SIZE;
-    current_dds[dd_read_delta_position_0] = *dd_buf_lid;    current_dds += DOMAIN_CELLS;    dd_buf_lid += 3*LOCAL_WORK_GROUP_SIZE;
+    current_dds[dd_read_delta_position_1] = *dd_buf_lid;    current_dds += DOMAIN_CELLS;    dd_buf_lid += localWorkGroup;
+    current_dds[dd_read_delta_position_0] = *dd_buf_lid;    current_dds += DOMAIN_CELLS;    dd_buf_lid += 3*localWorkGroup;
     current_dds[dd_read_delta_position_3] = dd2;        current_dds += DOMAIN_CELLS;
     current_dds[dd_read_delta_position_2] = dd3;        current_dds += DOMAIN_CELLS;
 
@@ -814,33 +829,33 @@ __global__ void lbm_kernel_beta(
 //    dd_buf[5][neg_x_wrap] = dd5;
 //    dd_buf[6][pos_x_wrap] = dd6;
 //    dd_buf[7][neg_x_wrap] = dd7;
-    dd_buf[4 * LOCAL_WORK_GROUP_SIZE + pos_x_wrap] = dd4;
-    dd_buf[5 * LOCAL_WORK_GROUP_SIZE + neg_x_wrap] = dd5;
-    dd_buf[6 * LOCAL_WORK_GROUP_SIZE + pos_x_wrap] = dd6;
-    dd_buf[7 * LOCAL_WORK_GROUP_SIZE + neg_x_wrap] = dd7;
+    dd_buf[4 * localWorkGroup + pos_x_wrap] = dd4;
+    dd_buf[5 * localWorkGroup + neg_x_wrap] = dd5;
+    dd_buf[6 * localWorkGroup + pos_x_wrap] = dd6;
+    dd_buf[7 * localWorkGroup + neg_x_wrap] = dd7;
     //barrier(CLK_LOCAL_MEM_FENCE);
     __syncthreads();
 
-    current_dds[dd_read_delta_position_5] = *dd_buf_lid;    current_dds += DOMAIN_CELLS;    dd_buf_lid += LOCAL_WORK_GROUP_SIZE;
-    current_dds[dd_read_delta_position_4] = *dd_buf_lid;    current_dds += DOMAIN_CELLS;    dd_buf_lid += LOCAL_WORK_GROUP_SIZE;
-    current_dds[dd_read_delta_position_7] = *dd_buf_lid;    current_dds += DOMAIN_CELLS;    dd_buf_lid += LOCAL_WORK_GROUP_SIZE;
-    current_dds[dd_read_delta_position_6] = *dd_buf_lid;    current_dds += DOMAIN_CELLS;    dd_buf_lid += LOCAL_WORK_GROUP_SIZE;
+    current_dds[dd_read_delta_position_5] = *dd_buf_lid;    current_dds += DOMAIN_CELLS;    dd_buf_lid += localWorkGroup;
+    current_dds[dd_read_delta_position_4] = *dd_buf_lid;    current_dds += DOMAIN_CELLS;    dd_buf_lid += localWorkGroup;
+    current_dds[dd_read_delta_position_7] = *dd_buf_lid;    current_dds += DOMAIN_CELLS;    dd_buf_lid += localWorkGroup;
+    current_dds[dd_read_delta_position_6] = *dd_buf_lid;    current_dds += DOMAIN_CELLS;    dd_buf_lid += localWorkGroup;
 
     /* f(1,0,1), f(-1,0,-1), f(1,0,-1), f(-1,0,1) */
 //    dd_buf[8][pos_x_wrap] = dd8;
 //    dd_buf[9][neg_x_wrap] = dd9;
 //    dd_buf[10][pos_x_wrap] = dd10;
 //    dd_buf[11][neg_x_wrap] = dd11;
-    dd_buf[8 * LOCAL_WORK_GROUP_SIZE + pos_x_wrap] = dd8;
-    dd_buf[9 * LOCAL_WORK_GROUP_SIZE + neg_x_wrap] = dd9;
-    dd_buf[10 * LOCAL_WORK_GROUP_SIZE + pos_x_wrap] = dd10;
-    dd_buf[11 * LOCAL_WORK_GROUP_SIZE + neg_x_wrap] = dd11;
+    dd_buf[8 * localWorkGroup + pos_x_wrap] = dd8;
+    dd_buf[9 * localWorkGroup + neg_x_wrap] = dd9;
+    dd_buf[10 * localWorkGroup + pos_x_wrap] = dd10;
+    dd_buf[11 * localWorkGroup + neg_x_wrap] = dd11;
     //barrier(CLK_LOCAL_MEM_FENCE);
     __syncthreads();
 
-    current_dds[dd_read_delta_position_9] = *dd_buf_lid;    current_dds += DOMAIN_CELLS;    dd_buf_lid += LOCAL_WORK_GROUP_SIZE;
-    current_dds[dd_read_delta_position_8] = *dd_buf_lid;    current_dds += DOMAIN_CELLS;    dd_buf_lid += LOCAL_WORK_GROUP_SIZE;
-    current_dds[dd_read_delta_position_11] = *dd_buf_lid;   current_dds += DOMAIN_CELLS;    dd_buf_lid += LOCAL_WORK_GROUP_SIZE;
+    current_dds[dd_read_delta_position_9] = *dd_buf_lid;    current_dds += DOMAIN_CELLS;    dd_buf_lid += localWorkGroup;
+    current_dds[dd_read_delta_position_8] = *dd_buf_lid;    current_dds += DOMAIN_CELLS;    dd_buf_lid += localWorkGroup;
+    current_dds[dd_read_delta_position_11] = *dd_buf_lid;   current_dds += DOMAIN_CELLS;    dd_buf_lid += localWorkGroup;
     current_dds[dd_read_delta_position_10] = *dd_buf_lid;   current_dds += DOMAIN_CELLS;
 
     /* f(0,1,1), f(0,-1,-1), f(0,1,-1), f(0,-1,1) */
@@ -934,6 +949,9 @@ template __global__ void lbm_kernel_beta<float>(
         const int originX,
         const int originY,
         const int originZ,
+        const int sizeX,
+        const int sizeY,
+        const int sizeZ,
         const int domainCells_x,
         const int domainCells_y,
         const int domainCells_z,
@@ -955,6 +973,9 @@ template __global__ void lbm_kernel_beta<double>(
         const int originX,
         const int originY,
         const int originZ,
+        const int sizeX,
+        const int sizeY,
+        const int sizeZ,
         const int domainCells_x,
         const int domainCells_y,
         const int domainCells_z,

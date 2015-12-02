@@ -38,8 +38,8 @@
     <!-- number of subdomains in x, y and z direction (unit: scalar) -->
     <subdomain-num>
       <x>1</x>
-      <y>4</y>
-      <z>2</z>
+      <y>1</y>
+      <z>1</z>
     </subdomain-num>
     <!-- ratio in x, y and z direction of subdomain cells which are processed by the CPU ([0.0, 1.0]) (unit: scalar factor) -->
     <cpu-subdomain-ratio>
@@ -92,7 +92,7 @@
       </alpha-grid-configuration>
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_beta() -->
       <beta-grid-configuration>
-        <x>32</x>
+        <x>8</x>
         <y>8</y>
         <z>1</z>
       </beta-grid-configuration>

@@ -127,9 +127,9 @@ inline int isPowerOfTwo(int x) {
  * f(1,0,0), f(-1,0,0),  f(0,1,0),  f(0,-1,0) f(0,0,1) f(0,0,-1)
  */
 #define eq_dd_a0(vela, vela2, rho_alpha) \
-    ((1.0/18.0)*((rho_alpha) + (3.0)*(vela) + (9.0/2.0)*(vela2)))
+    (((T)1/(T)18)*((rho_alpha) + ((T)3)*(vela) + ((T)9/(T)2)*(vela2)))
 #define eq_dd_a1(vela, vela2, rho_alpha) \
-    ((1.0/18.0)*((rho_alpha) + (-3.0)*(vela) + (9.0/2.0)*(vela2)))
+    (((T)1/(T)18)*((rho_alpha) + ((T)-3)*(vela) + ((T)9/(T)2)*(vela2)))
 
 /*
  * we can reuse the following functions because of the symmetry of the density distributions!
@@ -139,21 +139,21 @@ inline int isPowerOfTwo(int x) {
  * f(0,1,1), f(0,-1,-1), f(0,1,-1), f(0,-1,1)
  */
 #define eq_dd4(velx_add_vely, velx_add_vely_2, rho_alpha) \
-    ((1.0/36.0)*((rho_alpha) + (3.0)*(velx_add_vely) + (9.0/2.0)*(velx_add_vely_2)))
+    (((T)1/(T)36)*((rho_alpha) + ((T)3)*(velx_add_vely) + ((T)9/(T)2)*(velx_add_vely_2)))
 
 #define eq_dd5(velx_add_vely, velx_add_vely_2, rho_alpha) \
-    ((1.0/36.0)*((rho_alpha) + (-3.0)*(velx_add_vely) + (9.0/2.0)*(velx_add_vely_2)))
+    (((T)1/(T)36)*((rho_alpha) + ((T)-3)*(velx_add_vely) + ((T)9/(T)2)*(velx_add_vely_2)))
 
 #define eq_dd6(velx_sub_vely, velx_sub_vely_2, rho_alpha) \
-    ((1.0/36.0)*((rho_alpha) + (3.0)*(velx_sub_vely) + (9.0/2.0)*(velx_sub_vely_2)))
+    (((T)1/(T)36)*((rho_alpha) + ((T)3)*(velx_sub_vely) + ((T)9/(T)2)*(velx_sub_vely_2)))
 
 #define eq_dd7(velx_sub_vely, velx_sub_vely_2, rho_alpha) \
-    ((1.0/36.0)*((rho_alpha) + (-3.0)*(velx_sub_vely) + (9.0/2.0)*(velx_sub_vely_2)))
+    (((T)1/(T)36)*((rho_alpha) + ((T)-3)*(velx_sub_vely) + ((T)9/(T)2)*(velx_sub_vely_2)))
 
 /*
  * f(0,0,0)
  */
 #define eq_dd18(rho_alpha) \
-    ((1.0/3.0)*(rho_alpha))
+    (((T)1/(T)3)*(rho_alpha))
 
 #endif

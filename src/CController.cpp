@@ -94,7 +94,7 @@ CController<T>::CController(
 #endif
 
     if (this->configuration->doVisualization)
-    	/*
+        /*
         visualization = new CLbmVisualizationVTK<T>(
                 id,
                 this->configuration->visualizationRate,
@@ -288,12 +288,117 @@ void CController<T>::stepAlpha()
 template <class T>
 void CController<T>::stepBeta()
 {
+    CVector<3, int> innerOrigin(0);
+    CVector<3, int> innerSize(domain.getSizeWithHalo());
+
+#ifdef USE_MPI
+    CVector<3, int> boundaryOrigin, sendOrigin, recvOrigin;
+    CVector<3, int> boundarySize, sendSize, recvSize;
+
+    for (unsigned int i = 0; i < communication.size(); i++)
+    {
+        MPI_Irecv(
+                recvBuffers->at(i),
+                NUM_LATTICE_VECTORS * communication[i].getRecvSize().elements(),
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                communication[i].getDstId(),
+                simulationStepCounter,
+                MPI_COMM_WORLD,
+                &recvRequests[i]);
+    }
+
+    for (unsigned int i = 0; i < communication.size(); i++)
+    {
+        switch(communication[i].getDirection())
+        {
+        case LEFT:
+            boundaryOrigin = innerOrigin;
+            boundarySize.set(2, innerSize[1], innerSize[2]);
+            innerOrigin[0] += 2;
+            innerSize[0] -= 2;
+            break;
+        case RIGHT:
+            boundaryOrigin = innerOrigin;
+            boundaryOrigin[0] = domain.getSizeWithHalo()[0] - 2;
+            boundarySize.set(2, innerSize[1], innerSize[2]);
+            innerSize[0] -= 2;
+            break;
+        case BOTTOM:
+            boundaryOrigin = innerOrigin;
+            boundarySize.set(innerSize[0], 2, innerSize[2]);
+            innerOrigin[1] += 2;
+            innerSize[1] -= 2;
+            break;
+        case TOP:
+            boundaryOrigin = innerOrigin;
+            boundaryOrigin[1] = domain.getSizeWithHalo()[1] - 2;
+            boundarySize.set(innerSize[0], 2, innerSize[2]);
+            innerSize[1] -= 2;
+            break;
+        case BACK:
+            boundaryOrigin = innerOrigin;
+            boundarySize.set(innerSize[0], innerSize[1], 2);
+            innerOrigin[2] += 2;
+            innerSize[2] -= 2;
+            break;
+        case FRONT:
+            boundaryOrigin = innerOrigin;
+            boundaryOrigin[2] = domain.getSizeWithHalo()[2] - 2;
+            boundarySize.set(innerSize[0], innerSize[1], 2);
+            innerSize[2] -= 2;
+            break;
+        }
+
+        solverGPU->simulationStepBeta(boundaryOrigin, boundarySize, &streams->at(i));
+    }
+    GPU_ERROR_CHECK(cudaDeviceSynchronize())
+#endif
+
+    solverGPU->simulationStepBeta(innerOrigin, innerSize, &defaultStream);
+
+#ifdef USE_MPI
+    for (unsigned int i = 0; i < communication.size(); i++)
+    {
+        sendOrigin = communication[i].getRecvOrigin();
+        sendSize = communication[i].getRecvSize();
+        recvOrigin = communication[i].getSendOrigin();
+        recvSize = communication[i].getSendSize();
+
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(i), &streams->at(i));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(i)))
+
+        MPI_Isend(
+                sendBuffers->at(i),
+                NUM_LATTICE_VECTORS * communication[i].getSendSize().elements(),
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                communication[i].getDstId(),
+                simulationStepCounter,
+                MPI_COMM_WORLD,
+                &sendRequests[i]);
+
+        MPI_Wait(&recvRequests[i], MPI_STATUS_IGNORE);
+
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[i].getDirection(), recvBuffers->at(i), &streams->at(i));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(i)))
+    }
+
+    MPI_Waitall(communication.size(), sendRequests, MPI_STATUS_IGNORE);
+#endif
+    GPU_ERROR_CHECK(cudaStreamSynchronize(defaultStream))
+}
+
+/*
+template <class T>
+void CController<T>::stepBeta()
+{
     solverGPU->simulationStepBeta();
 #ifdef USE_MPI
     syncBeta();
 #endif
 }
+*/
 
+/*
 #ifdef USE_MPI
 template <class T>
 void CController<T>::syncAlpha()
@@ -368,6 +473,7 @@ void CController<T>::syncAlpha()
     }
 }
 #endif
+*/
 
 #ifdef USE_MPI
 template <class T>
