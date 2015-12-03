@@ -63,10 +63,12 @@ private:
     void computeNextStep();
     void stepAlpha();
     void stepBeta();
+    /*
 #ifdef USE_MPI
     void syncAlpha();
     void syncBeta();
 #endif
+    */
 
 public:
     CController(

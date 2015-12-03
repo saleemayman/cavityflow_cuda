@@ -23,7 +23,7 @@
 
 #define CACHED_ACCESS       0
 
-#define USE_SHARED_MEMORY   1
+#define USE_SHARED_MEMORY   0
 
 __device__ size_t DOMAIN_WRAP(size_t A, size_t DOMAIN_CELLS, bool isPowTwo)
 {
@@ -61,32 +61,19 @@ __global__ void lbm_kernel_beta(
         const bool storeDensities,
         const bool storeVelocities)
 {
-    size_t DOMAIN_CELLS = domainCellsX * domainCellsY * domainCellsZ;
-    size_t DOMAIN_SLICE_CELLS = domainCellsX * domainCellsY;
+	const unsigned int DOMAIN_CELLS = domainCellsX * domainCellsY * domainCellsZ;
 
-    int DELTA_POS_X = 1;
-    size_t DELTA_NEG_X = DOMAIN_CELLS - 1;
-    int DELTA_POS_Y = domainCellsX;
-    size_t DELTA_NEG_Y = DOMAIN_CELLS - domainCellsX;
-    size_t DELTA_POS_Z = DOMAIN_SLICE_CELLS;
-    size_t DELTA_NEG_Z = DOMAIN_CELLS - DOMAIN_SLICE_CELLS;
-
-    // get unique thread id
-    size_t blockId = (blockIdx.x + originX / blockDim.x) + ((blockIdx.y + originY / blockDim.y) * gridDim.x) + ((blockIdx.z + originZ / blockDim.z) * gridDim.x * gridDim.y);
-    size_t gid = blockId * (blockDim.x * blockDim.y * blockDim.z) + ((threadIdx.z + originZ % blockDim.z) * blockDim.x * blockDim.y) + ((threadIdx.y + originY % blockDim.y) * blockDim.x) + (threadIdx.x + originX % blockDim.x);
-
-    if (gid >= DOMAIN_CELLS)
-        return;
-
-    // load cell type flag
-    const int flag = flag_array[gid];
-
-	/*
-    const unsigned int DOMAIN_CELLS = domainCellsX * domainCellsY * domainCellsZ;
+    const int DELTA_POS_X = 1;
+    const int DELTA_NEG_X = DOMAIN_CELLS - 1;
+    const int DELTA_POS_Y = domainCellsX;
+    const int DELTA_NEG_Y = DOMAIN_CELLS - domainCellsX;
+    const int DELTA_POS_Z = domainCellsX * domainCellsY;
+    const int DELTA_NEG_Z = DOMAIN_CELLS - domainCellsX * domainCellsY;
 
     const unsigned int X = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned int Y = blockIdx.y * blockDim.y + threadIdx.y;
     const unsigned int Z = blockIdx.z * blockDim.z + threadIdx.z;
+
     const unsigned int gid = (originZ + Z) * (domainCellsX * domainCellsY) + (originY + Y) * domainCellsX + (originX + X);
 
     if (gid >= DOMAIN_CELLS)
@@ -95,10 +82,7 @@ __global__ void lbm_kernel_beta(
     if (X >= sizeX || Y >= sizeY || Z >= sizeZ)
         return;
 
-    Flag flag = flag_array[gid];
-    if  (flag == GHOST_LAYER)
-        return;
-    */
+    const int flag = flag_array[gid];
 
     /**
      * we use a pointer instead of accessing the array directly

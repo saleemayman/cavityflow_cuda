@@ -25,9 +25,9 @@
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-      <x>128</x>
-      <y>128</y>
-      <z>128</z>
+      <x>226</x>
+      <y>226</y>
+      <z>226</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
@@ -50,7 +50,7 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>1280</loops>
+    <loops>2260</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>0.01</timestep>
     <!--  -->
@@ -69,8 +69,8 @@
     </validation>
     <!--  -->
     <visualization>
-      <do>1</do>
-      <rate>1280</rate>
+      <do>0</do>
+      <rate>2260</rate>
       <output-dir>/work_fast/riesinge/workspace/lbm/visualization</output-dir>
     </visualization>
   </simulation>
@@ -92,7 +92,7 @@
       </alpha-grid-configuration>
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_beta() -->
       <beta-grid-configuration>
-        <x>8</x>
+        <x>32</x>
         <y>8</y>
         <z>1</z>
       </beta-grid-configuration>

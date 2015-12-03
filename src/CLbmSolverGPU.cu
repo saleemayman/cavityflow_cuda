@@ -237,7 +237,7 @@ template <class T>
 void CLbmSolverGPU<T>::simulationStepBeta(cudaStream_t* stream)
 {
     dim3 blocksPerGrid = getBlocksPerGrid(3, domain.getSizeWithHalo(), threadsPerBlock[2]);
-    size_t sMemSize = 12 * sizeof(T) * getSize(threadsPerBlock[2]);
+    // size_t sMemSize = 12 * sizeof(T) * getSize(threadsPerBlock[2]);
 
     if (doLogging)
     {
@@ -246,11 +246,11 @@ void CLbmSolverGPU<T>::simulationStepBeta(cudaStream_t* stream)
         std::cout << "--------------------------------------------------" << std::endl;
         std::cout << "threads per block:  [" << threadsPerBlock[2].x << ", " << threadsPerBlock[2].y << ", " << threadsPerBlock[2].z << "]" << std::endl;
         std::cout << "blocks per grid:    [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
-        std::cout << "shared memory size: " << ((T)sMemSize / (T)(1<<10)) << " KB" << std::endl;
+        // std::cout << "shared memory size: " << ((T)sMemSize / (T)(1<<10)) << " KB" << std::endl;
         std::cout << "--------------------------------------------------" << std::endl;
     }
 
-    lbm_kernel_beta<T><<<blocksPerGrid, threadsPerBlock[2], sMemSize, ((stream == NULL) ? 0 : *stream)>>>(
+    lbm_kernel_beta<T><<<blocksPerGrid, threadsPerBlock[2], 0, ((stream == NULL) ? 0 : *stream)>>>(
             densityDistributions,
             flags,
             velocities,
@@ -299,7 +299,7 @@ void CLbmSolverGPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int
     assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
 
     dim3 blocksPerGrid = getBlocksPerGrid(3, size, threadsPerBlock[2]);
-    size_t sMemSize = 12 * sizeof(T) * getSize(threadsPerBlock[2]);
+    // size_t sMemSize = 12 * sizeof(T) * getSize(threadsPerBlock[2]);
 
     if (doLogging)
     {
@@ -308,11 +308,11 @@ void CLbmSolverGPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int
         std::cout << "--------------------------------------------------" << std::endl;
         std::cout << "threads per block:  [" << threadsPerBlock[2].x << ", " << threadsPerBlock[2].y << ", " << threadsPerBlock[2].z << "]" << std::endl;
         std::cout << "blocks per grid:    [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
-        std::cout << "shared memory size: " << ((T)sMemSize / (T)(1<<10)) << " KB" << std::endl;
+        // std::cout << "shared memory size: " << ((T)sMemSize / (T)(1<<10)) << " KB" << std::endl;
         std::cout << "--------------------------------------------------" << std::endl;
     }
 
-    lbm_kernel_beta<T><<<blocksPerGrid, threadsPerBlock[2], sMemSize, ((stream == NULL) ? 0 : *stream)>>>(
+    lbm_kernel_beta<T><<<blocksPerGrid, threadsPerBlock[2], 0, ((stream == NULL) ? 0 : *stream)>>>(
             densityDistributions,
             flags,
             velocities,

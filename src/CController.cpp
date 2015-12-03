@@ -475,6 +475,7 @@ void CController<T>::syncAlpha()
 #endif
 */
 
+/*
 #ifdef USE_MPI
 template <class T>
 void CController<T>::syncBeta()
@@ -549,6 +550,7 @@ void CController<T>::syncBeta()
     }
 }
 #endif
+*/
 
 template <class T>
 void CController<T>::computeNextStep()

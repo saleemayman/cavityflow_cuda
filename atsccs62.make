@@ -66,8 +66,8 @@ CXXFLAGS			:=	-O3 \
 #       which can then be linked together.
 NVCCFLAGS			:=	-O3 \
 						-gencode arch=compute_$(COMPUTE_CAPABILITY),code=sm_$(COMPUTE_CAPABILITY) \
-						-maxrregcount=88 \
-#						--ptxas-options -v
+						-maxrregcount=80 \
+#						--ptxas-options -v \
 #						-Xcompiler "-std=c++11"
 
 ################################################################################
