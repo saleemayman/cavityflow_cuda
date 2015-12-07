@@ -54,16 +54,16 @@ ET.SubElement(visualization, "output-dir").text = str(sys.argv[18]) + "/disserta
 
 gridconfiguration = ET.SubElement(device, "grid-configuration")
 initgridconfiguration = ET.SubElement(gridconfiguration, "init-grid-configuration")
-ET.SubElement(initgridconfiguration, "x").text = "32"
-ET.SubElement(initgridconfiguration, "y").text = "16"
+ET.SubElement(initgridconfiguration, "x").text = "64"
+ET.SubElement(initgridconfiguration, "y").text = "1"
 ET.SubElement(initgridconfiguration, "z").text = "1"
 alphagridconfiguration = ET.SubElement(gridconfiguration, "alpha-grid-configuration")
 ET.SubElement(alphagridconfiguration, "x").text = "32"
-ET.SubElement(alphagridconfiguration, "y").text = "8"
+ET.SubElement(alphagridconfiguration, "y").text = "1"
 ET.SubElement(alphagridconfiguration, "z").text = "1"
 betagridconfiguration = ET.SubElement(gridconfiguration, "beta-grid-configuration")
 ET.SubElement(betagridconfiguration, "x").text = "32"
-ET.SubElement(betagridconfiguration, "y").text = "8"
+ET.SubElement(betagridconfiguration, "y").text = "1"
 ET.SubElement(betagridconfiguration, "z").text = "1"
 
 tree = ET.ElementTree(root)
