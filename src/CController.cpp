@@ -85,7 +85,7 @@ CController<T>::CController(
     GPU_ERROR_CHECK(cudaStreamCreate(&defaultStream))
 
 #ifdef USE_MPI
-    for (int i = 0; i < this->communication.size(); i++)
+    for (unsigned int i = 0; i < this->communication.size(); i++)
     {
         sendBuffers->at(i) = new T[NUM_LATTICE_VECTORS * communication[i].getSendSize().elements()];
         recvBuffers->at(i) = new T[NUM_LATTICE_VECTORS * communication[i].getRecvSize().elements()];
@@ -118,7 +118,7 @@ CController<T>::~CController()
         delete visualization;
 
 #ifdef USE_MPI
-    for (int i = communication.size() - 1; i >= 0; i--)
+    for (unsigned int i = communication.size() - 1; i >= 0; i--)
     {
         GPU_ERROR_CHECK(cudaStreamDestroy(streams->at(i)))
         delete[] recvBuffers->at(i);
