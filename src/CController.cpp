@@ -178,6 +178,13 @@ void CController<T>::stepAlpha()
     CVector<3, int> innerOrigin(0);
     CVector<3, int> innerSize(domain.getSizeWithHalo());
 
+    if (configuration->doLogging)
+    {
+        std::cout << "----- CController<T>::stepAlpha() -----" << std::endl;
+        std::cout << "id:                  " << id << std::endl;
+        std::cout << "---------------------------------------" << std::endl;
+    }
+
 #ifdef USE_MPI
     CVector<3, int> boundaryOrigin, sendOrigin, recvOrigin;
     CVector<3, int> boundarySize, sendSize, recvSize;
@@ -236,10 +243,25 @@ void CController<T>::stepAlpha()
             break;
         }
 
+        if (configuration->doLogging)
+        {
+            std::cout << "destination rank:       " << communication[i].getDstId() << std::endl;
+            std::cout << "boundary origin:        " << boundaryOrigin << std::endl;
+            std::cout << "boundary size:          " << boundarySize << std::endl;
+            std::cout << "---------------------------------------" << std::endl;
+        }
+
         solverGPU->simulationStepAlpha(boundaryOrigin, boundarySize, &streams->at(i));
     }
     GPU_ERROR_CHECK(cudaDeviceSynchronize())
 #endif
+
+    if (configuration->doLogging)
+    {
+        std::cout << "inner origin:           " << innerOrigin << std::endl;
+        std::cout << "inner size:             " << innerSize << std::endl;
+        std::cout << "---------------------------------------" << std::endl;
+    }
 
     solverGPU->simulationStepAlpha(innerOrigin, innerSize, &defaultStream);
 
@@ -250,6 +272,18 @@ void CController<T>::stepAlpha()
         sendSize = communication[i].getSendSize();
         recvOrigin = communication[i].getRecvOrigin();
         recvSize = communication[i].getRecvSize();
+
+        if (configuration->doLogging)
+        {
+            std::cout << "destination rank:       " << communication[i].getDstId() << std::endl;
+            std::cout << "send origin:            " << sendOrigin << std::endl;
+            std::cout << "send size:              " << sendSize << std::endl;
+            std::cout << "receive origin:         " << recvOrigin << std::endl;
+            std::cout << "receive size:           " << recvSize << std::endl;
+            std::cout << "amount of send data:    " << ((T)(sendSize.elements() * NUM_LATTICE_VECTORS * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "amount of receive data: " << ((T)(recvSize.elements() * NUM_LATTICE_VECTORS * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "---------------------------------------" << std::endl;
+        }
 
         solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(i), &streams->at(i));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(i)))
@@ -272,6 +306,12 @@ void CController<T>::stepAlpha()
     MPI_Waitall(communication.size(), sendRequests, MPI_STATUS_IGNORE);
 #endif
     GPU_ERROR_CHECK(cudaStreamSynchronize(defaultStream))
+
+    if (configuration->doLogging)
+    {
+        std::cout << "Alpha step successful." << std::endl;
+        std::cout << "---------------------------------------" << std::endl;
+    }
 }
 
 /*
@@ -291,9 +331,22 @@ void CController<T>::stepBeta()
     CVector<3, int> innerOrigin(0);
     CVector<3, int> innerSize(domain.getSizeWithHalo());
 
+    if (configuration->doLogging)
+    {
+        std::cout << "----- CController<T>::stepBeta() -----" << std::endl;
+        std::cout << "id:                  " << id << std::endl;
+        std::cout << "--------------------------------------" << std::endl;
+    }
+
 #ifdef USE_MPI
     CVector<3, int> boundaryOrigin, sendOrigin, recvOrigin;
     CVector<3, int> boundarySize, sendSize, recvSize;
+
+    if (configuration->doLogging)
+    {
+        std::cout << "id:                  " << id << std::endl;
+        std::cout << "--------------------------------------" << std::endl;
+    }
 
     for (unsigned int i = 0; i < communication.size(); i++)
     {
@@ -349,10 +402,25 @@ void CController<T>::stepBeta()
             break;
         }
 
+        if (configuration->doLogging)
+        {
+            std::cout << "destination rank:       " << communication[i].getDstId() << std::endl;
+            std::cout << "boundary origin:        " << boundaryOrigin << std::endl;
+            std::cout << "boundary size:          " << boundarySize << std::endl;
+            std::cout << "--------------------------------------" << std::endl;
+        }
+
         solverGPU->simulationStepBeta(boundaryOrigin, boundarySize, &streams->at(i));
     }
     GPU_ERROR_CHECK(cudaDeviceSynchronize())
 #endif
+
+    if (configuration->doLogging)
+    {
+        std::cout << "inner origin:           " << innerOrigin << std::endl;
+        std::cout << "inner size:             " << innerSize << std::endl;
+        std::cout << "--------------------------------------" << std::endl;
+    }
 
     solverGPU->simulationStepBeta(innerOrigin, innerSize, &defaultStream);
 
@@ -363,6 +431,18 @@ void CController<T>::stepBeta()
         sendSize = communication[i].getRecvSize();
         recvOrigin = communication[i].getSendOrigin();
         recvSize = communication[i].getSendSize();
+
+        if (configuration->doLogging)
+        {
+            std::cout << "destination rank:       " << communication[i].getDstId() << std::endl;
+            std::cout << "send origin:            " << sendOrigin << std::endl;
+            std::cout << "send size:              " << sendSize << std::endl;
+            std::cout << "receive origin:         " << recvOrigin << std::endl;
+            std::cout << "receive size:           " << recvSize << std::endl;
+            std::cout << "amount of send data:    " << ((T)(sendSize.elements() * NUM_LATTICE_VECTORS * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "amount of receive data: " << ((T)(recvSize.elements() * NUM_LATTICE_VECTORS * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "--------------------------------------" << std::endl;
+        }
 
         solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(i), &streams->at(i));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(i)))
@@ -385,6 +465,12 @@ void CController<T>::stepBeta()
     MPI_Waitall(communication.size(), sendRequests, MPI_STATUS_IGNORE);
 #endif
     GPU_ERROR_CHECK(cudaStreamSynchronize(defaultStream))
+
+    if (configuration->doLogging)
+    {
+        std::cout << "Beta step successful." << std::endl;
+        std::cout << "--------------------------------------" << std::endl;
+    }
 }
 
 /*
@@ -435,8 +521,8 @@ void CController<T>::syncAlpha()
             std::cout << "destination rank:           " << dstId << std::endl;
             std::cout << "send origin (with halo):    " << sendOrigin << std::endl;
             std::cout << "receive origin (with halo): " << recvOrigin << std::endl;
-            std::cout << "send buffer size:           " << ((T)sendBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
-            std::cout << "receive buffer size:        " << ((T)recvBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "send buffer size:           " << ((T)(sendBufferSize * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "receive buffer size:        " << ((T)(recvBufferSize * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
             std::cout << "---------------------------------------" << std::endl;
         }
 
@@ -512,8 +598,8 @@ void CController<T>::syncBeta()
             std::cout << "destination rank:           " << dstId << std::endl;
             std::cout << "send origin (with halo):    " << sendOrigin << std::endl;
             std::cout << "receive origin (with halo): " << recvOrigin << std::endl;
-            std::cout << "send buffer size:           " << ((T)sendBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
-            std::cout << "receive buffer size:        " << ((T)recvBufferSize / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "send buffer size:           " << ((T)(sendBufferSize * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+            std::cout << "receive buffer size:        " << ((T)(sendBufferSize * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
             std::cout << "--------------------------------------" << std::endl;
         }
 
