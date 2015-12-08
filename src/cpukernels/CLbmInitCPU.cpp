@@ -23,9 +23,13 @@ template<class T>
 CLbmInitCPU<T>::CLbmInitCPU(
                     CVector<3, int> domainSize,
                     CVector<3, int> domainSizeGPU,
+                    CVector<3, int> hollowCPULeftLimit,
+                    CVector<3, int> hollowCPURightLimit,
                     std::vector<Flag>& boundaryConditions) : 
                         domainSize(domainSize),
                         domainSizeGPU(domainSizeGPU),
+                        hollowCPULeftLimit(hollowCPULeftLimit),
+                        hollowCPURightLimit(hollowCPURightLimit),
                         boundaryConditionRight(boundaryConditions[0]),
                         boundaryConditionLeft(boundaryConditions[1]),
                         boundaryConditionTop(boundaryConditions[2]),
@@ -34,15 +38,6 @@ CLbmInitCPU<T>::CLbmInitCPU(
                         boundaryConditionBack(boundaryConditions[5])
 {
     domainCellsCPU = domainSize.elements() - domainSizeGPU.elements();  
-
-    // limits of the inner GPU domain w.r.t the CPU domain
-    innerCPULimit[0] = (domainSize[0] - domainSizeGPU[0]) / 2 - 1;
-    outerCPULimit[0] = innerCPULimit[0] + domainSizeGPU[0] + 1;
-    innerCPULimit[1] = (domainSize[1] - domainSizeGPU[1]) / 2 - 1;
-    outerCPULimit[1] = innerCPULimit[1] + domainSizeGPU[1] + 1;
-    innerCPULimit[2] = (domainSize[2] - domainSizeGPU[2]) / 2 - 1;
-    outerCPULimit[2] = innerCPULimit[2] + domainSizeGPU[2] + 1;
-
     localToGlobalIndexMap = new std::vector<int>(domainCellsCPU);
 }
 
@@ -75,9 +70,9 @@ void CLbmInitCPU<T>::setFlags(std::vector<Flag> &flags)
                 flag = FLUID;
 
                 // if inside GPU domain then skip cell
-                if ((x > innerCPULimit[0] && x < outerCPULimit[0]) &&
-                    (y > innerCPULimit[1] && y < outerCPULimit[1]) &&
-                    (z > innerCPULimit[2] && z < outerCPULimit[2]))
+                if ((x > hollowCPULeftLimit[0] && x < hollowCPURightLimit[0]) &&
+                    (y > hollowCPULeftLimit[1] && y < hollowCPURightLimit[1]) &&
+                    (z > hollowCPULeftLimit[2] && z < hollowCPURightLimit[2]))
                 {
                     globalID++;
                     continue;
@@ -86,14 +81,14 @@ void CLbmInitCPU<T>::setFlags(std::vector<Flag> &flags)
                 // set the flags for x-direction                
                 if (x == 0)
                     flag = boundaryConditionRight;
-                if (x == innerCPULimit[0] &&
-                        (y > innerCPULimit[1] && y < outerCPULimit[1]) &&
-                        (z > innerCPULimit[2] && z < outerCPULimit[2]) &&
+                if (x == hollowCPULeftLimit[0] &&
+                        (y > hollowCPULeftLimit[1] && y < hollowCPURightLimit[1]) &&
+                        (z > hollowCPULeftLimit[2] && z < hollowCPURightLimit[2]) &&
                         flag != OBSTACLE)
                     flag = GHOST_LAYER;
-                if (x == outerCPULimit[0] &&
-                        (y > innerCPULimit[1] && y < outerCPULimit[1]) && 
-                        (z > innerCPULimit[2] && z < outerCPULimit[2]) &&
+                if (x == hollowCPURightLimit[0] &&
+                        (y > hollowCPULeftLimit[1] && y < hollowCPURightLimit[1]) && 
+                        (z > hollowCPULeftLimit[2] && z < hollowCPURightLimit[2]) &&
                         flag != OBSTACLE)
                     flag = GHOST_LAYER;
                 if (x == domainSize[0]-1 && flag != OBSTACLE)
@@ -102,14 +97,14 @@ void CLbmInitCPU<T>::setFlags(std::vector<Flag> &flags)
                 // set the flags for y-direction                
                 if (y == 0 && flag != OBSTACLE)
                     flag = boundaryConditionTop;
-                if (y == innerCPULimit[1] && 
-                        (x > innerCPULimit[0] && x < outerCPULimit[0]) && 
-                        (z > innerCPULimit[2] && z < outerCPULimit[2]) && 
+                if (y == hollowCPULeftLimit[1] && 
+                        (x > hollowCPULeftLimit[0] && x < hollowCPURightLimit[0]) && 
+                        (z > hollowCPULeftLimit[2] && z < hollowCPURightLimit[2]) && 
                         flag != OBSTACLE)
                     flag = GHOST_LAYER;
-                if (y == outerCPULimit[1] && 
-                        (x > innerCPULimit[0] && x < outerCPULimit[0]) && 
-                        (z > innerCPULimit[2] && z < outerCPULimit[2]) && 
+                if (y == hollowCPURightLimit[1] && 
+                        (x > hollowCPULeftLimit[0] && x < hollowCPURightLimit[0]) && 
+                        (z > hollowCPULeftLimit[2] && z < hollowCPURightLimit[2]) && 
                         flag != OBSTACLE)
                     flag = GHOST_LAYER;
                 if (y == domainSize[1]-1 && flag != OBSTACLE)
@@ -118,14 +113,14 @@ void CLbmInitCPU<T>::setFlags(std::vector<Flag> &flags)
                 // set the flags for z-direction                
                 if (z == 0 && flag != OBSTACLE)
                     flag = boundaryConditionFront;
-                if (z == innerCPULimit[2] && 
-                        (x > innerCPULimit[0] && x < outerCPULimit[0]) &&
-                        (y > innerCPULimit[1] && y < outerCPULimit[1]) &&  
+                if (z == hollowCPULeftLimit[2] && 
+                        (x > hollowCPULeftLimit[0] && x < hollowCPURightLimit[0]) &&
+                        (y > hollowCPULeftLimit[1] && y < hollowCPURightLimit[1]) &&  
                         flag != OBSTACLE)
                     flag = GHOST_LAYER;
-                if (z == outerCPULimit[2]-1 && 
-                        (x > innerCPULimit[0] && x < outerCPULimit[0]) &&
-                        (y > innerCPULimit[1] && y < outerCPULimit[1]) && 
+                if (z == hollowCPURightLimit[2]-1 && 
+                        (x > hollowCPULeftLimit[0] && x < hollowCPURightLimit[0]) &&
+                        (y > hollowCPULeftLimit[1] && y < hollowCPURightLimit[1]) && 
                         flag != OBSTACLE)
                     flag = GHOST_LAYER;
                 if (z == domainSize[2]-1 && flag != OBSTACLE)
@@ -142,6 +137,28 @@ void CLbmInitCPU<T>::setFlags(std::vector<Flag> &flags)
             }
         }
     }
+}
+
+template<class T>
+int CLbmInitCPU<T>::getLocalIndex(int globalId)
+{
+    std::vector<int>::iterator localIndex;
+    localIndex = std::lower_bound(localToGlobalIndexMap->begin(), localToGlobalIndexMap->end(), globalId);
+
+    if (localIndex != localToGlobalIndexMap->end() && *localIndex == globalId)
+    {
+        return (int)(localIndex - localToGlobalIndexMap->begin());
+    }
+    else
+    {
+        return -1;
+    }
+}
+
+template<class T>
+int CLbmInitCPU<T>::getGlobalIndex(int localId)
+{
+    return localToGlobalIndexMap->operator[](localId);
 }
 
 template<class T>
@@ -246,6 +263,14 @@ void CLbmInitCPU<T>::initLbm(
         }
     }
 }
+
+
+template<class T>
+std::vector<int>* CLbmInitCPU<T>::getCellIndexMap()
+{
+    return localToGlobalIndexMap;
+}
+
 
 template class CLbmInitCPU<double>;
 template class CLbmInitCPU<float>;

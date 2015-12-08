@@ -35,9 +35,9 @@ private:
     int domainCellsCPU;
     CVector<3, int> domainSize;
     CVector<3, int> domainSizeGPU; 
+    CVector<3, int> hollowCPULeftLimit;
+    CVector<3, int> hollowCPURightLimit;
     CVector<3, T> gravitation;
-    CVector<3, int> innerCPULimit;
-    CVector<3, int> outerCPULimit;
 
     T vel2;     // vel*vel
     T vela2;
@@ -49,6 +49,8 @@ public:
     CLbmAlphaCPU(
             CVector<3, int> domainSize,
             CVector<3, int> domainSizeGPU,
+            CVector<3, int> hollowCPULeftLimit,
+            CVector<3, int> hollowCPURightLimit,
             CVector<3, T> gravitation);
     ~CLbmAlphaCPU();
 

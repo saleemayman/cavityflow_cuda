@@ -22,22 +22,40 @@
 
 #include "CLbmSolver.hpp"
 
-// #include "gpukernels/copy_buffer_rect.cuh"
 #include "CComm.hpp"
 #include "CLbmSolverGPU.cuh"
 #include "cpukernels/CLbmInitCPU.hpp"
+#include "cpukernels/CLbmAlphaCPU.hpp"
+#include "cpukernels/CLbmBetaCPU.hpp"
 
 template<typename T>
 class CLbmSolverCPU : public CLbmSolver<T>
 {
 private:
-    CLbmSolverGPU<T>* solverGPU;
-//    CLbmInitCPU<T>* initKernelCPU;
+    using CLbmSolver<T>::id;
+    using CLbmSolver<T>::globalLength;
+    using CLbmSolver<T>::domain;
+    using CLbmSolver<T>::velocity;
+    using CLbmSolver<T>::velocityDimLess;
+    using CLbmSolver<T>::acceleration;
+    using CLbmSolver<T>::accelerationDimLess;
+    using CLbmSolver<T>::storeDensities;
+    using CLbmSolver<T>::storeVelocities;
+    using CLbmSolver<T>::doLogging;
+    using CLbmSolver<T>::tauInv;
 
-    std::vector<T*> densityDistributions;
-    std::vector<Flag*> flags;
-    std::vector<T*> velocities;
-    std::vector<T*> densities;
+    CLbmSolverGPU<T>* solverGPU;
+    CLbmInitCPU<T>* initLbmCPU;
+    CLbmAlphaCPU<T>* alphaLbmCPU;
+    CLbmBetaCPU<T>* betaLbmCPU;
+
+    CVector<3, int> hollowCPULeftLimit;
+    CVector<3, int> hollowCPURightLimit;
+
+    std::vector<T> densityDistributions;
+    std::vector<Flag> flags;
+    std::vector<T> velocities;
+    std::vector<T> densities;
     
     /*
      * Maybe these members are not required if data copy operations during sync
@@ -69,6 +87,11 @@ public:
             bool doLogging);
     ~CLbmSolverCPU();
 
+    using CLbmSolver<T>::simulationStepAlpha;
+    using CLbmSolver<T>::simulationStepBeta;
+    using CLbmSolver<T>::getDensityDistributions;
+    using CLbmSolver<T>::setDensityDistributions;
+
     void simulationStepAlpha();
     void simulationStepAlpha(CVector<3, int> origin, CVector<3, int> size);
     void simulationStepBeta();
@@ -89,6 +112,9 @@ public:
     void getDensities(T* src);
     void setDensities(CVector<3, int> &origin, CVector<3, int> &size, T* dst);
     void setDensities(T* dst);
+
+    CVector<3, int> getHollowCPULeftLimits();
+    CVector<3, int> getHollowCPURightLimits();
 };
 
 #endif

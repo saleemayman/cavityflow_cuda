@@ -33,8 +33,8 @@ private:
     int domainCellsCPU;
     CVector<3, int> domainSize;
     CVector<3, int> domainSizeGPU; 
-    CVector<3, int> innerCPULimit;
-    CVector<3, int> outerCPULimit;
+    CVector<3, int> hollowCPULeftLimit;
+    CVector<3, int> hollowCPURightLimit;
     std::vector<int> *localToGlobalIndexMap;
 
     // declare simulation related variables
@@ -59,6 +59,8 @@ public:
     CLbmInitCPU(
             CVector<3, int> domainSize,
             CVector<3, int> domainSizeGPU,
+            CVector<3, int> hollowCPULeftLimit,
+            CVector<3, int> hollowCPURightLimit,
             std::vector<Flag>& boundaryConditions);
     ~CLbmInitCPU();
 
@@ -69,5 +71,10 @@ public:
         std::vector<T> &densities,
         const bool storeDensities,
         const bool storeVelocities);
+
+    int getLocalIndex(int globalId);
+    int getGlobalIndex(int localId);
+
+    std::vector<int>* getCellIndexMap();
 };
 #endif

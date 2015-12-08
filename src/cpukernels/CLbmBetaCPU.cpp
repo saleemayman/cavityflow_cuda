@@ -25,10 +25,14 @@ template<class T>
 CLbmBetaCPU<T>::CLbmBetaCPU(
                     CVector<3, int> domainSize,
                     CVector<3, int> domainSizeGPU,
+                    CVector<3, int> hollowCPULeftLimit,
+                    CVector<3, int> hollowCPURightLimit,
                     CVector<3, T> gravitation,
                     std::vector<int> *localToGlobalIndexMap) :
                         domainSize(domainSize),
                         domainSizeGPU(domainSizeGPU),
+                        hollowCPULeftLimit(hollowCPULeftLimit),
+                        hollowCPURightLimit(hollowCPURightLimit),
                         gravitation(gravitation),
                         localToGlobalIndexMap(localToGlobalIndexMap)
 {
@@ -42,14 +46,6 @@ CLbmBetaCPU<T>::CLbmBetaCPU(
     deltaNegY = domainCells - domainSize[0];
     deltaPosZ = domainCellsInXYPlane;
     deltaNegZ = domainCells - domainCellsInXYPlane;
-
-    // limits of the inner GPU domain w.r.t the CPU domain
-    innerCPULimit[0] = (domainSize[0] - domainSizeGPU[0]) / 2 - 1;
-    outerCPULimit[0] = innerCPULimit[0] + domainSizeGPU[0] + 1;
-    innerCPULimit[1] = (domainSize[1] - domainSizeGPU[1]) / 2 - 1;
-    outerCPULimit[1] = innerCPULimit[1] + domainSizeGPU[1] + 1;
-    innerCPULimit[2] = (domainSize[2] - domainSizeGPU[2]) / 2 - 1;
-    outerCPULimit[2] = innerCPULimit[2] + domainSizeGPU[2] + 1;
 }
 
 
@@ -93,7 +89,7 @@ void CLbmBetaCPU<T>::betaKernelCPU(
         const T drivenCavityVelocity, // velocity parameters for modification of density distributions
         const bool isDomainPowOfTwo,
         const bool storeDensities,
-		const bool storeVelocities)
+        const bool storeVelocities)
 {
     /*
      * Iterate over all CPU domain cells in the following order:
@@ -290,12 +286,12 @@ void CLbmBetaCPU<T>::betaKernelCPU(
             case OBSTACLE: // in case of an obstacle, we bounce back the values
                 // set to zero velocity and no fluid density
     
-            	if (storeVelocities)
-            	{
+                if (storeVelocities)
+                {
                     velocity_x = (T)0;
                     velocity_y = (T)0;
                     velocity_z = (T)0;
-            	}
+                }
     
                 // use simple bounce back
                 vela2 = dd1;    dd1 = dd0;      dd0 = vela2;

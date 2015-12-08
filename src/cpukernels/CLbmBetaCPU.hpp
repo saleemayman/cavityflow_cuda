@@ -34,9 +34,9 @@ private:
     int domainCellsCPU;
     CVector<3, int> domainSize;
     CVector<3, int> domainSizeGPU; 
+    CVector<3, int> hollowCPULeftLimit;
+    CVector<3, int> hollowCPURightLimit;
     CVector<3, T> gravitation;
-    CVector<3, int> innerCPULimit;
-    CVector<3, int> outerCPULimit;
     std::vector<int> *localToGlobalIndexMap;
 
     int domainCells;
@@ -57,6 +57,8 @@ public:
     CLbmBetaCPU(
             CVector<3, int> domainSize,
             CVector<3, int> domainSizeGPU,
+            CVector<3, int> hollowCPULeftLimit,
+            CVector<3, int> hollowCPURightLimit,
             CVector<3, T> gravitation,
             std::vector<int> *localToGlobalIndexMap);
     ~CLbmBetaCPU();
@@ -70,7 +72,7 @@ public:
             const T drivenCavityVelocity,
             const bool isDomainPowOfTwo,
             const bool storeDensities,
-    		const bool storeVelocities);
+            const bool storeVelocities);
 
 };
 #endif

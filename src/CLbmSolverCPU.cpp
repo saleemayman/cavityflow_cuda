@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+#include <cassert>
+#include <cstring>
+
 #include "CLbmSolverCPU.hpp"
 
 template <class T>
@@ -42,26 +45,126 @@ CLbmSolverCPU<T>::CLbmSolverCPU(
                 storeDensities, storeVelocities, doLogging),
         solverGPU(solverGPU)
 {
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverCPU<T>::CLbmSolverCPU() -----" << std::endl;
+        std::cout << "id:                                          " << this->id << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+    }
+
+    CVector<3, int> domainSizeGPU;
+    domainSizeGPU = (solverGPU->getDomain())->getSize();
+
+
+    /*
+     * Set the limits of the CPU domain w.r.t to the inner GPU domain.
+     */
+    hollowCPULeftLimit[0] = (this->domain.getSize()[0] - domainSizeGPU[0]) / 2 - 1;
+    hollowCPURightLimit[0] = hollowCPULeftLimit[0] + domainSizeGPU[0] + 1;
+    hollowCPULeftLimit[1] = (this->domain.getSize()[1] - domainSizeGPU[1]) / 2 - 1;
+    hollowCPURightLimit[1] = hollowCPULeftLimit[1] + domainSizeGPU[1] + 1;
+    hollowCPULeftLimit[2] = (this->domain.getSize()[2] - domainSizeGPU[2]) / 2 - 1;
+    hollowCPURightLimit[2] = hollowCPULeftLimit[2] + domainSizeGPU[2] + 1;
+
+
     /*
      * Allocate memory for density distributions, density, flags and velocities.
      */
+    int domainCellsCPUWithHalo = this->domain.getNumOfCellsWithHalo() -((domainSizeGPU[0] - 2) * (domainSizeGPU[1] - 2) * (domainSizeGPU[2] - 2));
 
+    densityDistributions.reserve(NUM_LATTICE_VECTORS * domainCellsCPUWithHalo); 
+    flags.reserve(domainCellsCPUWithHalo);
+
+    if (storeDensities)
+        densities.reserve(domainCellsCPUWithHalo);
+    if (storeVelocities)
+        velocities.reserve(3 * domainCellsCPUWithHalo);
+
+    if (doLogging) {
+        std::cout << "size of allocated memory for density distributions: " << ((T)(NUM_LATTICE_VECTORS * domainCellsCPUWithHalo * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+        std::cout << "size of allocated memory for flags:                 " << ((T)(domainCellsCPUWithHalo * sizeof(Flag)) / (T)(1<<20)) << " MBytes" << std::endl;
+        if(this->storeDensities)
+            std::cout << "size of allocated memory for velocities:            " << ((T)(3 * domainCellsCPUWithHalo * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+        if(this->storeVelocities)
+            std::cout << "size of allocated memory for densities:             " << ((T)(domainCellsCPUWithHalo * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+    }
 
     /*
-     * instantiate the cpu init-kernel class
+     * instantiate the cpu init-kernel class and initialize the LBM simulation
      */
+    initLbmCPU = new CLbmInitCPU<T>(
+                        this->domain.getSize(), 
+                        domainSizeGPU, 
+                        hollowCPULeftLimit, 
+                        hollowCPURightLimit, 
+                        boundaryConditions);
+    initLbmCPU->initLbm(
+                    densityDistributions, 
+                    flags, 
+                    velocities, 
+                    densities, 
+                    storeDensities, 
+                    storeVelocities);
 
+    if (doLogging) {
+        std::cout << "CPU Domain successfully initialized!" <<  std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
+    }
+
+    /*
+     * instantiate the alhpa and beta classes
+     */
+    alphaLbmCPU = new CLbmAlphaCPU<T>(
+                            this->domain.getSize(), 
+                            domainSizeGPU, 
+                            hollowCPULeftLimit, 
+                            hollowCPURightLimit, 
+                            acceleration);
+    betaLbmCPU = new CLbmBetaCPU<T>(
+                            this->domain.getSize(), 
+                            domainSizeGPU, 
+                            hollowCPULeftLimit, 
+                            hollowCPURightLimit, 
+                            acceleration, 
+                            initLbmCPU->getCellIndexMap());
 }
 
 template <class T>
 CLbmSolverCPU<T>::~CLbmSolverCPU()
 {
-//    delete initKernelCPU;
+    delete initLbmCPU;
+    delete alphaLbmCPU;
+    delete betaLbmCPU;
 }
 
 template <class T>
 void CLbmSolverCPU<T>::simulationStepAlpha()
 {
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverCPU<T>::simulationStepAlpha() -----" << std::endl;
+        std::cout << "id:                " << id << std::endl;
+        std::cout << "---------------------------------------------------" << std::endl;
+    }
+
+    /*
+     * launch the alpha-kernel for the CPU domain
+     */
+    alphaLbmCPU->alphaKernelCPU(
+                    densityDistributions,
+                    flags,
+                    velocities,
+                    densities,
+                    tauInv,
+                    velocityDimLess[0],
+                    storeDensities,
+                    storeVelocities);
+
+    if (doLogging)
+    {
+        std::cout << "Alpha kernel was successfully executed on the whole CPU subdomain." << std::endl;
+        std::cout << "---------------------------------------------------" << std::endl;
+    }
 }
 
 template <class T>
@@ -72,6 +175,29 @@ void CLbmSolverCPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, in
 template <class T>
 void CLbmSolverCPU<T>::simulationStepBeta()
 {
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverCPU<T>::simulationStepBeta() -----" << std::endl;
+        std::cout << "id:                 " << id << std::endl;
+        std::cout << "---------------------------------------------------" << std::endl;
+    }
+
+    betaLbmCPU->betaKernelCPU(
+                    densityDistributions,
+                    flags,
+                    velocities,
+                    densities,
+                    tauInv,
+                    velocityDimLess[0],
+                    isPowerOfTwo(this->domain.getNumOfCellsWithHalo()),
+                    storeDensities,
+                    storeVelocities);
+
+    if (doLogging)
+    {
+        std::cout << "Beta kernel was successfully executed on the whole CPU subdomain." << std::endl;
+        std::cout << "--------------------------------------------------" << std::endl;
+    }
 }
 
 template <class T>
@@ -80,22 +206,57 @@ void CLbmSolverCPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int
 }
 
 template <class T>
-void CLbmSolverCPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* src)
+void CLbmSolverCPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* dst)
+{
+    assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
+    assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
+    assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
+    assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
+    //TODO: assert(origin[0] is NOT between the left[0] and right[0] CPU inner limits);
+    //TODO: assert(origin[1] is NOT between the left[1] and right[1] CPU inner limits);
+    //TODO: assert(origin[2] is NOT between the left[2] and right[2] CPU inner limits);
+
+    // get global linear index of starting cell
+    int dstIndex;
+    int srcIndex;
+    int localIndex; 
+    int globalIndex = origin[0] + origin[1] * domain.getSizeWithHalo()[0] + origin[2] * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+
+    /* 
+     * loop over the number of cell widths to copy in z- and y-dimensions, 
+     * and then do a memcpy of all the size[0] cells in the x-dimension.
+     */
+    for(int latticeVector = 0; latticeVector < NUM_LATTICE_VECTORS; latticeVector++)
+    {
+        for (int widthZ = 0; widthZ < size[2]; widthZ++)
+        {
+            for (int widthY = 0; widthY < size[1]; widthY++)
+            {
+                globalIndex += widthY * domain.getSizeWithHalo()[0] + widthZ * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+                localIndex = initLbmCPU->getLocalIndex(globalIndex);
+                
+                dstIndex = widthY * size[0] + widthZ * (size[0] * size[1]) + latticeVector * size.elements();
+                srcIndex = localIndex + latticeVector * domain.getNumOfCellsWithHalo();
+
+                std::memcpy(&dst[dstIndex], &densityDistributions[srcIndex], size[0] * sizeof(T));
+            }
+        }
+    } 
+}
+
+template <class T>
+void CLbmSolverCPU<T>::getDensityDistributions(T* dst)
 {
 }
 
 template <class T>
-void CLbmSolverCPU<T>::getDensityDistributions(T* src)
+void CLbmSolverCPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* src)
 {
 }
 
 template <class T>
-void CLbmSolverCPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* dst)
-{
-}
-
-template <class T>
-void CLbmSolverCPU<T>::setDensityDistributions(T* dst)
+void CLbmSolverCPU<T>::setDensityDistributions(T* src)
 {
 }
 
@@ -158,6 +319,19 @@ template <class T>
 void CLbmSolverCPU<T>::setDensities(T* dst)
 {
 }
+
+template <class T>
+CVector<3, int> CLbmSolverCPU<T>::getHollowCPULeftLimits()
+{
+    return hollowCPULeftLimit;
+}
+
+template <class T>
+CVector<3, int> CLbmSolverCPU<T>::getHollowCPURightLimits()
+{
+    return hollowCPURightLimit;
+}
+
 
 template class CLbmSolverCPU<float>;
 template class CLbmSolverCPU<double>;
