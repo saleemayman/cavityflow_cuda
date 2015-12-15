@@ -50,12 +50,12 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>2260</loops>
+    <loops>10</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>0.01</timestep>
     <!--  -->
     <benchmark>
-      <do>1</do>
+      <do>0</do>
       <output-dir>/work_fast/riesinge/workspace/lbm/benchmark</output-dir>
     </benchmark>
     <!--  -->
@@ -70,7 +70,7 @@
     <!--  -->
     <visualization>
       <do>0</do>
-      <rate>2260</rate>
+      <rate>22600</rate>
       <output-dir>/work_fast/riesinge/workspace/lbm/visualization</output-dir>
     </visualization>
   </simulation>
@@ -80,20 +80,20 @@
     <grid-configuration>
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_init() -->
       <init-grid-configuration>
-        <x>32</x>
-        <y>16</y>
+        <x>64</x>
+        <y>1</y>
         <z>1</z>
       </init-grid-configuration>
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_alpha() -->
       <alpha-grid-configuration>
         <x>32</x>
-        <y>8</y>
+        <y>1</y>
         <z>1</z>
       </alpha-grid-configuration>
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_beta() -->
       <beta-grid-configuration>
         <x>32</x>
-        <y>8</y>
+        <y>1</y>
         <z>1</z>
       </beta-grid-configuration>
     </grid-configuration>

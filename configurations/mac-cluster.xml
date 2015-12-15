@@ -25,21 +25,21 @@
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-      <x>512</x>
-      <y>512</y>
-      <z>32</z>
+      <x>256</x>
+      <y>256</y>
+      <z>256</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
       <x>1.0</x>
       <y>1.0</y>
-      <z>0.0625</z>
+      <z>1.0</z>
     </domian-length>
     <!-- number of subdomains in x, y and z direction (unit: scalar) -->
     <subdomain-num>
-      <x>2</x>
-      <y>2</y>
-      <z>2</z>
+      <x>1</x>
+      <y>1</y>
+      <z>1</z>
     </subdomain-num>
     <!-- ratio in x, y and z direction of subdomain cells which are processed by the CPU ([0.0, 1.0]) (unit: scalar factor) -->
     <cpu-subdomain-ratio>
@@ -50,12 +50,12 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>1344602</loops>
+    <loops>10</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>0.01</timestep>
     <!--  -->
     <benchmark>
-      <do>1</do>
+      <do>0</do>
       <output-dir>/scratch/pr63so/lu32dec/dissertation/lbm/benchmark</output-dir>
     </benchmark>
     <!--  -->
@@ -69,8 +69,8 @@
     </validation>
     <!--  -->
     <visualization>
-      <do>1</do>
-      <rate>2241</rate>
+      <do>0</do>
+      <rate>1</rate>
       <output-dir>/scratch/pr63so/lu32dec/dissertation/lbm/visualization</output-dir>
     </visualization>
   </simulation>
@@ -80,20 +80,20 @@
     <grid-configuration>
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_init() -->
       <init-grid-configuration>
-        <x>32</x>
-        <y>16</y>
+        <x>64</x>
+        <y>1</y>
         <z>1</z>
       </init-grid-configuration>
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_alpha() -->
       <alpha-grid-configuration>
         <x>32</x>
-        <y>8</y>
+        <y>1</y>
         <z>1</z>
       </alpha-grid-configuration>
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_beta() -->
       <beta-grid-configuration>
         <x>32</x>
-        <y>8</y>
+        <y>1</y>
         <z>1</z>
       </beta-grid-configuration>
     </grid-configuration>
