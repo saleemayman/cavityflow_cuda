@@ -60,7 +60,9 @@ public:
             std::vector<T> &velocities,
             std::vector<T> &densities,
             const T inv_tau,
-            const T drivenCavityVelocity, // velocity parameters for modification of density distributions
+            const T drivenCavityVelocity,
+            CVector<3, int> origin,
+            CVector<3, int> size,
             const bool storeDensities,
             const bool storeVelocities);
 

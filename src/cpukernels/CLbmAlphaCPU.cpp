@@ -48,15 +48,19 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
                 std::vector<T> &velocities,
                 std::vector<T> &densities,
                 const T inv_tau,
-                const T drivenCavityVelocity, // velocity parameters for modification of density distributions
+                const T drivenCavityVelocity,
+                CVector<3, int> origin,
+                CVector<3, int> size,
                 const bool storeDensities,
                 const bool storeVelocities)
 {
+    const int startIndex = origin[0] + origin[1] * domainSize[0] + origin[2] * (domainSize[1] * domainSize[2]);
+    const int endIndex = (origin[0] + size[0]) + (origin[1] + size[1]) * domainSize[0] + (origin[2] + size[2]) * (domainSize[1] * domainSize[2]);
+
     /*
      * Iterate over all CPU domain cells.
-     * 
      */
-    for (int i = 0; i < domainCellsCPU; i++)
+    for (int i = startIndex; i < endIndex; i++)
     {
         /*
          * skip cell if it is a ghost cell. Note: a ghost cell also means
@@ -64,7 +68,7 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
          * have to skip them as well.
          */
         if  (flags[i] == GHOST_LAYER)
-            break;
+            continue;
 
         /*
          * we have to sum the densities up in a specific order.

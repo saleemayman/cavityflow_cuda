@@ -70,6 +70,8 @@ public:
             std::vector<T> &densities,
             const T inv_tau,
             const T drivenCavityVelocity,
+            CVector<3, int> origin,
+            CVector<3, int> size,
             const bool isDomainPowOfTwo,
             const bool storeDensities,
             const bool storeVelocities);

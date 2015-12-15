@@ -86,16 +86,21 @@ void CLbmBetaCPU<T>::betaKernelCPU(
         std::vector<T> &velocities,
         std::vector<T> &densities,
         const T inv_tau,
-        const T drivenCavityVelocity, // velocity parameters for modification of density distributions
+        const T drivenCavityVelocity, 
+        CVector<3, int> origin,
+        CVector<3, int> size,
         const bool isDomainPowOfTwo,
         const bool storeDensities,
         const bool storeVelocities)
 {
+    const int startIndex = origin[0] + origin[1] * domainSize[0] + origin[2] * (domainSize[1] * domainSize[2]);
+    const int endIndex = (origin[0] + size[0]) + (origin[1] + size[1]) * domainSize[0] + (origin[2] + size[2]) * (domainSize[1] * domainSize[2]);
+
     /*
      * Iterate over all CPU domain cells in the following order:
      * x-cells, y-cells, z-cells.
      */
-    for (int cellID = 0; cellID < domainCellsCPU; cellID++)
+    for (int cellID = startIndex; cellID < endIndex; cellID++)
     {
         int gid = localToGlobalIndexMap->operator[](cellID);
 
@@ -448,7 +453,7 @@ void CLbmBetaCPU<T>::betaKernelCPU(
         densityDistributions[cellID + 18*domainCellsCPU] = dd18;
     
         if ( flags[cellID] == GHOST_LAYER)
-            return;
+            continue;
     
         if (storeVelocities)
         {
