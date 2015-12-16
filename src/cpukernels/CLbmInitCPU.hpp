@@ -21,6 +21,7 @@
 #define LBM_INITCPU_HPP
 
 #include <vector>
+#include <algorithm>
 
 #include "../libmath/CVector.hpp"
 #include "../CDomain.hpp"
