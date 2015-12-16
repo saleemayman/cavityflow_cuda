@@ -744,8 +744,8 @@ void CController<T>::run()
         elapsed = (T)(end.tv_sec - start.tv_sec) + (T)(end.tv_usec - start.tv_usec) * (T)0.000001;
 
         T iterationsPerSecond = (T)(configuration->loops) / elapsed;
-        T glups = iterationsPerSecond * (T)configuration->domainSize.elements() * (T)0.000000001;
-        T gbandwidth = glups * (T)usedDataSize;
+        T lups = iterationsPerSecond * (T)configuration->domainSize.elements() * (T)0.000000001;
+        T bandwidth = lups * (T)usedDataSize;
 
         std::stringstream benchmarkFileName;
         benchmarkFileName << configuration->benchmarkOutputDir << "/benchmark_" << id << ".txt";
@@ -755,8 +755,8 @@ void CController<T>::run()
             benchmarkFile << "loops:           " << configuration->loops << std::endl;
             benchmarkFile << "time:            " << elapsed << "s" << std::endl;
             benchmarkFile << "iterations:      " << iterationsPerSecond << "s^-1" << std::endl;
-            benchmarkFile << "lattice updates: " << glups << "GLUPS" << std::endl;
-            benchmarkFile << "bandwidth:       " << gbandwidth << "GB/s" << std::endl;
+            benchmarkFile << "lattice updates: " << lups << "GLUPS" << std::endl;
+            benchmarkFile << "bandwidth:       " << bandwidth << "GB/s" << std::endl;
             benchmarkFile.close();
         } else {
             std::cerr << "----- CController<T>::run() -----" << std::endl;

@@ -20,7 +20,7 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#define TYPE                double
+#define TYPE                float
 
 #define NUM_LATTICE_VECTORS 19
 

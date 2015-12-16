@@ -20,6 +20,10 @@
 #ifndef COMMON_CUH
 #define COMMON_CUH
 
+#define GRAVITATION         0
+#define CACHED_ACCESS       0
+#define USE_SHARED_MEMORY   0
+
 /*
  * Workaround taken from 0_Simple/simpleTemplates/sharedmem.cuh:
  * Because dynamically sized shared memory arrays are declared "extern", we

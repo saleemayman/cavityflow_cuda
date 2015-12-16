@@ -25,9 +25,9 @@
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-      <x>256</x>
-      <y>256</y>
-      <z>256</z>
+      <x>409</x>
+      <y>409</y>
+      <z>409</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
@@ -50,12 +50,12 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>10</loops>
+    <loops>100</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>0.01</timestep>
     <!--  -->
     <benchmark>
-      <do>0</do>
+      <do>1</do>
       <output-dir>/scratch/pr63so/lu32dec/dissertation/lbm/benchmark</output-dir>
     </benchmark>
     <!--  -->
