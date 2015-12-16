@@ -19,12 +19,6 @@
 
 #include "lbm_beta.cuh"
 
-#define GRAVITATION         0
-
-#define CACHED_ACCESS       0
-
-#define USE_SHARED_MEMORY   0
-
 __device__ size_t DOMAIN_WRAP(size_t A, size_t DOMAIN_CELLS, bool isPowTwo)
 {
     return ( (int)isPowTwo*(A & (DOMAIN_CELLS-1)) + (int)(!isPowTwo)*(A % DOMAIN_CELLS) );
