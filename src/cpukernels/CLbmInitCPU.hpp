@@ -31,9 +31,8 @@ template<typename T>
 class CLbmInitCPU
 {
 private:
-    int domainCellsCPU;
-    CVector<3, int> domainSize;
-    CVector<3, int> domainSizeGPU; 
+    int domainCellsCPUWithHalo;
+    CVector<3, int> domainSizeWithHalo;
     CVector<3, int> hollowCPULeftLimit;
     CVector<3, int> hollowCPURightLimit;
     std::vector<int> *localToGlobalIndexMap;
@@ -58,8 +57,8 @@ private:
 
 public:
     CLbmInitCPU(
-            CVector<3, int> domainSize,
-            CVector<3, int> domainSizeGPU,
+            int domainCellsCPUWithHalo,
+            CVector<3, int> domainSizeWithHalo,
             CVector<3, int> hollowCPULeftLimit,
             CVector<3, int> hollowCPURightLimit,
             std::vector<Flag>& boundaryConditions);

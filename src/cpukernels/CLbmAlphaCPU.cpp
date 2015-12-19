@@ -21,23 +21,28 @@
 
 template<class T>
 CLbmAlphaCPU<T>::CLbmAlphaCPU(
-                    CVector<3, int> domainSize,
-                    CVector<3, int> domainSizeGPU,
+                    int domainCellsCPUWithHalo,
+                    CVector<3, int> domainSizeWithHalo,
                     CVector<3, int> hollowCPULeftLimit,
                     CVector<3, int> hollowCPURightLimit,
+                    //std::vector<int> *localToGlobalIndexMap,
+                    CLbmInitCPU<T> *initLbmCPU,
                     CVector<3, T> gravitation) :
-                        domainSize(domainSize),
-                        domainSizeGPU(domainSizeGPU),
+                        domainCellsCPUWithHalo(domainCellsCPUWithHalo),
+                        domainSizeWithHalo(domainSizeWithHalo),
                         hollowCPULeftLimit(hollowCPULeftLimit),
                         hollowCPURightLimit(hollowCPURightLimit),
+                        //localToGlobalIndexMap(localToGlobalIndexMap),
+                        initLbmCPU(initLbmCPU),
                         gravitation(gravitation)
 {
-    domainCellsCPU = domainSize.elements() - domainSizeGPU.elements();    
 }
 
 template<class T>
 CLbmAlphaCPU<T>::~CLbmAlphaCPU()
 {
+	if (isSubRegion)
+		delete[] localIndices;
 }
 
 
@@ -54,14 +59,55 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
                 const bool storeDensities,
                 const bool storeVelocities)
 {
-    const int startIndex = origin[0] + origin[1] * domainSize[0] + origin[2] * (domainSize[1] * domainSize[2]);
-    const int endIndex = (origin[0] + size[0]) + (origin[1] + size[1]) * domainSize[0] + (origin[2] + size[2]) * (domainSize[1] * domainSize[2]);
+    int i;  // cell local linear id
+	int startIndex, endIndex;
+
+    /*
+     * Check if computation has to be done for a sub-region, if yes then create a local vector
+     * containing the local linear indices of all the linear global cells for which we need to 
+     * do the computation (the global cells are specified in size parameter).
+     */
+    if (size[0] == domainSizeWithHalo[0] && size[1] == domainSizeWithHalo[1] && size[2] == domainSizeWithHalo[2])
+    {
+        startIndex = 0; 
+        endIndex = domainCellsCPUWithHalo;
+        isSubRegion = (bool)0;
+    }
+    else
+        isSubRegion = (bool)1;
+
+    if (isSubRegion)
+    {
+        startIndex = 0; 
+        endIndex = size[0] * size[1] * size[2]; 
+        localIndices = new std::vector<int>(endIndex);
+
+        for (int i = 0; i < size[2]; i++)
+        {
+            for (int j = 0; j < size[1]; j++)
+            {
+                for (int k = 0; k < size[0]; k++)
+                {
+                    localIndices->operator[](k + j * size[0] + i * size[0] * size[1]) = initLbmCPU->getLocalIndex((origin[0] +  k) + (origin[1] + j) * domainSizeWithHalo[0] + (origin[2] + i) * (domainSizeWithHalo[1] * domainSizeWithHalo[2]));
+                }
+            }
+        }
+    }
 
     /*
      * Iterate over all CPU domain cells.
      */
-    for (int i = startIndex; i < endIndex; i++)
+    for (int id = startIndex; id < endIndex; id++)
     {
+        if (isSubRegion)
+        {
+            i = localIndices->operator[](id);
+        }
+        else
+        {
+            i = id;
+        }
+            
         /*
          * skip cell if it is a ghost cell. Note: a ghost cell also means
          * that the cell lies at the boundary of the GPU domain and we 
@@ -80,19 +126,19 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
          * +++++++++++
          * 0-3: f(1,0,0), f(-1,0,0),  f(0,1,0),  f(0,-1,0)
          */
-        dd0 = densityDistributions[i + 0*domainCellsCPU];
+        dd0 = densityDistributions[i + 0*domainCellsCPUWithHalo];
         rho = dd0;
         velocity_x = dd0;
        
-        dd1 = densityDistributions[i + 1*domainCellsCPU]; 
+        dd1 = densityDistributions[i + 1*domainCellsCPUWithHalo]; 
         rho += dd1;
         velocity_x -= dd1;
 
-        dd2 = densityDistributions[i + 2*domainCellsCPU]; 
+        dd2 = densityDistributions[i + 2*domainCellsCPUWithHalo]; 
         rho += dd2;
         velocity_y = dd2;
     
-        dd3 = densityDistributions[i + 3*domainCellsCPU]; 
+        dd3 = densityDistributions[i + 3*domainCellsCPUWithHalo]; 
         rho += dd3;
         velocity_y -= dd3;
     
@@ -101,22 +147,22 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
          * +++++++++++
          * 4-7: f(1,1,0), f(-1,-1,0), f(1,-1,0), f(-1,1,0)
          */
-        dd4 = densityDistributions[i + 4*domainCellsCPU]; 
+        dd4 = densityDistributions[i + 4*domainCellsCPUWithHalo]; 
         rho += dd4;
         velocity_x += dd4;
         velocity_y += dd4;
 
-        dd5 = densityDistributions[i + 5*domainCellsCPU]; 
+        dd5 = densityDistributions[i + 5*domainCellsCPUWithHalo]; 
         rho += dd5;
         velocity_x -= dd5;
         velocity_y -= dd5;
     
-        dd6 = densityDistributions[i + 6*domainCellsCPU]; 
+        dd6 = densityDistributions[i + 6*domainCellsCPUWithHalo]; 
         rho += dd6;
         velocity_x += dd6;
         velocity_y -= dd6;
 
-        dd7 = densityDistributions[i + 7*domainCellsCPU]; 
+        dd7 = densityDistributions[i + 7*domainCellsCPUWithHalo]; 
         rho += dd7;
         velocity_x -= dd7;
         velocity_y += dd7;
@@ -126,22 +172,22 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
          * +++++++++++
          * 8-11: f(1,0,1), f(-1,0,-1), f(1,0,-1), f(-1,0,1)
          */
-        dd8 = densityDistributions[i + 8*domainCellsCPU]; 
+        dd8 = densityDistributions[i + 8*domainCellsCPUWithHalo]; 
         rho += dd8;
         velocity_x += dd8;
         velocity_z = dd8;
 
-        dd9 = densityDistributions[i + 9*domainCellsCPU]; 
+        dd9 = densityDistributions[i + 9*domainCellsCPUWithHalo]; 
         rho += dd9;
         velocity_x -= dd9;
         velocity_z -= dd9;
     
-        dd10 = densityDistributions[i + 10*domainCellsCPU]; 
+        dd10 = densityDistributions[i + 10*domainCellsCPUWithHalo]; 
         rho += dd10;
         velocity_x += dd10;
         velocity_z -= dd10;
 
-        dd11 = densityDistributions[i + 11*domainCellsCPU]; 
+        dd11 = densityDistributions[i + 11*domainCellsCPUWithHalo]; 
         rho += dd11;
         velocity_x -= dd11;
         velocity_z += dd11;
@@ -151,22 +197,22 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
          * +++++++++++
          * dd3: f(0,1,1), f(0,-1,-1), f(0,1,-1), f(0,-1,1)
          */ 
-        dd12 = densityDistributions[i + 12*domainCellsCPU]; 
+        dd12 = densityDistributions[i + 12*domainCellsCPUWithHalo]; 
         rho += dd12;
         velocity_y += dd12;
         velocity_z += dd12;
 
-        dd13 = densityDistributions[i + 13*domainCellsCPU]; 
+        dd13 = densityDistributions[i + 13*domainCellsCPUWithHalo]; 
         rho += dd13;
         velocity_y -= dd13;
         velocity_z -= dd13;
     
-        dd14 = densityDistributions[i + 14*domainCellsCPU]; 
+        dd14 = densityDistributions[i + 14*domainCellsCPUWithHalo]; 
         rho += dd14;
         velocity_y += dd14;
         velocity_z -= dd14;
 
-        dd15 = densityDistributions[i + 15*domainCellsCPU]; 
+        dd15 = densityDistributions[i + 15*domainCellsCPUWithHalo]; 
         rho += dd15;
         velocity_y -= dd15;
         velocity_z += dd15;
@@ -176,15 +222,15 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
          * +++++++++++
          * dd4: f(0,0,1), f(0,0,-1),  f(0,0,0),  (not used)
          */
-        dd16 = densityDistributions[i + 16*domainCellsCPU]; 
+        dd16 = densityDistributions[i + 16*domainCellsCPUWithHalo]; 
         rho += dd16;
         velocity_z += dd16;
 
-        dd17 = densityDistributions[i + 17*domainCellsCPU]; 
+        dd17 = densityDistributions[i + 17*domainCellsCPUWithHalo]; 
         rho += dd17;
         velocity_z -= dd17;
 
-        dd18 = densityDistributions[i + 18*domainCellsCPU]; 
+        dd18 = densityDistributions[i + 18*domainCellsCPUWithHalo]; 
         rho += dd18;
     
     
@@ -205,21 +251,21 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
                 vela2 = velocity_x*velocity_x;
                 dd1 += inv_tau*(eq_dd_a1(velocity_x, vela2, dd_param) - dd1);
                 dd1 -= tmp;
-                densityDistributions[i + 0*domainCellsCPU] = dd1;
+                densityDistributions[i + 0*domainCellsCPUWithHalo] = dd1;
     
                 dd0 += inv_tau*(eq_dd_a0(velocity_x, vela2, dd_param) - dd0);
                 dd0 += tmp;
-                densityDistributions[i + 1*domainCellsCPU] = dd0;
+                densityDistributions[i + 1*domainCellsCPUWithHalo] = dd0;
     
                 tmp = gravitation[1]*(T)(-1.0f/18.0f)*rho;
                 vela2 = velocity_y*velocity_y;
                 dd3 += inv_tau*(eq_dd_a1(velocity_y, vela2, dd_param) - dd3);
                 dd3 -= tmp;
-                densityDistributions[i + 2*domainCellsCPU] = dd3;
+                densityDistributions[i + 2*domainCellsCPUWithHalo] = dd3;
     
                 dd2 += inv_tau*(eq_dd_a0(velocity_y, vela2, dd_param) - dd2);
                 dd2 += tmp;
-                densityDistributions[i + 3*domainCellsCPU] = dd2;
+                densityDistributions[i + 3*domainCellsCPUWithHalo] = dd2;
     
 #define vela_velb_2 vela2
                 /***********************
@@ -232,22 +278,22 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
     
                 dd5 += inv_tau*(eq_dd5(vela_velb, vela_velb_2, dd_param) - dd5);
                 dd5 -= tmp;
-                densityDistributions[i + 4*domainCellsCPU] = dd5;
+                densityDistributions[i + 4*domainCellsCPUWithHalo] = dd5;
     
                 dd4 += inv_tau*(eq_dd4(vela_velb, vela_velb_2, dd_param) - dd4);
                 dd4 += tmp;
-                densityDistributions[i + 5*domainCellsCPU] = dd4;
+                densityDistributions[i + 5*domainCellsCPUWithHalo] = dd4;
     
                 vela_velb = velocity_x-velocity_y;
                 vela_velb_2 = vela_velb*vela_velb;
                 tmp = (gravitation[0] + gravitation[1])*((T)1/(T)36)*rho;
                 dd7 += inv_tau*(eq_dd5(vela_velb, vela_velb_2, dd_param) - dd7);
                 dd7 -= tmp;
-                densityDistributions[i + 6*domainCellsCPU] = dd7;
+                densityDistributions[i + 6*domainCellsCPUWithHalo] = dd7;
     
                 dd6 += inv_tau*(eq_dd4(vela_velb, vela_velb_2, dd_param) - dd6);
                 dd6 += tmp;
-                densityDistributions[i + 7*domainCellsCPU] = dd6;
+                densityDistributions[i + 7*domainCellsCPUWithHalo] = dd6;
     
                 /***********************
                  * DD2
@@ -258,22 +304,22 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
     
                 dd9 += inv_tau*(eq_dd5(vela_velb, vela_velb_2, dd_param) - dd9);
                 dd9 -= tmp;
-                densityDistributions[i + 8*domainCellsCPU] = dd9;
+                densityDistributions[i + 8*domainCellsCPUWithHalo] = dd9;
     
                 dd8 += inv_tau*(eq_dd4(vela_velb, vela_velb_2, dd_param) - dd8);
                 dd8 += tmp;
-                densityDistributions[i + 9*domainCellsCPU] = dd8;
+                densityDistributions[i + 9*domainCellsCPUWithHalo] = dd8;
     
                 tmp = (gravitation[0] - gravitation[2])*((T)1/(T)36)*rho;
                 vela_velb = velocity_x-velocity_z;
                 vela_velb_2 = vela_velb*vela_velb;
                 dd11 += inv_tau*(eq_dd5(vela_velb, vela_velb_2, dd_param) - dd11);
                 dd11 -= tmp;
-                densityDistributions[i + 10*domainCellsCPU] = dd11;
+                densityDistributions[i + 10*domainCellsCPUWithHalo] = dd11;
     
                 dd10 += inv_tau*(eq_dd4(vela_velb, vela_velb_2, dd_param) - dd10);
                 dd10 += tmp;
-                densityDistributions[i + 11*domainCellsCPU] = dd10;
+                densityDistributions[i + 11*domainCellsCPUWithHalo] = dd10;
     
                 /***********************
                  * DD3
@@ -284,11 +330,11 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
                 tmp = (gravitation[2] - gravitation[1])*((T)1/(T)36)*rho;
                 dd13 += inv_tau*(eq_dd5(vela_velb, vela_velb_2, dd_param) - dd13);
                 dd13 -= tmp;
-                densityDistributions[i + 12*domainCellsCPU] = dd13;
+                densityDistributions[i + 12*domainCellsCPUWithHalo] = dd13;
     
                 dd12 += inv_tau*(eq_dd4(vela_velb, vela_velb_2, dd_param) - dd12);
                 dd12 += tmp;
-                densityDistributions[i + 13*domainCellsCPU] = dd12;
+                densityDistributions[i + 13*domainCellsCPUWithHalo] = dd12;
     
                 vela_velb = velocity_y-velocity_z;
                 vela_velb_2 = vela_velb*vela_velb;
@@ -296,11 +342,11 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
     
                 dd15 += inv_tau*(eq_dd5(vela_velb, vela_velb_2, dd_param) - dd15);
                 dd15 -= tmp;
-                densityDistributions[i + 14*domainCellsCPU] = dd15;
+                densityDistributions[i + 14*domainCellsCPUWithHalo] = dd15;
     
                 dd14 += inv_tau*(eq_dd4(vela_velb, vela_velb_2, dd_param) - dd14);
                 dd14 += tmp;
-                densityDistributions[i + 15*domainCellsCPU] = dd14;
+                densityDistributions[i + 15*domainCellsCPUWithHalo] = dd14;
     
 #undef vela_velb_2
                 /***********************
@@ -311,14 +357,14 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
                 tmp = gravitation[2]*(T)(1.0f/18.0f)*rho;
                 dd17 += inv_tau*(eq_dd_a1(velocity_z, vela2, dd_param) - dd17);
                 dd17 -= tmp;
-                densityDistributions[i + 16*domainCellsCPU] = dd17;
+                densityDistributions[i + 16*domainCellsCPUWithHalo] = dd17;
     
                 dd16 += inv_tau*(eq_dd_a0(velocity_z, vela2, dd_param) - dd16);
                 dd16 += tmp;
-                densityDistributions[i + 17*domainCellsCPU] = dd16;
+                densityDistributions[i + 17*domainCellsCPUWithHalo] = dd16;
     
                 dd18 += inv_tau*(eq_dd18(dd_param) - dd18);
-                densityDistributions[i + 18*domainCellsCPU] = dd18;
+                densityDistributions[i + 18*domainCellsCPUWithHalo] = dd18;
     
                 break;
     
@@ -355,22 +401,22 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
     
                 dd1 = eq_dd_a1(velocity_x, vela2, dd_param);
                 dd1 -= tmp;
-                densityDistributions[i + 0*domainCellsCPU] = dd1;
+                densityDistributions[i + 0*domainCellsCPUWithHalo] = dd1;
     
                 dd0 = eq_dd_a0(velocity_x, vela2, dd_param);
                 dd0 += tmp;
-                densityDistributions[i + 1*domainCellsCPU] = dd0;
+                densityDistributions[i + 1*domainCellsCPUWithHalo] = dd0;
     
                 vela2 = velocity_y*velocity_y;
                 tmp = gravitation[1]*((T)-1/(T)18)*rho;
     
                 dd3 = eq_dd_a1(velocity_y, vela2, dd_param);
                 dd3 -= tmp;
-                densityDistributions[i + 2*domainCellsCPU] = dd3;
+                densityDistributions[i + 2*domainCellsCPUWithHalo] = dd3;
     
                 dd2 = eq_dd_a0(velocity_y, vela2, dd_param);
                 dd2 += tmp;
-                densityDistributions[i + 3*domainCellsCPU] = dd2;
+                densityDistributions[i + 3*domainCellsCPUWithHalo] = dd2;
     
 #define vela_velb_2 vela2
                 /***********************
@@ -382,11 +428,11 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
     
                 dd5 = eq_dd5(vela_velb, vela_velb_2, dd_param);
                 dd5 -= tmp;
-                densityDistributions[i + 4*domainCellsCPU] = dd5;
+                densityDistributions[i + 4*domainCellsCPUWithHalo] = dd5;
     
                 dd4 = eq_dd4(vela_velb, vela_velb_2, dd_param);
                 dd4 += tmp;
-                densityDistributions[i + 5*domainCellsCPU] = dd4;
+                densityDistributions[i + 5*domainCellsCPUWithHalo] = dd4;
     
                 vela_velb = velocity_x-velocity_y;
                 vela_velb_2 = vela_velb*vela_velb;
@@ -394,11 +440,11 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
     
                 dd7 = eq_dd5(vela_velb, vela_velb_2, dd_param);
                 dd7 -= tmp;
-                densityDistributions[i + 6*domainCellsCPU] = dd7;
+                densityDistributions[i + 6*domainCellsCPUWithHalo] = dd7;
     
                 dd6 = eq_dd4(vela_velb, vela_velb_2, dd_param);
                 dd6 += tmp;
-                densityDistributions[i + 7*domainCellsCPU] = dd6;
+                densityDistributions[i + 7*domainCellsCPUWithHalo] = dd6;
     
                 /***********************
                  * DD2
@@ -409,11 +455,11 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
     
                 dd9 = eq_dd5(vela_velb, vela_velb_2, dd_param);
                 dd9 -= tmp;
-                densityDistributions[i + 8*domainCellsCPU] = dd9;
+                densityDistributions[i + 8*domainCellsCPUWithHalo] = dd9;
     
                 dd8 = eq_dd4(vela_velb, vela_velb_2, dd_param);
                 dd8 += tmp;
-                densityDistributions[i + 9*domainCellsCPU] = dd8;
+                densityDistributions[i + 9*domainCellsCPUWithHalo] = dd8;
     
                 vela_velb = velocity_x-velocity_z;
                 vela_velb_2 = vela_velb*vela_velb;
@@ -421,11 +467,11 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
     
                 dd11 = eq_dd5(vela_velb, vela_velb_2, dd_param);
                 dd11 -= tmp;
-                densityDistributions[i + 10*domainCellsCPU] = dd11;
+                densityDistributions[i + 10*domainCellsCPUWithHalo] = dd11;
     
                 dd10 = eq_dd4(vela_velb, vela_velb_2, dd_param);
                 dd10 += tmp;
-                densityDistributions[i + 11*domainCellsCPU] = dd10;
+                densityDistributions[i + 11*domainCellsCPUWithHalo] = dd10;
     
                 /***********************
                  * DD3
@@ -436,11 +482,11 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
     
                 dd13 = eq_dd5(vela_velb, vela_velb_2, dd_param);
                 dd13 -= tmp;
-                densityDistributions[i + 12*domainCellsCPU] = dd13;
+                densityDistributions[i + 12*domainCellsCPUWithHalo] = dd13;
     
                 dd12 = eq_dd4(vela_velb, vela_velb_2, dd_param);
                 dd12 += tmp;
-                densityDistributions[i + 13*domainCellsCPU] = dd12;
+                densityDistributions[i + 13*domainCellsCPUWithHalo] = dd12;
     
                 vela_velb = velocity_y-velocity_z;
                 vela_velb_2 = vela_velb*vela_velb;
@@ -448,11 +494,11 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
     
                 dd15 = eq_dd5(vela_velb, vela_velb_2, dd_param);
                 dd15 -= tmp;
-                densityDistributions[i + 14*domainCellsCPU] = dd15;
+                densityDistributions[i + 14*domainCellsCPUWithHalo] = dd15;
     
                 dd14 = eq_dd4(vela_velb, vela_velb_2, dd_param);
                 dd14 += tmp;
-                densityDistributions[i + 15*domainCellsCPU] = dd14;
+                densityDistributions[i + 15*domainCellsCPUWithHalo] = dd14;
 #undef vela_velb_2
                 /***********************
                  * DD4
@@ -462,14 +508,14 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
                 tmp = gravitation[2]*(T)(1.0f/18.0f)*rho;
                 dd17 = eq_dd_a1(velocity_z, vela2, dd_param);
                 dd17 -= tmp;
-                densityDistributions[i + 16*domainCellsCPU] = dd17;
+                densityDistributions[i + 16*domainCellsCPUWithHalo] = dd17;
     
                 dd16 = eq_dd_a0(velocity_z, vela2, dd_param);
                 dd16 += tmp;
-                densityDistributions[i + 17*domainCellsCPU] = dd16;
+                densityDistributions[i + 17*domainCellsCPUWithHalo] = dd16;
     
                 dd18 = eq_dd18(dd_param);
-                densityDistributions[i + 18*domainCellsCPU] = dd18;
+                densityDistributions[i + 18*domainCellsCPUWithHalo] = dd18;
                 break;
     
             case (GHOST_LAYER):
@@ -479,9 +525,9 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
         if (storeVelocities)
         {
             // store velocity
-            velocities[i + 0*domainCellsCPU] = velocity_x;
-            velocities[i + 1*domainCellsCPU] = velocity_y;
-            velocities[i + 2*domainCellsCPU] = velocity_z;
+            velocities[i + 0*domainCellsCPUWithHalo] = velocity_x;
+            velocities[i + 1*domainCellsCPUWithHalo] = velocity_y;
+            velocities[i + 2*domainCellsCPUWithHalo] = velocity_z;
         }
     
         if (storeDensities)

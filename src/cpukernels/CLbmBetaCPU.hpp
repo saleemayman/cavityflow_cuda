@@ -23,6 +23,7 @@
 #include <vector>
 #include <algorithm>
 
+#include "CLbmInitCPU.hpp"
 #include "../common.h"
 #include "../libmath/CVector.hpp"
 #include "../CDomain.hpp"
@@ -31,13 +32,16 @@ template<class T>
 class CLbmBetaCPU
 {
 private:
-    int domainCellsCPU;
-    CVector<3, int> domainSize;
-    CVector<3, int> domainSizeGPU; 
+    int domainCellsCPUWithHalo;
+    CVector<3, int> domainSizeWithHalo;
     CVector<3, int> hollowCPULeftLimit;
     CVector<3, int> hollowCPURightLimit;
+    //std::vector<int> *localToGlobalIndexMap;
+    CLbmInitCPU<T> *initLbmCPU;
     CVector<3, T> gravitation;
-    std::vector<int> *localToGlobalIndexMap;
+	std::vector<int> *localIndices;
+
+	bool isSubRegion;
 
     int domainCells;
     int domainCellsInXYPlane;
@@ -55,12 +59,13 @@ private:
     int domainWrap(int A, int domainCells, bool isPowTwo);
 public:
     CLbmBetaCPU(
-            CVector<3, int> domainSize,
-            CVector<3, int> domainSizeGPU,
+            int domainCellsCPUWithHalo,
+            CVector<3, int> domainSizeWithHalo,
             CVector<3, int> hollowCPULeftLimit,
             CVector<3, int> hollowCPURightLimit,
-            CVector<3, T> gravitation,
-            std::vector<int> *localToGlobalIndexMap);
+            //std::vector<int> *localToGlobalIndexMap,
+            CLbmInitCPU<T> *initLbmCPU,
+            CVector<3, T> gravitation);
     ~CLbmBetaCPU();
 
     void betaKernelCPU(

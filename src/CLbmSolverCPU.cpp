@@ -70,7 +70,7 @@ CLbmSolverCPU<T>::CLbmSolverCPU(
     /*
      * Allocate memory for density distributions, density, flags and velocities.
      */
-    int domainCellsCPUWithHalo = this->domain.getNumOfCellsWithHalo() -((domainSizeGPU[0] - 2) * (domainSizeGPU[1] - 2) * (domainSizeGPU[2] - 2));
+    domainCellsCPUWithHalo = this->domain.getNumOfCellsWithHalo() -((domainSizeGPU[0] - 2) * (domainSizeGPU[1] - 2) * (domainSizeGPU[2] - 2));
 
     densityDistributions.resize(NUM_LATTICE_VECTORS * domainCellsCPUWithHalo); 
     flags.resize(domainCellsCPUWithHalo);
@@ -93,8 +93,8 @@ CLbmSolverCPU<T>::CLbmSolverCPU(
      * instantiate the cpu init-kernel class and initialize the LBM simulation
      */
     initLbmCPU = new CLbmInitCPU<T>(
-                        this->domain.getSize(), 
-                        domainSizeGPU, 
+                        domainCellsCPUWithHalo,
+                        this->domain.getSizeWithHalo(), 
                         hollowCPULeftLimit, 
                         hollowCPURightLimit, 
                         boundaryConditions);
@@ -115,18 +115,21 @@ CLbmSolverCPU<T>::CLbmSolverCPU(
      * instantiate the alhpa and beta classes
      */
     alphaLbmCPU = new CLbmAlphaCPU<T>(
-                            this->domain.getSize(), 
-                            domainSizeGPU, 
+                            domainCellsCPUWithHalo,
+                            this->domain.getSizeWithHalo(), 
                             hollowCPULeftLimit, 
                             hollowCPURightLimit, 
+                            //initLbmCPU->getCellIndexMap(),
+                            initLbmCPU,
                             acceleration);
     betaLbmCPU = new CLbmBetaCPU<T>(
-                            this->domain.getSize(), 
-                            domainSizeGPU, 
+                            domainCellsCPUWithHalo,
+                            this->domain.getSizeWithHalo(), 
                             hollowCPULeftLimit, 
                             hollowCPURightLimit, 
-                            acceleration, 
-                            initLbmCPU->getCellIndexMap());
+                            //initLbmCPU->getCellIndexMap(),
+                            initLbmCPU,
+                            acceleration);
 }
 
 template <class T>
@@ -178,9 +181,7 @@ void CLbmSolverCPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, in
     assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
     assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
     assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
-    //TODO: assert(origin[0] is NOT between the left[0] and right[0] CPU inner limits);
-    //TODO: assert(origin[1] is NOT between the left[1] and right[1] CPU inner limits);
-    //TODO: assert(origin[2] is NOT between the left[2] and right[2] CPU inner limits)
+	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
     
     if (doLogging)
     {
@@ -252,9 +253,7 @@ void CLbmSolverCPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int
     assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
     assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
     assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
-    //TODO: assert(origin[0] is NOT between the left[0] and right[0] CPU inner limits);
-    //TODO: assert(origin[1] is NOT between the left[1] and right[1] CPU inner limits);
-    //TODO: assert(origin[2] is NOT between the left[2] and right[2] CPU inner limits)
+	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
 
     if (doLogging)
     {
@@ -293,10 +292,21 @@ void CLbmSolverCPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<
     assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
     assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
     assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
-    //TODO: assert(origin[0] is NOT between the left[0] and right[0] CPU inner limits);
-    //TODO: assert(origin[1] is NOT between the left[1] and right[1] CPU inner limits);
-    //TODO: assert(origin[2] is NOT between the left[2] and right[2] CPU inner limits);
+	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
 
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverCPU<T>::getDensityDistributions() -----" << std::endl;
+        std::cout << "id:                " << id << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:       " << domain.getSize() << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "cuboid origin:     " << origin << std::endl;
+        std::cout << "cuboid size:       " << size << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
+    
     // get global linear index of starting cell
     int dstIndex;
     int srcIndex;
@@ -318,12 +328,18 @@ void CLbmSolverCPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<
                 localIndex = initLbmCPU->getLocalIndex(globalIndex);
                 
                 dstIndex = widthY * size[0] + widthZ * (size[0] * size[1]) + latticeVector * size.elements();
-                srcIndex = localIndex + latticeVector * domain.getNumOfCellsWithHalo(); // TODO: domain.getNumOfCellsWithHalo() should not be used. We need the domainCellsCPU
+                srcIndex = localIndex + latticeVector * domainCellsCPUWithHalo;
 
                 std::memcpy(dst + dstIndex, densityDistributions.data() + srcIndex, size[0] * sizeof(T));
             }
         }
     } 
+
+    if (doLogging)
+    {
+        std::cout << "A copy operation with in the host was performed." << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
 }
 
 template <class T>
@@ -343,8 +359,7 @@ void CLbmSolverCPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
     assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
     assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
     assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
-    // TODO: check if origin lies within the hollow region - es muss nicht!
-    // TODO: check if (origin+size) overlaps with the hollow region - wieder, es musst nicht sein!
+	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
 
     if (doLogging)
     {
@@ -382,7 +397,7 @@ void CLbmSolverCPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
                 localIndex = initLbmCPU->getLocalIndex(globalIndex);
                 
                 srcIndex = widthY * size[0] + widthZ * (size[0] * size[1]) + latticeVector * size.elements();
-                dstIndex = localIndex + latticeVector * domain.getNumOfCellsWithHalo(); // TODO: we need the domainCellsCPU here.
+                dstIndex = localIndex + latticeVector * domainCellsCPUWithHalo; 
 
                 std::memcpy(densityDistributions.data() + dstIndex, src + srcIndex, size[0] * sizeof(T));
             }
@@ -399,66 +414,408 @@ void CLbmSolverCPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
 template <class T>
 void CLbmSolverCPU<T>::setDensityDistributions(T* src)
 {
+    CVector<3, int> origin(1);
+    CVector<3, int> size(domain.getSize());
+
+    setDensityDistributions(origin, size, src);
 }
 
 template <class T>
-void CLbmSolverCPU<T>::getFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* src)
+void CLbmSolverCPU<T>::getFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* dst)
 {
+    assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
+    assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
+    assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
+    assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
+	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
+
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverCPU<T>::getFlags() -----" << std::endl;
+        std::cout << "id:                " << id << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:       " << domain.getSize() << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "cuboid origin:     " << origin << std::endl;
+        std::cout << "cuboid size:       " << size << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
+
+    // get global linear index of starting cell
+    int dstIndex;
+    int srcIndex;
+    int localIndex; 
+    int globalIndex;
+    int indexOffset = origin[0] + origin[1] * domain.getSizeWithHalo()[0] + origin[2] * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+
+    /* 
+     * loop over the number of cell widths to copy in z- and y-dimensions, 
+     * and then do a memcpy of all the size[0] cells in the x-dimension.
+     */
+    for (int widthZ = 0; widthZ < size[2]; widthZ++)
+    {
+        for (int widthY = 0; widthY < size[1]; widthY++)
+        {
+            globalIndex = indexOffset + widthY * domain.getSizeWithHalo()[0] + widthZ * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+            localIndex = initLbmCPU->getLocalIndex(globalIndex);
+            
+            dstIndex = widthY * size[0] + widthZ * (size[0] * size[1]);
+            srcIndex = localIndex;
+    
+            std::memcpy(dst + dstIndex, flags.data() + srcIndex, size[0] * sizeof(Flag));
+        }
+    }
+
+    if (doLogging)
+    {
+        std::cout << "A copy operation within the host was performed." << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
 }
 
 template <class T>
-void CLbmSolverCPU<T>::getFlags(Flag* src)
+void CLbmSolverCPU<T>::getFlags(Flag* dst)
 {
+    CVector<3, int> origin(1);
+    CVector<3, int> size(domain.getSize());
+
+    getFlags(origin, size, dst);
 }
 
 template <class T>
-void CLbmSolverCPU<T>::setFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* dst)
+void CLbmSolverCPU<T>::setFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* src)
 {
+    assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
+    assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
+    assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
+    assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
+	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
+
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverCPU<T>::setFlags() -----" << std::endl;
+        std::cout << "A copy operation within the host will be performed." << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "id:                " << id << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:       " << domain.getSize() << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "cuboid origin:     " << origin << std::endl;
+        std::cout << "cuboid size:       " << size << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
+
+    // get global linear index of starting cell
+    int dstIndex;
+    int srcIndex;
+    int localIndex; 
+    int globalIndex;
+    int indexOffset = origin[0] + origin[1] * domain.getSizeWithHalo()[0] + origin[2] * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+
+    /* 
+     * loop over the number of cell widths to copy in z- and y-dimensions, 
+     * and then do a memcpy of all the size[0] cells in the x-dimension.
+     */
+    for (int widthZ = 0; widthZ < size[2]; widthZ++)
+    {
+        for (int widthY = 0; widthY < size[1]; widthY++)
+        {
+            globalIndex = indexOffset + widthY * domain.getSizeWithHalo()[0] + widthZ * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+            localIndex = initLbmCPU->getLocalIndex(globalIndex);
+            
+            srcIndex = widthY * size[0] + widthZ * (size[0] * size[1]);
+            dstIndex = localIndex; 
+    
+            std::memcpy(flags.data() + dstIndex, src + srcIndex, size[0] * sizeof(Flag));
+        }
+    }
+
+    if (doLogging)
+    {
+        std::cout << "A copy operation within the host was performed." << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
 }
 
 template <class T>
-void CLbmSolverCPU<T>::setFlags(Flag* dst)
+void CLbmSolverCPU<T>::setFlags(Flag* src)
 {
+    CVector<3, int> origin(1);
+    CVector<3, int> size(domain.getSize());
+
+    setFlags(origin, size, src);
 }
 
 template <class T>
-void CLbmSolverCPU<T>::getVelocities(CVector<3, int> &origin, CVector<3, int> &size, T* src)
+void CLbmSolverCPU<T>::getVelocities(CVector<3, int> &origin, CVector<3, int> &size, T* dst)
 {
+    assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
+    assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
+    assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
+    assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
+	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
+
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverCPU<T>::getVelocities() -----" << std::endl;
+        std::cout << "id:                " << id << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:       " << domain.getSize() << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "cuboid origin:     " << origin << std::endl;
+        std::cout << "cuboid size:       " << size << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
+
+    // get global linear index of starting cell
+    int dstIndex;
+    int srcIndex;
+    int localIndex; 
+    int globalIndex;
+    int indexOffset = origin[0] + origin[1] * domain.getSizeWithHalo()[0] + origin[2] * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+
+    /* 
+     * loop over the number of cell widths to copy in z- and y-dimensions, 
+     * and then do a memcpy of all the size[0] cells in the x-dimension.
+     */
+    for(int dim = 0; dim < 3; dim++)
+    {
+        for (int widthZ = 0; widthZ < size[2]; widthZ++)
+        {
+            for (int widthY = 0; widthY < size[1]; widthY++)
+            {
+                globalIndex = indexOffset + widthY * domain.getSizeWithHalo()[0] + widthZ * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+                localIndex = initLbmCPU->getLocalIndex(globalIndex);
+                
+                dstIndex = widthY * size[0] + widthZ * (size[0] * size[1]) + dim * size.elements();
+                srcIndex = localIndex + dim * domainCellsCPUWithHalo;
+
+                std::memcpy(dst + dstIndex, velocities.data() + srcIndex, size[0] * sizeof(T));
+            }
+        }
+    } 
+
+    if (doLogging)
+    {
+        std::cout << "A copy operation within the host was performed." << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
 }
 
 template <class T>
-void CLbmSolverCPU<T>::getVelocities(T* src)
+void CLbmSolverCPU<T>::getVelocities(T* dst)
 {
+    CVector<3, int> origin(1);
+    CVector<3, int> size(domain.getSize());
+
+    getVelocities(origin, size, dst);
 }
 
 template <class T>
-void CLbmSolverCPU<T>::setVelocities(CVector<3, int> &origin, CVector<3, int> &size, T* dst)
+void CLbmSolverCPU<T>::setVelocities(CVector<3, int> &origin, CVector<3, int> &size, T* src)
 {
+    assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
+    assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
+    assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
+    assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
+	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
+
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverCPU<T>::setVelocities() -----" << std::endl;
+        std::cout << "A copy operation within the host will be performed." << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "id:                " << id << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:       " << domain.getSize() << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "cuboid origin:     " << origin << std::endl;
+        std::cout << "cuboid size:       " << size << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
+
+    // get global linear index of starting cell
+    int dstIndex;
+    int srcIndex;
+    int localIndex; 
+    int globalIndex;
+    int indexOffset = origin[0] + origin[1] * domain.getSizeWithHalo()[0] + origin[2] * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+
+    /* 
+     * loop over the number of cell widths to copy in z- and y-dimensions, 
+     * and then do a memcpy of all the size[0] cells in the x-dimension.
+     */
+    for(int dim = 0; dim < 3; dim++)
+    {
+        for (int widthZ = 0; widthZ < size[2]; widthZ++)
+        {
+            for (int widthY = 0; widthY < size[1]; widthY++)
+            {
+                globalIndex = indexOffset + widthY * domain.getSizeWithHalo()[0] + widthZ * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+                localIndex = initLbmCPU->getLocalIndex(globalIndex);
+                
+                srcIndex = widthY * size[0] + widthZ * (size[0] * size[1]) + dim * size.elements();
+                dstIndex = localIndex + dim * domainCellsCPUWithHalo; 
+
+                std::memcpy(velocities.data() + dstIndex, src + srcIndex, size[0] * sizeof(T));
+            }
+        }
+    } 
+
+    if (doLogging)
+    {
+        std::cout << "A copy operation with in the host was performed." << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
 }
 
 template <class T>
-void CLbmSolverCPU<T>::setVelocities(T* dst)
+void CLbmSolverCPU<T>::setVelocities(T* src)
 {
+    CVector<3, int> origin(1);
+    CVector<3, int> size(domain.getSize());
+
+    setVelocities(origin, size, src);
 }
 
 template <class T>
-void CLbmSolverCPU<T>::getDensities(CVector<3, int> &origin, CVector<3, int> &size, T* src)
+void CLbmSolverCPU<T>::getDensities(CVector<3, int> &origin, CVector<3, int> &size, T* dst)
 {
+    assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
+    assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
+    assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
+    assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
+	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
+
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverCPU<T>::getDensities() -----" << std::endl;
+        std::cout << "A copy operation within the host will be performed." << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "id:                " << id << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:       " << domain.getSize() << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "cuboid origin:     " << origin << std::endl;
+        std::cout << "cuboid size:       " << size << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+    }
+
+    // get global linear index of starting cell
+    int dstIndex;
+    int srcIndex;
+    int localIndex; 
+    int globalIndex;
+    int indexOffset = origin[0] + origin[1] * domain.getSizeWithHalo()[0] + origin[2] * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+
+    /* 
+     * loop over the number of cell widths to copy in z- and y-dimensions, 
+     * and then do a memcpy of all the size[0] cells in the x-dimension.
+     */
+    for (int widthZ = 0; widthZ < size[2]; widthZ++)
+    {
+        for (int widthY = 0; widthY < size[1]; widthY++)
+        {
+            globalIndex = indexOffset + widthY * domain.getSizeWithHalo()[0] + widthZ * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+            localIndex = initLbmCPU->getLocalIndex(globalIndex);
+            
+            dstIndex = widthY * size[0] + widthZ * (size[0] * size[1]);
+            srcIndex = localIndex;
+    
+            std::memcpy(dst + dstIndex, densities.data() + srcIndex, size[0] * sizeof(T));
+        }
+    }
+
+    if (doLogging)
+    {
+        std::cout << "A copy operation within the host was performed." << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+    }
 }
 
 template <class T>
-void CLbmSolverCPU<T>::getDensities(T* src)
+void CLbmSolverCPU<T>::getDensities(T* dst)
 {
+    CVector<3, int> origin(1);
+    CVector<3, int> size(domain.getSize());
+
+    getDensities(origin, size, dst);
 }
 
 template <class T>
-void CLbmSolverCPU<T>::setDensities(CVector<3, int> &origin, CVector<3, int> &size, T* dst)
+void CLbmSolverCPU<T>::setDensities(CVector<3, int> &origin, CVector<3, int> &size, T* src)
 {
+    assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
+    assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
+    assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
+    assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
+	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
+
+    if (doLogging)
+    {
+        std::cout << "----- CLbmSolverCPU<T>::setDensities() -----" << std::endl;
+        std::cout << "A copy operation within the host will be performed." << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "id:                " << id << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
+        std::cout << "domain size:       " << domain.getSize() << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "cuboid origin:     " << origin << std::endl;
+        std::cout << "cuboid size:       " << size << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+    }
+
+    // get global linear index of starting cell
+    int dstIndex;
+    int srcIndex;
+    int localIndex; 
+    int globalIndex;
+    int indexOffset = origin[0] + origin[1] * domain.getSizeWithHalo()[0] + origin[2] * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+
+    /* 
+     * loop over the number of cell widths to copy in z- and y-dimensions, 
+     * and then do a memcpy of all the size[0] cells in the x-dimension.
+     */
+    for (int widthZ = 0; widthZ < size[2]; widthZ++)
+    {
+        for (int widthY = 0; widthY < size[1]; widthY++)
+        {
+            globalIndex = indexOffset + widthY * domain.getSizeWithHalo()[0] + widthZ * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+            localIndex = initLbmCPU->getLocalIndex(globalIndex);
+            
+            srcIndex = widthY * size[0] + widthZ * (size[0] * size[1]);
+            dstIndex = localIndex; 
+    
+            std::memcpy(densities.data() + dstIndex, src + srcIndex, size[0] * sizeof(T));
+        }
+    }
+
+    if (doLogging)
+    {
+        std::cout << "A copy operation within the host was performed." << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
+    }
 }
 
 template <class T>
-void CLbmSolverCPU<T>::setDensities(T* dst)
+void CLbmSolverCPU<T>::setDensities(T* src)
 {
+    CVector<3, int> origin(1);
+    CVector<3, int> size(domain.getSize());
+
+    setDensities(origin, size, src);
 }
 
 template <class T>
