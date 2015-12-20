@@ -54,7 +54,7 @@ enum Flag
     FLUID              = (1<<1),
     VELOCITY_INJECTION = (1<<2),
     GHOST_LAYER        = (1<<3),
-    GHOST_LAYER_BETA   = (GHOST_LAYER | (1<<4))
+    // GHOST_LAYER_BETA   = (GHOST_LAYER | (1<<4))
 };
 
 enum Direction
