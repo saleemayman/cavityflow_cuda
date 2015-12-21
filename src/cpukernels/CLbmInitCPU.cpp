@@ -19,6 +19,7 @@
 
 #include "CLbmInitCPU.hpp"
 
+#if !TOP_DOWN_DECOMPOSITION
 template<class T>
 CLbmInitCPU<T>::CLbmInitCPU(
                     int domainCellsCPUWithHalo,
@@ -39,11 +40,30 @@ CLbmInitCPU<T>::CLbmInitCPU(
 {
     localToGlobalIndexMap = new std::vector<int>(domainCellsCPUWithHalo);
 }
+#else
+template<class T>
+CLbmInitCPU<T>::CLbmInitCPU(
+                    int domainCellsCPUWithHalo,
+                    CVector<3, int> domainSizeWithHalo,
+                    std::vector<Flag>& boundaryConditions) : 
+                        domainCellsCPUWithHalo(domainCellsCPUWithHalo),
+                        domainSizeWithHalo(domainSizeWithHalo),
+                        boundaryConditionRight(boundaryConditions[0]),
+                        boundaryConditionLeft(boundaryConditions[1]),
+                        boundaryConditionTop(boundaryConditions[2]),
+                        boundaryConditionBottom(boundaryConditions[3]),
+                        boundaryConditionFront(boundaryConditions[4]),
+                        boundaryConditionBack(boundaryConditions[5])
+{
+}
+#endif
 
 template<class T>
 CLbmInitCPU<T>::~CLbmInitCPU()
 {
+#if !TOP_DOWN_DECOMPOSITION
     delete localToGlobalIndexMap;
+#endif
 }
 
 
@@ -68,6 +88,7 @@ void CLbmInitCPU<T>::setFlags(std::vector<Flag> &flags)
                 // initialize flag field
                 flag = FLUID;
 
+#if !TOP_DOWN_DECOMPOSITION
                 // if inside GPU domain then skip cell
                 if ((x > (hollowCPULeftLimit[0] + 1) && x < (hollowCPURightLimit[0] - 1)) &&
                     (y > (hollowCPULeftLimit[1] + 1) && y < (hollowCPURightLimit[1] - 1)) &&
@@ -76,10 +97,11 @@ void CLbmInitCPU<T>::setFlags(std::vector<Flag> &flags)
                     globalID++;
                     continue;
                 }
-
+#endif
                 // set the flags for x-direction                
                 if (x == 0)
                     flag = boundaryConditionRight;
+#if !TOP_DOWN_DECOMPOSITION
                 if (x == hollowCPULeftLimit[0] + 1 &&
                         (y > hollowCPULeftLimit[1] && y < hollowCPURightLimit[1]) &&
                         (z > hollowCPULeftLimit[2] && z < hollowCPURightLimit[2]) &&
@@ -90,12 +112,14 @@ void CLbmInitCPU<T>::setFlags(std::vector<Flag> &flags)
                         (z > hollowCPULeftLimit[2] && z < hollowCPURightLimit[2]) &&
                         flag != OBSTACLE)
                     flag = GHOST_LAYER;
+#endif
                 if (x == domainSizeWithHalo[0]-1 && flag != OBSTACLE)
                     flag = boundaryConditionLeft;
                 
                 // set the flags for y-direction                
                 if (y == 0 && flag != OBSTACLE)
                     flag = boundaryConditionTop;
+#if !TOP_DOWN_DECOMPOSITION
                 if (y == hollowCPULeftLimit[1] + 1 && 
                         (x > hollowCPULeftLimit[0] && x < hollowCPURightLimit[0]) && 
                         (z > hollowCPULeftLimit[2] && z < hollowCPURightLimit[2]) && 
@@ -106,12 +130,14 @@ void CLbmInitCPU<T>::setFlags(std::vector<Flag> &flags)
                         (z > hollowCPULeftLimit[2] && z < hollowCPURightLimit[2]) && 
                         flag != OBSTACLE)
                     flag = GHOST_LAYER;
+#endif
                 if (y == domainSizeWithHalo[1]-1 && flag != OBSTACLE)
                     flag = boundaryConditionBottom;
                 
                 // set the flags for z-direction                
                 if (z == 0 && flag != OBSTACLE)
                     flag = boundaryConditionFront;
+#if !TOP_DOWN_DECOMPOSITION
                 if (z == hollowCPULeftLimit[2] + 1 && 
                         (x > hollowCPULeftLimit[0] && x < hollowCPURightLimit[0]) &&
                         (y > hollowCPULeftLimit[1] && y < hollowCPURightLimit[1]) &&  
@@ -122,22 +148,25 @@ void CLbmInitCPU<T>::setFlags(std::vector<Flag> &flags)
                         (y > hollowCPULeftLimit[1] && y < hollowCPURightLimit[1]) && 
                         flag != OBSTACLE)
                     flag = GHOST_LAYER;
+#endif
                 if (z == domainSizeWithHalo[2]-1 && flag != OBSTACLE)
                     flag = boundaryConditionBack;
 
                 flags[cellID] = flag;
 
+#if !TOP_DOWN_DECOMPOSITION
                 // add the global cell index to an array
                 localToGlobalIndexMap->operator[](cellID) = globalID;
-
+                globalID++;
+#endif
                 // increment cell linear id
                 cellID++;
-                globalID++;
             }
         }
     }
 }
 
+#if !TOP_DOWN_DECOMPOSITION
 template<class T>
 int CLbmInitCPU<T>::getLocalIndex(int globalId)
 {
@@ -159,6 +188,14 @@ int CLbmInitCPU<T>::getGlobalIndex(int localId)
 {
     return localToGlobalIndexMap->operator[](localId);
 }
+
+template<class T>
+std::vector<int>* CLbmInitCPU<T>::getCellIndexMap()
+{
+    return localToGlobalIndexMap;
+}
+#endif
+
 
 template<class T>
 void CLbmInitCPU<T>::initLbm(
@@ -261,13 +298,6 @@ void CLbmInitCPU<T>::initLbm(
             densities[i] = rho;
         }
     }
-}
-
-
-template<class T>
-std::vector<int>* CLbmInitCPU<T>::getCellIndexMap()
-{
-    return localToGlobalIndexMap;
 }
 
 

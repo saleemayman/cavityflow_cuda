@@ -34,8 +34,6 @@ class CLbmBetaCPU
 private:
     int domainCellsCPUWithHalo;
     CVector<3, int> domainSizeWithHalo;
-    CVector<3, int> hollowCPULeftLimit;
-    CVector<3, int> hollowCPURightLimit;
     //std::vector<int> *localToGlobalIndexMap;
     CLbmInitCPU<T> *initLbmCPU;
     CVector<3, T> gravitation;
@@ -61,8 +59,6 @@ public:
     CLbmBetaCPU(
             int domainCellsCPUWithHalo,
             CVector<3, int> domainSizeWithHalo,
-            CVector<3, int> hollowCPULeftLimit,
-            CVector<3, int> hollowCPURightLimit,
             //std::vector<int> *localToGlobalIndexMap,
             CLbmInitCPU<T> *initLbmCPU,
             CVector<3, T> gravitation);

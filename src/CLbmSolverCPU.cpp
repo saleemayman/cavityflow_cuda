@@ -52,10 +52,12 @@ CLbmSolverCPU<T>::CLbmSolverCPU(
         std::cout << "---------------------------------------------" << std::endl;
     }
 
-    CVector<3, int> domainSizeGPU;
     domainSizeGPU = (solverGPU->getDomain())->getSize();
+#if TOP_DOWN_DECOMPOSITION
+	domainSizeCPUWithHalo.set(this->domain.getSize()[0] + 2, this->domain.getSize()[1] - domainSizeGPU[1] + 2, this->domain.getSize()[2] + 2);
+#endif
 
-
+#if !TOP_DOWN_DECOMPOSITION
     /*
      * Set the limits of the CPU domain w.r.t to the inner GPU domain.
      */
@@ -65,12 +67,16 @@ CLbmSolverCPU<T>::CLbmSolverCPU(
     hollowCPURightLimit[1] = hollowCPULeftLimit[1] + domainSizeGPU[1] + 1;
     hollowCPULeftLimit[2] = (this->domain.getSize()[2] - domainSizeGPU[2]) / 2 - 1;
     hollowCPURightLimit[2] = hollowCPULeftLimit[2] + domainSizeGPU[2] + 1;
-
+#endif
 
     /*
      * Allocate memory for density distributions, density, flags and velocities.
      */
-    domainCellsCPUWithHalo = this->domain.getNumOfCellsWithHalo() -((domainSizeGPU[0] - 2) * (domainSizeGPU[1] - 2) * (domainSizeGPU[2] - 2));
+#if !TOP_DOWN_DECOMPOSITION
+    domainCellsCPUWithHalo = this->domain.getNumOfCellsWithHalo() - ((domainSizeGPU[0] - 2) * (domainSizeGPU[1] - 2) * (domainSizeGPU[2] - 2));
+#else
+    domainCellsCPUWithHalo = domainSizeCPUWithHalo[0] * domainSizeCPUWithHalo[1] * domainSizeCPUWithHalo[2];
+#endif
 
     densityDistributions.resize(NUM_LATTICE_VECTORS * domainCellsCPUWithHalo); 
     flags.resize(domainCellsCPUWithHalo);
@@ -92,12 +98,19 @@ CLbmSolverCPU<T>::CLbmSolverCPU(
     /*
      * instantiate the cpu init-kernel class and initialize the LBM simulation
      */
+#if !TOP_DOWN_DECOMPOSITION
     initLbmCPU = new CLbmInitCPU<T>(
                         domainCellsCPUWithHalo,
                         this->domain.getSizeWithHalo(), 
                         hollowCPULeftLimit, 
                         hollowCPURightLimit, 
                         boundaryConditions);
+#else
+    initLbmCPU = new CLbmInitCPU<T>(
+                        domainCellsCPUWithHalo,
+                        domainSizeCPUWithHalo, 
+                        boundaryConditions);
+#endif
     initLbmCPU->initLbm(
                     densityDistributions, 
                     flags, 
@@ -114,22 +127,33 @@ CLbmSolverCPU<T>::CLbmSolverCPU(
     /*
      * instantiate the alhpa and beta classes
      */
+#if !TOP_DOWN_DECOMPOSITION
     alphaLbmCPU = new CLbmAlphaCPU<T>(
                             domainCellsCPUWithHalo,
                             this->domain.getSizeWithHalo(), 
-                            hollowCPULeftLimit, 
-                            hollowCPURightLimit, 
                             //initLbmCPU->getCellIndexMap(),
                             initLbmCPU,
                             acceleration);
     betaLbmCPU = new CLbmBetaCPU<T>(
                             domainCellsCPUWithHalo,
                             this->domain.getSizeWithHalo(), 
-                            hollowCPULeftLimit, 
-                            hollowCPURightLimit, 
                             //initLbmCPU->getCellIndexMap(),
                             initLbmCPU,
                             acceleration);
+#else
+    alphaLbmCPU = new CLbmAlphaCPU<T>(
+                            domainCellsCPUWithHalo,
+                            domainSizeCPUWithHalo, 
+                            //initLbmCPU->getCellIndexMap(),
+                            initLbmCPU,
+                            acceleration);
+    betaLbmCPU = new CLbmBetaCPU<T>(
+                            domainCellsCPUWithHalo,
+                            domainSizeCPUWithHalo, 
+                            //initLbmCPU->getCellIndexMap(),
+                            initLbmCPU,
+                            acceleration);
+#endif
 }
 
 template <class T>
@@ -138,6 +162,165 @@ CLbmSolverCPU<T>::~CLbmSolverCPU()
     delete initLbmCPU;
     delete alphaLbmCPU;
     delete betaLbmCPU;
+}
+
+template <class T>
+void CLbmSolverCPU<T>::getVariable(CVector<3, int> &origin, CVector<3, int> &size, std::vector<T> &variableData, T* dst, int numDimensions)
+{
+    // get global linear index of starting cell
+    int dstIndex;
+    int srcIndex;
+    int localIndex; 
+    int globalIndex;
+#if !TOP_DOWN_DECOMPOSITION
+    int indexOffset = origin[0] + origin[1] * domain.getSizeWithHalo()[0] + origin[2] * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+#else
+    int indexOffset = origin[0] + origin[1] * domainSizeCPUWithHalo[0] + origin[2] * (domainSizeCPUWithHalo[0] * domainSizeCPUWithHalo[1]);
+#endif
+
+    /* 
+     * loop over the number of cell widths to copy in z- and y-dimensions, 
+     * and then do a memcpy of all the size[0] cells in the x-dimension.
+     */
+    for(int dim = 0; dim < numDimensions; dim++)
+    {
+        for (int widthZ = 0; widthZ < size[2]; widthZ++)
+        {
+            for (int widthY = 0; widthY < size[1]; widthY++)
+            {
+#if !TOP_DOWN_DECOMPOSITION
+                globalIndex = indexOffset + widthY * domain.getSizeWithHalo()[0] + widthZ * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+                localIndex = initLbmCPU->getLocalIndex(globalIndex);
+#else
+                globalIndex = indexOffset + widthY * domainSizeCPUWithHalo[0] + widthZ * (domainSizeCPUWithHalo[0] * domainSizeCPUWithHalo[1]);
+                localIndex = globalIndex;
+#endif                
+                dstIndex = widthY * size[0] + widthZ * (size[0] * size[1]) + dim * size.elements();
+                srcIndex = localIndex + dim * domainCellsCPUWithHalo;
+
+                std::memcpy(dst + dstIndex, variableData.data() + srcIndex, size[0] * sizeof(T));
+            }
+        }
+    } 
+}
+
+template <class T>
+void CLbmSolverCPU<T>::getVariable(CVector<3, int> &origin, CVector<3, int> &size, std::vector<Flag> &variableData, Flag* dst, int numDimensions)
+{
+    // get global linear index of starting cell
+    int dstIndex;
+    int srcIndex;
+    int localIndex; 
+    int globalIndex;
+#if !TOP_DOWN_DECOMPOSITION
+    int indexOffset = origin[0] + origin[1] * domain.getSizeWithHalo()[0] + origin[2] * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+#else
+    int indexOffset = origin[0] + origin[1] * domainSizeCPUWithHalo[0] + origin[2] * (domainSizeCPUWithHalo[0] * domainSizeCPUWithHalo[1]);
+#endif
+    /* 
+     * loop over the number of cell widths to copy in z- and y-dimensions, 
+     * and then do a memcpy of all the size[0] cells in the x-dimension.
+     */
+    for(int dim = 0; dim < numDimensions; dim++)
+    {
+        for (int widthZ = 0; widthZ < size[2]; widthZ++)
+        {
+            for (int widthY = 0; widthY < size[1]; widthY++)
+            {
+#if !TOP_DOWN_DECOMPOSITION
+                globalIndex = indexOffset + widthY * domain.getSizeWithHalo()[0] + widthZ * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+                localIndex = initLbmCPU->getLocalIndex(globalIndex);
+#else
+                globalIndex = indexOffset + widthY * domainSizeCPUWithHalo[0] + widthZ * (domainSizeCPUWithHalo[0] * domainSizeCPUWithHalo[1]);
+                localIndex = globalIndex;
+#endif                
+                dstIndex = widthY * size[0] + widthZ * (size[0] * size[1]) + dim * size.elements();
+                srcIndex = localIndex + dim * domainCellsCPUWithHalo;
+
+                std::memcpy(dst + dstIndex, variableData.data() + srcIndex, size[0] * sizeof(Flag));
+            }
+        }
+    } 
+}
+
+template <class T>
+void CLbmSolverCPU<T>::setVariable(CVector<3, int> &origin, CVector<3, int> &size, std::vector<T> &variableData, T* src, int numDimensions)
+{
+    // get global linear index of starting cell
+    int dstIndex;
+    int srcIndex;
+    int localIndex; 
+    int globalIndex;
+#if !TOP_DOWN_DECOMPOSITION
+    int indexOffset = origin[0] + origin[1] * domain.getSizeWithHalo()[0] + origin[2] * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+#else
+    int indexOffset = origin[0] + origin[1] * domainSizeCPUWithHalo[0] + origin[2] * (domainSizeCPUWithHalo[0] * domainSizeCPUWithHalo[1]);
+#endif
+    /* 
+     * loop over the number of cell widths to copy in z- and y-dimensions, 
+     * and then do a memcpy of all the size[0] cells in the x-dimension.
+     */
+    for(int dim = 0; dim < numDimensions; dim++)
+    {
+        for (int widthZ = 0; widthZ < size[2]; widthZ++)
+        {
+            for (int widthY = 0; widthY < size[1]; widthY++)
+            {
+#if !TOP_DOWN_DECOMPOSITION
+                globalIndex = indexOffset + widthY * domain.getSizeWithHalo()[0] + widthZ * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+                localIndex = initLbmCPU->getLocalIndex(globalIndex);
+#else
+                globalIndex = indexOffset + widthY * domainSizeCPUWithHalo[0] + widthZ * (domainSizeCPUWithHalo[0] * domainSizeCPUWithHalo[1]);
+                localIndex = globalIndex;
+#endif                
+                srcIndex = widthY * size[0] + widthZ * (size[0] * size[1]) + dim * size.elements();
+                dstIndex = localIndex + dim * domainCellsCPUWithHalo; 
+
+                std::memcpy(variableData.data() + dstIndex, src + srcIndex, size[0] * sizeof(T));
+            }
+        }
+    } 
+}
+
+template <class T>
+void CLbmSolverCPU<T>::setVariable(CVector<3, int> &origin, CVector<3, int> &size, std::vector<Flag> &variableData, Flag* src, int numDimensions)
+{
+    // get global linear index of starting cell
+    int dstIndex;
+    int srcIndex;
+    int localIndex; 
+    int globalIndex;
+#if !TOP_DOWN_DECOMPOSITION
+    int indexOffset = origin[0] + origin[1] * domain.getSizeWithHalo()[0] + origin[2] * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+#else
+    int indexOffset = origin[0] + origin[1] * domainSizeCPUWithHalo[0] + origin[2] * (domainSizeCPUWithHalo[0] * domainSizeCPUWithHalo[1]);
+#endif
+
+    /* 
+     * loop over the number of cell widths to copy in z- and y-dimensions, 
+     * and then do a memcpy of all the size[0] cells in the x-dimension.
+     */
+    for(int dim = 0; dim < numDimensions; dim++)
+    {
+        for (int widthZ = 0; widthZ < size[2]; widthZ++)
+        {
+            for (int widthY = 0; widthY < size[1]; widthY++)
+            {
+#if !TOP_DOWN_DECOMPOSITION
+                globalIndex = indexOffset + widthY * domain.getSizeWithHalo()[0] + widthZ * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
+                localIndex = initLbmCPU->getLocalIndex(globalIndex);
+#else
+                globalIndex = indexOffset + widthY * domainSizeCPUWithHalo[0] + widthZ * (domainSizeCPUWithHalo[0] * domainSizeCPUWithHalo[1]);
+                localIndex = globalIndex;
+#endif                
+
+                srcIndex = widthY * size[0] + widthZ * (size[0] * size[1]) + dim * size.elements();
+                dstIndex = localIndex + dim * domainCellsCPUWithHalo; 
+
+                std::memcpy(variableData.data() + dstIndex, src + srcIndex, size[0] * sizeof(Flag));
+            }
+        }
+    } 
 }
 
 template <class T>
@@ -154,6 +337,7 @@ void CLbmSolverCPU<T>::simulationStepAlpha()
     /*
      * launch the alpha-kernel for the CPU domain
      */
+#if !TOP_DOWN_DECOMPOSITION
     alphaLbmCPU->alphaKernelCPU(
                     densityDistributions,
                     flags,
@@ -165,6 +349,19 @@ void CLbmSolverCPU<T>::simulationStepAlpha()
                     this->domain.getSizeWithHalo(), 
                     storeDensities,
                     storeVelocities);
+#else
+    alphaLbmCPU->alphaKernelCPU(
+                    densityDistributions,
+                    flags,
+                    velocities,
+                    densities,
+                    tauInv,
+                    velocityDimLess[0],
+                    CVector<3, int>(0, 0, 0),
+                    domainSizeCPUWithHalo, 
+                    storeDensities,
+                    storeVelocities);
+#endif
 
     if (doLogging)
     {
@@ -179,10 +376,14 @@ void CLbmSolverCPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, in
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
     assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
-    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
     assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
+#if !TOP_DOWN_DECOMPOSITION
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
 	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
-    
+#else
+    assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
+#endif
+
     if (doLogging)
     {
         std::cout << "----- CLbmSolverCPU<T>::simulationStepAlpha() -----" << std::endl;
@@ -225,6 +426,7 @@ void CLbmSolverCPU<T>::simulationStepBeta()
         std::cout << "---------------------------------------------------" << std::endl;
     }
 
+#if !TOP_DOWN_DECOMPOSITION
     betaLbmCPU->betaKernelCPU(
                     densityDistributions,
                     flags,
@@ -237,6 +439,20 @@ void CLbmSolverCPU<T>::simulationStepBeta()
                     isPowerOfTwo(this->domain.getNumOfCellsWithHalo()),
                     storeDensities,
                     storeVelocities);
+#else
+    betaLbmCPU->betaKernelCPU(
+                    densityDistributions,
+                    flags,
+                    velocities,
+                    densities,
+                    tauInv,
+                    velocityDimLess[0],
+                    CVector<3, int>(0, 0, 0),
+                    domainSizeCPUWithHalo, 
+                    isPowerOfTwo(domainSizeCPUWithHalo[0] * domainSizeCPUWithHalo[1] * domainSizeCPUWithHalo[2]),
+                    storeDensities,
+                    storeVelocities);
+#endif
 
     if (doLogging)
     {
@@ -251,9 +467,13 @@ void CLbmSolverCPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
     assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
-    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
     assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
+#if !TOP_DOWN_DECOMPOSITION
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
 	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
+#else
+    assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
+#endif
 
     if (doLogging)
     {
@@ -262,6 +482,7 @@ void CLbmSolverCPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int
         std::cout << "--------------------------------------------------" << std::endl;
     }
 
+#if !TOP_DOWN_DECOMPOSITION
     betaLbmCPU->betaKernelCPU(
                     densityDistributions,
                     flags,
@@ -274,6 +495,20 @@ void CLbmSolverCPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int
                     isPowerOfTwo(this->domain.getNumOfCellsWithHalo()),
                     storeDensities,
                     storeVelocities);
+#else
+    betaLbmCPU->betaKernelCPU(
+                    densityDistributions,
+                    flags,
+                    velocities,
+                    densities,
+                    tauInv,
+                    velocityDimLess[0],
+                    origin,
+                    size, 
+                    isPowerOfTwo(domainSizeCPUWithHalo[0] * domainSizeCPUWithHalo[1] * domainSizeCPUWithHalo[2]),
+                    storeDensities,
+                    storeVelocities);
+#endif
 
     if (doLogging)
     {
@@ -290,9 +525,13 @@ void CLbmSolverCPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
     assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
-    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
     assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
+#if !TOP_DOWN_DECOMPOSITION
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
 	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
+#else
+    assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
+#endif
 
     if (doLogging)
     {
@@ -307,33 +546,7 @@ void CLbmSolverCPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<
         std::cout << "-------------------------------------------------------" << std::endl;
     }
     
-    // get global linear index of starting cell
-    int dstIndex;
-    int srcIndex;
-    int localIndex; 
-    int globalIndex;
-    int indexOffset = origin[0] + origin[1] * domain.getSizeWithHalo()[0] + origin[2] * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
-
-    /* 
-     * loop over the number of cell widths to copy in z- and y-dimensions, 
-     * and then do a memcpy of all the size[0] cells in the x-dimension.
-     */
-    for(int latticeVector = 0; latticeVector < NUM_LATTICE_VECTORS; latticeVector++)
-    {
-        for (int widthZ = 0; widthZ < size[2]; widthZ++)
-        {
-            for (int widthY = 0; widthY < size[1]; widthY++)
-            {
-                globalIndex = indexOffset + widthY * domain.getSizeWithHalo()[0] + widthZ * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
-                localIndex = initLbmCPU->getLocalIndex(globalIndex);
-                
-                dstIndex = widthY * size[0] + widthZ * (size[0] * size[1]) + latticeVector * size.elements();
-                srcIndex = localIndex + latticeVector * domainCellsCPUWithHalo;
-
-                std::memcpy(dst + dstIndex, densityDistributions.data() + srcIndex, size[0] * sizeof(T));
-            }
-        }
-    } 
+	getVariable(origin, size, densityDistributions, dst, NUM_LATTICE_VECTORS);
 
     if (doLogging)
     {
@@ -357,9 +570,13 @@ void CLbmSolverCPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
     assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
-    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
     assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
+#if !TOP_DOWN_DECOMPOSITION
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
 	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
+#else
+    assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
+#endif
 
     if (doLogging)
     {
@@ -376,33 +593,7 @@ void CLbmSolverCPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
         std::cout << "-------------------------------------------------------" << std::endl;
     }
 
-    // get global linear index of starting cell
-    int dstIndex;
-    int srcIndex;
-    int localIndex; 
-    int globalIndex;
-    int indexOffset = origin[0] + origin[1] * domain.getSizeWithHalo()[0] + origin[2] * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
-
-    /* 
-     * loop over the number of cell widths to copy in z- and y-dimensions, 
-     * and then do a memcpy of all the size[0] cells in the x-dimension.
-     */
-    for(int latticeVector = 0; latticeVector < NUM_LATTICE_VECTORS; latticeVector++)
-    {
-        for (int widthZ = 0; widthZ < size[2]; widthZ++)
-        {
-            for (int widthY = 0; widthY < size[1]; widthY++)
-            {
-                globalIndex = indexOffset + widthY * domain.getSizeWithHalo()[0] + widthZ * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
-                localIndex = initLbmCPU->getLocalIndex(globalIndex);
-                
-                srcIndex = widthY * size[0] + widthZ * (size[0] * size[1]) + latticeVector * size.elements();
-                dstIndex = localIndex + latticeVector * domainCellsCPUWithHalo; 
-
-                std::memcpy(densityDistributions.data() + dstIndex, src + srcIndex, size[0] * sizeof(T));
-            }
-        }
-    } 
+	setVariable(origin, size, densityDistributions, src, NUM_LATTICE_VECTORS);
 
     if (doLogging)
     {
@@ -426,9 +617,13 @@ void CLbmSolverCPU<T>::getFlags(CVector<3, int> &origin, CVector<3, int> &size, 
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
     assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
-    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
     assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
+#if !TOP_DOWN_DECOMPOSITION
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
 	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
+#else
+    assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
+#endif
 
     if (doLogging)
     {
@@ -443,30 +638,7 @@ void CLbmSolverCPU<T>::getFlags(CVector<3, int> &origin, CVector<3, int> &size, 
         std::cout << "-------------------------------------------------------" << std::endl;
     }
 
-    // get global linear index of starting cell
-    int dstIndex;
-    int srcIndex;
-    int localIndex; 
-    int globalIndex;
-    int indexOffset = origin[0] + origin[1] * domain.getSizeWithHalo()[0] + origin[2] * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
-
-    /* 
-     * loop over the number of cell widths to copy in z- and y-dimensions, 
-     * and then do a memcpy of all the size[0] cells in the x-dimension.
-     */
-    for (int widthZ = 0; widthZ < size[2]; widthZ++)
-    {
-        for (int widthY = 0; widthY < size[1]; widthY++)
-        {
-            globalIndex = indexOffset + widthY * domain.getSizeWithHalo()[0] + widthZ * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
-            localIndex = initLbmCPU->getLocalIndex(globalIndex);
-            
-            dstIndex = widthY * size[0] + widthZ * (size[0] * size[1]);
-            srcIndex = localIndex;
-    
-            std::memcpy(dst + dstIndex, flags.data() + srcIndex, size[0] * sizeof(Flag));
-        }
-    }
+	getVariable(origin, size, flags, dst, 1);
 
     if (doLogging)
     {
@@ -490,9 +662,13 @@ void CLbmSolverCPU<T>::setFlags(CVector<3, int> &origin, CVector<3, int> &size, 
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
     assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
-    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
     assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
+#if !TOP_DOWN_DECOMPOSITION
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
 	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
+#else
+    assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
+#endif
 
     if (doLogging)
     {
@@ -509,30 +685,7 @@ void CLbmSolverCPU<T>::setFlags(CVector<3, int> &origin, CVector<3, int> &size, 
         std::cout << "-------------------------------------------------------" << std::endl;
     }
 
-    // get global linear index of starting cell
-    int dstIndex;
-    int srcIndex;
-    int localIndex; 
-    int globalIndex;
-    int indexOffset = origin[0] + origin[1] * domain.getSizeWithHalo()[0] + origin[2] * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
-
-    /* 
-     * loop over the number of cell widths to copy in z- and y-dimensions, 
-     * and then do a memcpy of all the size[0] cells in the x-dimension.
-     */
-    for (int widthZ = 0; widthZ < size[2]; widthZ++)
-    {
-        for (int widthY = 0; widthY < size[1]; widthY++)
-        {
-            globalIndex = indexOffset + widthY * domain.getSizeWithHalo()[0] + widthZ * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
-            localIndex = initLbmCPU->getLocalIndex(globalIndex);
-            
-            srcIndex = widthY * size[0] + widthZ * (size[0] * size[1]);
-            dstIndex = localIndex; 
-    
-            std::memcpy(flags.data() + dstIndex, src + srcIndex, size[0] * sizeof(Flag));
-        }
-    }
+	setVariable(origin, size, flags, src, 1);
 
     if (doLogging)
     {
@@ -556,9 +709,13 @@ void CLbmSolverCPU<T>::getVelocities(CVector<3, int> &origin, CVector<3, int> &s
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
     assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
-    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
     assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
+#if !TOP_DOWN_DECOMPOSITION
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
 	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
+#else
+    assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
+#endif
 
     if (doLogging)
     {
@@ -573,33 +730,7 @@ void CLbmSolverCPU<T>::getVelocities(CVector<3, int> &origin, CVector<3, int> &s
         std::cout << "-------------------------------------------------------" << std::endl;
     }
 
-    // get global linear index of starting cell
-    int dstIndex;
-    int srcIndex;
-    int localIndex; 
-    int globalIndex;
-    int indexOffset = origin[0] + origin[1] * domain.getSizeWithHalo()[0] + origin[2] * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
-
-    /* 
-     * loop over the number of cell widths to copy in z- and y-dimensions, 
-     * and then do a memcpy of all the size[0] cells in the x-dimension.
-     */
-    for(int dim = 0; dim < 3; dim++)
-    {
-        for (int widthZ = 0; widthZ < size[2]; widthZ++)
-        {
-            for (int widthY = 0; widthY < size[1]; widthY++)
-            {
-                globalIndex = indexOffset + widthY * domain.getSizeWithHalo()[0] + widthZ * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
-                localIndex = initLbmCPU->getLocalIndex(globalIndex);
-                
-                dstIndex = widthY * size[0] + widthZ * (size[0] * size[1]) + dim * size.elements();
-                srcIndex = localIndex + dim * domainCellsCPUWithHalo;
-
-                std::memcpy(dst + dstIndex, velocities.data() + srcIndex, size[0] * sizeof(T));
-            }
-        }
-    } 
+	getVariable(origin, size, velocities, dst, 3);
 
     if (doLogging)
     {
@@ -623,9 +754,13 @@ void CLbmSolverCPU<T>::setVelocities(CVector<3, int> &origin, CVector<3, int> &s
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
     assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
-    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
     assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
+#if !TOP_DOWN_DECOMPOSITION
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
 	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
+#else
+    assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
+#endif
 
     if (doLogging)
     {
@@ -642,33 +777,7 @@ void CLbmSolverCPU<T>::setVelocities(CVector<3, int> &origin, CVector<3, int> &s
         std::cout << "-------------------------------------------------------" << std::endl;
     }
 
-    // get global linear index of starting cell
-    int dstIndex;
-    int srcIndex;
-    int localIndex; 
-    int globalIndex;
-    int indexOffset = origin[0] + origin[1] * domain.getSizeWithHalo()[0] + origin[2] * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
-
-    /* 
-     * loop over the number of cell widths to copy in z- and y-dimensions, 
-     * and then do a memcpy of all the size[0] cells in the x-dimension.
-     */
-    for(int dim = 0; dim < 3; dim++)
-    {
-        for (int widthZ = 0; widthZ < size[2]; widthZ++)
-        {
-            for (int widthY = 0; widthY < size[1]; widthY++)
-            {
-                globalIndex = indexOffset + widthY * domain.getSizeWithHalo()[0] + widthZ * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
-                localIndex = initLbmCPU->getLocalIndex(globalIndex);
-                
-                srcIndex = widthY * size[0] + widthZ * (size[0] * size[1]) + dim * size.elements();
-                dstIndex = localIndex + dim * domainCellsCPUWithHalo; 
-
-                std::memcpy(velocities.data() + dstIndex, src + srcIndex, size[0] * sizeof(T));
-            }
-        }
-    } 
+	setVariable(origin, size, velocities, src, 3);
 
     if (doLogging)
     {
@@ -692,9 +801,13 @@ void CLbmSolverCPU<T>::getDensities(CVector<3, int> &origin, CVector<3, int> &si
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
     assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
-    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
     assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
+#if !TOP_DOWN_DECOMPOSITION
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
 	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
+#else
+    assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
+#endif
 
     if (doLogging)
     {
@@ -711,30 +824,7 @@ void CLbmSolverCPU<T>::getDensities(CVector<3, int> &origin, CVector<3, int> &si
         std::cout << "--------------------------------------------" << std::endl;
     }
 
-    // get global linear index of starting cell
-    int dstIndex;
-    int srcIndex;
-    int localIndex; 
-    int globalIndex;
-    int indexOffset = origin[0] + origin[1] * domain.getSizeWithHalo()[0] + origin[2] * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
-
-    /* 
-     * loop over the number of cell widths to copy in z- and y-dimensions, 
-     * and then do a memcpy of all the size[0] cells in the x-dimension.
-     */
-    for (int widthZ = 0; widthZ < size[2]; widthZ++)
-    {
-        for (int widthY = 0; widthY < size[1]; widthY++)
-        {
-            globalIndex = indexOffset + widthY * domain.getSizeWithHalo()[0] + widthZ * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
-            localIndex = initLbmCPU->getLocalIndex(globalIndex);
-            
-            dstIndex = widthY * size[0] + widthZ * (size[0] * size[1]);
-            srcIndex = localIndex;
-    
-            std::memcpy(dst + dstIndex, densities.data() + srcIndex, size[0] * sizeof(T));
-        }
-    }
+	getVariable(origin, size, densities, dst, 1);
 
     if (doLogging)
     {
@@ -758,9 +848,13 @@ void CLbmSolverCPU<T>::setDensities(CVector<3, int> &origin, CVector<3, int> &si
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
     assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);
-    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
     assert(origin[2] + size[2] <= domain.getSizeWithHalo()[2]);
+#if !TOP_DOWN_DECOMPOSITION
+    assert(origin[1] + size[1] <= domain.getSizeWithHalo()[1]);
 	assert(!(origin[0] > hollowCPULeftLimit[0] && origin[0] < hollowCPURightLimit[0] && origin[1] > hollowCPULeftLimit[1] && origin[1] < hollowCPURightLimit[1] && origin[2] > hollowCPULeftLimit[2] && origin[2] < hollowCPURightLimit[2]));
+#else
+    assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
+#endif
 
     if (doLogging)
     {
@@ -777,30 +871,7 @@ void CLbmSolverCPU<T>::setDensities(CVector<3, int> &origin, CVector<3, int> &si
         std::cout << "-------------------------------------------------------" << std::endl;
     }
 
-    // get global linear index of starting cell
-    int dstIndex;
-    int srcIndex;
-    int localIndex; 
-    int globalIndex;
-    int indexOffset = origin[0] + origin[1] * domain.getSizeWithHalo()[0] + origin[2] * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
-
-    /* 
-     * loop over the number of cell widths to copy in z- and y-dimensions, 
-     * and then do a memcpy of all the size[0] cells in the x-dimension.
-     */
-    for (int widthZ = 0; widthZ < size[2]; widthZ++)
-    {
-        for (int widthY = 0; widthY < size[1]; widthY++)
-        {
-            globalIndex = indexOffset + widthY * domain.getSizeWithHalo()[0] + widthZ * (domain.getSizeWithHalo()[0] * domain.getSizeWithHalo()[1]);
-            localIndex = initLbmCPU->getLocalIndex(globalIndex);
-            
-            srcIndex = widthY * size[0] + widthZ * (size[0] * size[1]);
-            dstIndex = localIndex; 
-    
-            std::memcpy(densities.data() + dstIndex, src + srcIndex, size[0] * sizeof(T));
-        }
-    }
+	setVariable(origin, size, densities, src, 1);
 
     if (doLogging)
     {
@@ -818,6 +889,7 @@ void CLbmSolverCPU<T>::setDensities(T* src)
     setDensities(origin, size, src);
 }
 
+#if !TOP_DOWN_DECOMPOSITION
 template <class T>
 CVector<3, int> CLbmSolverCPU<T>::getHollowCPULeftLimits()
 {
@@ -829,7 +901,7 @@ CVector<3, int> CLbmSolverCPU<T>::getHollowCPURightLimits()
 {
     return hollowCPURightLimit;
 }
-
+#endif
 
 template class CLbmSolverCPU<float>;
 template class CLbmSolverCPU<double>;

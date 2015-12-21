@@ -23,15 +23,11 @@ template<class T>
 CLbmAlphaCPU<T>::CLbmAlphaCPU(
                     int domainCellsCPUWithHalo,
                     CVector<3, int> domainSizeWithHalo,
-                    CVector<3, int> hollowCPULeftLimit,
-                    CVector<3, int> hollowCPURightLimit,
                     //std::vector<int> *localToGlobalIndexMap,
                     CLbmInitCPU<T> *initLbmCPU,
                     CVector<3, T> gravitation) :
                         domainCellsCPUWithHalo(domainCellsCPUWithHalo),
                         domainSizeWithHalo(domainSizeWithHalo),
-                        hollowCPULeftLimit(hollowCPULeftLimit),
-                        hollowCPURightLimit(hollowCPURightLimit),
                         //localToGlobalIndexMap(localToGlobalIndexMap),
                         initLbmCPU(initLbmCPU),
                         gravitation(gravitation)
@@ -42,7 +38,7 @@ template<class T>
 CLbmAlphaCPU<T>::~CLbmAlphaCPU()
 {
 	if (isSubRegion)
-		delete[] localIndices;
+		delete localIndices;
 }
 
 
@@ -88,7 +84,11 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
             {
                 for (int k = 0; k < size[0]; k++)
                 {
+#if !TOP_DOWN_DECOMPOSITION
                     localIndices->operator[](k + j * size[0] + i * size[0] * size[1]) = initLbmCPU->getLocalIndex((origin[0] +  k) + (origin[1] + j) * domainSizeWithHalo[0] + (origin[2] + i) * (domainSizeWithHalo[1] * domainSizeWithHalo[2]));
+#else
+					localIndices->operator[](k + j * size[0] + i * size[0] * size[1]) = (origin[0] +  k) + (origin[1] + j) * domainSizeWithHalo[0] + (origin[2] + i) * (domainSizeWithHalo[1] * domainSizeWithHalo[2]);
+#endif
                 }
             }
         }

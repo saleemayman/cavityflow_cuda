@@ -33,9 +33,11 @@ class CLbmInitCPU
 private:
     int domainCellsCPUWithHalo;
     CVector<3, int> domainSizeWithHalo;
+#if !TOP_DOWN_DECOMPOSITION
     CVector<3, int> hollowCPULeftLimit;
     CVector<3, int> hollowCPURightLimit;
     std::vector<int> *localToGlobalIndexMap;
+#endif
 
     // declare simulation related variables
     Flag flag;
@@ -56,12 +58,19 @@ private:
     void setFlags(std::vector<Flag> &flags);
 
 public:
+#if !TOP_DOWN_DECOMPOSITION
     CLbmInitCPU(
             int domainCellsCPUWithHalo,
             CVector<3, int> domainSizeWithHalo,
             CVector<3, int> hollowCPULeftLimit,
             CVector<3, int> hollowCPURightLimit,
             std::vector<Flag>& boundaryConditions);
+#else
+    CLbmInitCPU(
+            int domainCellsCPUWithHalo,
+            CVector<3, int> domainSizeWithHalo,
+            std::vector<Flag>& boundaryConditions);
+#endif
     ~CLbmInitCPU();
 
     void initLbm(
@@ -72,9 +81,11 @@ public:
         const bool storeDensities,
         const bool storeVelocities);
 
+#if !TOP_DOWN_DECOMPOSITION
     int getLocalIndex(int globalId);
     int getGlobalIndex(int localId);
 
     std::vector<int>* getCellIndexMap();
+#endif
 };
 #endif

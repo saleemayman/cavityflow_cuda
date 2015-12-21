@@ -25,15 +25,11 @@ template<class T>
 CLbmBetaCPU<T>::CLbmBetaCPU(
                     int domainCellsCPUWithHalo,
                     CVector<3, int> domainSizeWithHalo,
-                    CVector<3, int> hollowCPULeftLimit,
-                    CVector<3, int> hollowCPURightLimit,
                     //std::vector<int> *localToGlobalIndexMap,
                     CLbmInitCPU<T> *initLbmCPU,
                     CVector<3, T> gravitation) :
                         domainCellsCPUWithHalo(domainCellsCPUWithHalo),
                         domainSizeWithHalo(domainSizeWithHalo),
-                        hollowCPULeftLimit(hollowCPULeftLimit),
-                        hollowCPURightLimit(hollowCPURightLimit),
                         //localToGlobalIndexMap(localToGlobalIndexMap),
                         initLbmCPU(initLbmCPU),
                         gravitation(gravitation)
@@ -54,7 +50,7 @@ template<class T>
 CLbmBetaCPU<T>::~CLbmBetaCPU()
 {
 	if (isSubRegion)
-		delete[] localIndices;
+		delete localIndices;
 }
 
 template<class T>
@@ -62,7 +58,12 @@ int CLbmBetaCPU<T>::domainWrap(int A, int domainCells, bool isPowTwo)
 {
     int globalWrappedIndex = (int)isPowTwo*(A & (domainCellsCPUWithHalo-1)) + (int)(!isPowTwo)*(A % domainCellsCPUWithHalo);
 
+#if !TOP_DOWN_DECOMPOSITION
     return initLbmCPU->getLocalIndex(globalWrappedIndex);
+#else
+	return globalWrappedIndex;
+#endif
+
 //    /* 
 //     * Map the global index to local (CPU linear id) index by 
 //     * searching the map-vector for globalIndex and return the
@@ -128,7 +129,11 @@ void CLbmBetaCPU<T>::betaKernelCPU(
             {
                 for (int k = 0; k < size[0]; k++)
                 {
+#if !TOP_DOWN_DECOMPOSITION
                     localIndices->operator[](k + j * size[0] + i * size[0] * size[1]) = initLbmCPU->getLocalIndex((origin[0] +  k) + (origin[1] + j) * domainSizeWithHalo[0] + (origin[2] + i) * (domainSizeWithHalo[1] * domainSizeWithHalo[2]));
+#else
+					localIndices->operator[](k + j * size[0] + i * size[0] * size[1]) = (origin[0] +  k) + (origin[1] + j) * domainSizeWithHalo[0] + (origin[2] + i) * (domainSizeWithHalo[1] * domainSizeWithHalo[2]);
+#endif
                 }
             }
         }
@@ -148,7 +153,11 @@ void CLbmBetaCPU<T>::betaKernelCPU(
         {
             cellID = id;
         }
+#if !TOP_DOWN_DECOMPOSITION
         gid = initLbmCPU->getGlobalIndex(cellID);
+#else
+		gid = cellID;
+#endif
 
         /*
          * dd 0-3: f(1,0,0), f(-1,0,0),  f(0,1,0),  f(0,-1,0)

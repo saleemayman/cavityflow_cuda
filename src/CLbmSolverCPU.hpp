@@ -49,8 +49,12 @@ private:
     CLbmAlphaCPU<T>* alphaLbmCPU;
     CLbmBetaCPU<T>* betaLbmCPU;
 
+#if !TOP_DOWN_DECOMPOSITION
     CVector<3, int> hollowCPULeftLimit;
     CVector<3, int> hollowCPURightLimit;
+#endif
+    CVector<3, int> domainSizeGPU;
+    CVector<3, int> domainSizeCPUWithHalo;
 
     std::vector<T> densityDistributions;
     std::vector<Flag> flags;
@@ -70,6 +74,10 @@ private:
     */
     std::vector<CComm<T>*> commContainer;
 
+	void getVariable(CVector<3, int> &origin, CVector<3, int> &size, std::vector<T> &variableData, T* src, int numDimensions);
+	void getVariable(CVector<3, int> &origin, CVector<3, int> &size, std::vector<Flag> &variableData, Flag* src, int numDimensions);
+	void setVariable(CVector<3, int> &origin, CVector<3, int> &size, std::vector<T> &variableData, T* src, int numDimensions);
+	void setVariable(CVector<3, int> &origin, CVector<3, int> &size, std::vector<Flag> &variableData, Flag* src, int numDimensions);
 public:
     CLbmSolverCPU();
     CLbmSolverCPU(
@@ -113,10 +121,12 @@ public:
     void getDensities(CVector<3, int> &origin, CVector<3, int> &size, T* dst);
     void getDensities(T* dst);
     void setDensities(CVector<3, int> &origin, CVector<3, int> &size, T* src);
-    void setDensities(T* srsrcc);
+    void setDensities(T* src);
 
+#if !TOP_DOWN_DECOMPOSITION
     CVector<3, int> getHollowCPULeftLimits();
     CVector<3, int> getHollowCPURightLimits();
+#endif
 };
 
 #endif
