@@ -47,7 +47,7 @@
 #define E18 CVector<3, int>( 0,  0,  0)
 
 // set the CPU-GPU domain decomposition
-#define TOP_DOWN_DECOMPOSITION 		0
+#define TOP_DOWN_DECOMPOSITION 		1
 
 extern CVector<3, int> lbm_units[];
 
