@@ -25,9 +25,9 @@
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-      <x>226</x>
-      <y>226</y>
-      <z>226</z>
+      <x>128</x>
+      <y>128</y>
+      <z>128</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
@@ -39,7 +39,7 @@
     <subdomain-num>
       <x>1</x>
       <y>1</y>
-      <z>1</z>
+      <z>2</z>
     </subdomain-num>
     <!-- ratio in x, y and z direction of subdomain cells which are processed by the CPU ([0.0, 1.0]) (unit: scalar factor) -->
     <cpu-subdomain-ratio>
@@ -55,7 +55,7 @@
     <timestep>0.01</timestep>
     <!--  -->
     <benchmark>
-      <do>0</do>
+      <do>1</do>
       <output-dir>/work_fast/riesinge/workspace/lbm/benchmark</output-dir>
     </benchmark>
     <!--  -->
