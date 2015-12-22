@@ -29,7 +29,7 @@ COMPUTE_CAPABILITY	:=	20
 ################################################################################
 
 ifeq ($(INSTRUMENT), 1)
-CC					:=	scalasca -instrument -comp=none mpicc
+CC					:=	scorep mpicc
 else
 	ifeq ($(USE_MPI), 1)
 	CC				:=	mpicc
@@ -39,7 +39,7 @@ else
 endif
 
 ifeq ($(INSTRUMENT), 1)
-CXX					:=	scalasca -instrument -comp=none mpicxx
+CXX					:=	scorep mpicxx
 else
 	ifeq ($(USE_MPI), 1)
 	CXX				:=	mpicxx
@@ -49,7 +49,7 @@ else
 endif
 
 ifeq ($(INSTRUMENT), 1)
-LINKER				:=	scalasca -instrument -comp=none mpicxx
+LINKER				:=	scorep mpicxx
 else
 	ifeq ($(USE_MPI), 1)
 	LINKER			:=	mpicxx

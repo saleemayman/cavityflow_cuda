@@ -25,9 +25,9 @@
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-      <x>409</x>
-      <y>409</y>
-      <z>409</z>
+      <x>128</x>
+      <y>128</y>
+      <z>128</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
@@ -39,18 +39,14 @@
     <subdomain-num>
       <x>1</x>
       <y>1</y>
-      <z>1</z>
+      <z>2</z>
     </subdomain-num>
-    <!-- ratio in x, y and z direction of subdomain cells which are processed by the CPU ([0.0, 1.0]) (unit: scalar factor) -->
-    <cpu-subdomain-ratio>
-      <x>0.5</x>
-      <y>0.5</y>
-      <z>0.5</z>
-    </cpu-subdomain-ratio>
+    <!-- ratio of the part of the subdomain which is processed by the CPU to the total size of the sub domain ([0.0, 1.0]) (unit: scalar factor) -->
+    <cpu-subdomain-ratio>0.0</cpu-subdomain-ratio>
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>10</loops>
+    <loops>1280</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>0.01</timestep>
     <!--  -->
@@ -69,8 +65,8 @@
     </validation>
     <!--  -->
     <visualization>
-      <do>0</do>
-      <rate>1</rate>
+      <do>1</do>
+      <rate>1280</rate>
       <output-dir>/scratch/pr63so/lu32dec/dissertation/lbm/visualization</output-dir>
     </visualization>
   </simulation>

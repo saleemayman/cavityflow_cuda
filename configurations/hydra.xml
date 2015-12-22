@@ -41,12 +41,8 @@
       <y>1</y>
       <z>1</z>
     </subdomain-num>
-    <!-- ratio in x, y and z direction of subdomain cells which are processed by the CPU ([0.0, 1.0]) (unit: scalar factor) -->
-    <cpu-subdomain-ratio>
-      <x>0.5</x>
-      <y>0.5</y>
-      <z>0.5</z>
-    </cpu-subdomain-ratio>
+    <!-- ratio of the part of the subdomain which is processed by the CPU to the total size of the sub domain ([0.0, 1.0]) (unit: scalar factor) -->
+    <cpu-subdomain-ratio>0.0</cpu-subdomain-ratio>
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>

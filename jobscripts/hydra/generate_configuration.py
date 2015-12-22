@@ -32,10 +32,7 @@ subdomainnum = ET.SubElement(grid, "subdomain-num")
 ET.SubElement(subdomainnum, "x").text = str(sys.argv[7])
 ET.SubElement(subdomainnum, "y").text = str(sys.argv[8])
 ET.SubElement(subdomainnum, "z").text = str(sys.argv[9])
-cpusubdomainratio = ET.SubElement(grid, "cpu-subdomain-ratio")
-ET.SubElement(cpusubdomainratio, "x").text = "0.5"
-ET.SubElement(cpusubdomainratio, "y").text = "0.5"
-ET.SubElement(cpusubdomainratio, "z").text = "0.5"
+cpusubdomainratio = ET.SubElement(grid, "cpu-subdomain-ratio").text = "0.0"
 
 ET.SubElement(simulation, "loops").text = str(sys.argv[10])
 ET.SubElement(simulation, "timestep").text = "0.01"

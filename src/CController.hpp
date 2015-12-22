@@ -59,7 +59,8 @@ private:
     cudaStream_t defaultStream;
     int simulationStepCounter;
 
-    CDomain<T> decomposeSubdomain();
+    CDomain<T> getDecomposedSubdomainCPU();
+    CDomain<T> getDecomposedSubdomainGPU();
     void computeNextStep();
     void stepAlpha();
     void stepBeta();

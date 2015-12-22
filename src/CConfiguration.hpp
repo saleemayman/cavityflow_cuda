@@ -68,7 +68,7 @@ public:
     CVector<3, int> domainSize;
     CVector<3, T> domainLength;
     CVector<3, int> numOfSubdomains;
-    CVector<3, T> CPUSubdomainRatio;
+    T CPUSubdomainRatio;
 
     /*
      * simulation configuration data

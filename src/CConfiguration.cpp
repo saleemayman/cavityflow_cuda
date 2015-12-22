@@ -91,9 +91,7 @@ void CConfiguration<T>::interpretGridData(const tinyxml2::XMLNode* root)
     numOfSubdomains.set(1, 1, 1);
 #endif
 
-    CPUSubdomainRatio[0] = atof(gridChild->FirstChildElement("cpu-subdomain-ratio")->FirstChildElement("x")->GetText());
-    CPUSubdomainRatio[1] = atof(gridChild->FirstChildElement("cpu-subdomain-ratio")->FirstChildElement("y")->GetText());
-    CPUSubdomainRatio[2] = atof(gridChild->FirstChildElement("cpu-subdomain-ratio")->FirstChildElement("z")->GetText());
+    CPUSubdomainRatio = atof(gridChild->FirstChildElement("cpu-subdomain-ratio")->GetText());
 }
 
 template <class T>
@@ -161,8 +159,7 @@ void CConfiguration<T>::checkParameters()
     assert(domainSize[0] > 0 && domainSize[1] > 0 && domainSize[2] > 0);
     assert(domainLength[0] > (T)0 && domainLength[1] > (T)0 && domainLength[2] > (T)0);
     assert(numOfSubdomains[0] > 0 && numOfSubdomains[1] > 0 && numOfSubdomains[2] > 0);
-    assert(CPUSubdomainRatio[0] >= (T)0 && CPUSubdomainRatio[1] >= (T)0 && CPUSubdomainRatio[2] >= (T)0);
-    assert(CPUSubdomainRatio[0] <= (T)1 && CPUSubdomainRatio[1] <= (T)1 && CPUSubdomainRatio[2] <= (T)1);
+    assert(CPUSubdomainRatio >= (T)0 && CPUSubdomainRatio <= (T)1);
     assert(domainSize[0] % numOfSubdomains[0] == 0 && domainSize[1] % numOfSubdomains[1] == 0 && domainSize[2] % numOfSubdomains[2] == 0);
     assert(CMath<T>::abs(domainLength[0] / (T)domainSize[0] - domainLength[1] / (T)domainSize[1]) < std::numeric_limits<T>::epsilon());
     assert(CMath<T>::abs(domainLength[1] / (T)domainSize[1] - domainLength[2] / (T)domainSize[2]) < std::numeric_limits<T>::epsilon());
