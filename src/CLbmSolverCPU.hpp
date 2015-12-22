@@ -49,14 +49,20 @@ private:
     CLbmAlphaCPU<T>* alphaLbmCPU;
     CLbmBetaCPU<T>* betaLbmCPU;
 
+#if !TOP_DOWN_DECOMPOSITION
     CVector<3, int> hollowCPULeftLimit;
     CVector<3, int> hollowCPURightLimit;
+#endif
+    CVector<3, int> domainSizeGPU;
+    CVector<3, int> domainSizeCPUWithHalo;
 
     std::vector<T> densityDistributions;
     std::vector<Flag> flags;
     std::vector<T> velocities;
     std::vector<T> densities;
-    
+
+    int domainCellsCPUWithHalo;    
+
     /*
      * Maybe these members are not required if data copy operations during sync
      * operations and "inner cells operations"/"boundary cells operations" can
@@ -68,6 +74,10 @@ private:
     */
     std::vector<CComm<T>*> commContainer;
 
+	void getVariable(CVector<3, int> &origin, CVector<3, int> &size, std::vector<T> &variableData, T* src, int numDimensions);
+	void getVariable(CVector<3, int> &origin, CVector<3, int> &size, std::vector<Flag> &variableData, Flag* src, int numDimensions);
+	void setVariable(CVector<3, int> &origin, CVector<3, int> &size, std::vector<T> &variableData, T* src, int numDimensions);
+	void setVariable(CVector<3, int> &origin, CVector<3, int> &size, std::vector<Flag> &variableData, Flag* src, int numDimensions);
 public:
     CLbmSolverCPU();
     CLbmSolverCPU(
@@ -100,21 +110,23 @@ public:
     void getDensityDistributions(T* dst);
     void setDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* src);
     void setDensityDistributions(T* src);
-    void getFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* src);
-    void getFlags(Flag* src);
-    void setFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* dst);
-    void setFlags(Flag* dst);
-    void getVelocities(CVector<3, int> &origin, CVector<3, int> &size, T* src);
-    void getVelocities(T* src);
-    void setVelocities(CVector<3, int> &origin, CVector<3, int> &size, T* dst);
-    void setVelocities(T* dst);
-    void getDensities(CVector<3, int> &origin, CVector<3, int> &size, T* src);
-    void getDensities(T* src);
-    void setDensities(CVector<3, int> &origin, CVector<3, int> &size, T* dst);
-    void setDensities(T* dst);
+    void getFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* dst);
+    void getFlags(Flag* dst);
+    void setFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* src);
+    void setFlags(Flag* src);
+    void getVelocities(CVector<3, int> &origin, CVector<3, int> &size, T* dst);
+    void getVelocities(T* dst);
+    void setVelocities(CVector<3, int> &origin, CVector<3, int> &size, T* src);
+    void setVelocities(T* src);
+    void getDensities(CVector<3, int> &origin, CVector<3, int> &size, T* dst);
+    void getDensities(T* dst);
+    void setDensities(CVector<3, int> &origin, CVector<3, int> &size, T* src);
+    void setDensities(T* src);
 
+#if !TOP_DOWN_DECOMPOSITION
     CVector<3, int> getHollowCPULeftLimits();
     CVector<3, int> getHollowCPURightLimits();
+#endif
 };
 
 #endif

@@ -46,6 +46,9 @@
 #define E17 CVector<3, int>( 0,  0, -1)
 #define E18 CVector<3, int>( 0,  0,  0)
 
+// set the CPU-GPU domain decomposition
+#define TOP_DOWN_DECOMPOSITION 		1
+
 extern CVector<3, int> lbm_units[];
 
 enum Flag
@@ -54,7 +57,7 @@ enum Flag
     FLUID              = (1<<1),
     VELOCITY_INJECTION = (1<<2),
     GHOST_LAYER        = (1<<3),
-    GHOST_LAYER_BETA   = (GHOST_LAYER | (1<<4))
+    // GHOST_LAYER_BETA   = (GHOST_LAYER | (1<<4))
 };
 
 enum Direction

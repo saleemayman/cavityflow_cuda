@@ -114,22 +114,24 @@ CController<T>::CController(
 template <class T>
 CController<T>::~CController()
 {
-    if (configuration->doVisualization)
+	if (configuration->doVisualization)
         delete visualization;
 
+/*
 #ifdef USE_MPI
-    for (unsigned int i = communication.size() - 1; i >= 0; i--)
+	for (unsigned int i = communication.size() - 1; i >= 0; i--)
     {
-        GPU_ERROR_CHECK(cudaStreamDestroy(streams->at(i)))
+    	GPU_ERROR_CHECK(cudaStreamDestroy(streams->at(i)))
         delete[] recvBuffers->at(i);
         delete[] sendBuffers->at(i);
     }
 #endif
+*/
 
-    GPU_ERROR_CHECK(cudaStreamDestroy(defaultStream))
+	GPU_ERROR_CHECK(cudaStreamDestroy(defaultStream))
 #ifdef USE_MPI
     delete streams;
-    delete[] recvRequests;
+	delete[] recvRequests;
     delete[] sendRequests;
     delete recvBuffers;
     delete sendBuffers;
@@ -736,6 +738,9 @@ void CController<T>::run()
 
         if (configuration->doVisualization)
             visualization->render(simulationStepCounter);
+            
+        if (configuration->doLogging)
+            std::cout << "Iteration " << i << " successful." << std::endl;
     }
 
     if (configuration->doBenchmark)
@@ -744,7 +749,7 @@ void CController<T>::run()
         elapsed = (T)(end.tv_sec - start.tv_sec) + (T)(end.tv_usec - start.tv_usec) * (T)0.000001;
 
         T iterationsPerSecond = (T)(configuration->loops) / elapsed;
-        T lups = iterationsPerSecond * (T)configuration->domainSize.elements() * (T)0.000000001;
+        T lups = iterationsPerSecond * (T)configuration->domainSize[0] * (T)configuration->domainSize[1] * (T)configuration->domainSize[2] * (T)0.000000001;
         T bandwidth = lups * (T)usedDataSize;
 
         std::stringstream benchmarkFileName;

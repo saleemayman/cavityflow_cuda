@@ -22,6 +22,7 @@
 
 #include <vector>
 
+#include "CLbmInitCPU.hpp"
 #include "../libmath/CVector.hpp"
 #include "../CDomain.hpp"
 #include "../common.h"
@@ -32,12 +33,14 @@ template<class T>
 class CLbmAlphaCPU
 {
 private:
-    int domainCellsCPU;
-    CVector<3, int> domainSize;
-    CVector<3, int> domainSizeGPU; 
-    CVector<3, int> hollowCPULeftLimit;
-    CVector<3, int> hollowCPURightLimit;
+    int domainCellsCPUWithHalo;
+    CVector<3, int> domainSizeWithHalo;
+    //std::vector<int> *localToGlobalIndexMap;
+    CLbmInitCPU<T> *initLbmCPU;
     CVector<3, T> gravitation;
+	std::vector<int> *localIndices;
+
+	bool isSubRegion;
 
     T vel2;     // vel*vel
     T vela2;
@@ -47,10 +50,10 @@ private:
     T rho;  // density
 public:
     CLbmAlphaCPU(
-            CVector<3, int> domainSize,
-            CVector<3, int> domainSizeGPU,
-            CVector<3, int> hollowCPULeftLimit,
-            CVector<3, int> hollowCPURightLimit,
+            int domainCellsCPUWithHalo,
+            CVector<3, int> domainSizeWithHalo,
+            //std::vector<int> *localToGlobalIndexMap,
+            CLbmInitCPU<T> *initLbmCPU,
             CVector<3, T> gravitation);
     ~CLbmAlphaCPU();
 

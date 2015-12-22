@@ -23,27 +23,24 @@
 
 template<class T>
 CLbmBetaCPU<T>::CLbmBetaCPU(
-                    CVector<3, int> domainSize,
-                    CVector<3, int> domainSizeGPU,
-                    CVector<3, int> hollowCPULeftLimit,
-                    CVector<3, int> hollowCPURightLimit,
-                    CVector<3, T> gravitation,
-                    std::vector<int> *localToGlobalIndexMap) :
-                        domainSize(domainSize),
-                        domainSizeGPU(domainSizeGPU),
-                        hollowCPULeftLimit(hollowCPULeftLimit),
-                        hollowCPURightLimit(hollowCPURightLimit),
-                        gravitation(gravitation),
-                        localToGlobalIndexMap(localToGlobalIndexMap)
+                    int domainCellsCPUWithHalo,
+                    CVector<3, int> domainSizeWithHalo,
+                    //std::vector<int> *localToGlobalIndexMap,
+                    CLbmInitCPU<T> *initLbmCPU,
+                    CVector<3, T> gravitation) :
+                        domainCellsCPUWithHalo(domainCellsCPUWithHalo),
+                        domainSizeWithHalo(domainSizeWithHalo),
+                        //localToGlobalIndexMap(localToGlobalIndexMap),
+                        initLbmCPU(initLbmCPU),
+                        gravitation(gravitation)
 {
-    domainCells = domainSize[0] * domainSize[1] * domainSize[2];
-    domainCellsCPU = domainSize.elements() - domainSizeGPU.elements();    
-    domainCellsInXYPlane = domainSize[0] * domainSize[1];
+    domainCells = domainSizeWithHalo[0] * domainSizeWithHalo[1] * domainSizeWithHalo[2];
+    domainCellsInXYPlane = domainSizeWithHalo[0] * domainSizeWithHalo[1];
 
     deltaPosX = 1;
     deltaNegX = domainCells - 1;
-    deltaPosY = domainSize[0];
-    deltaNegY = domainCells - domainSize[0];
+    deltaPosY = domainSizeWithHalo[0];
+    deltaNegY = domainCells - domainSizeWithHalo[0];
     deltaPosZ = domainCellsInXYPlane;
     deltaNegZ = domainCells - domainCellsInXYPlane;
 }
@@ -52,30 +49,38 @@ CLbmBetaCPU<T>::CLbmBetaCPU(
 template<class T>
 CLbmBetaCPU<T>::~CLbmBetaCPU()
 {
+	if (isSubRegion)
+		delete localIndices;
 }
 
 template<class T>
 int CLbmBetaCPU<T>::domainWrap(int A, int domainCells, bool isPowTwo)
 {
-    int globalWrappedIndex = (int)isPowTwo*(A & (domainCellsCPU-1)) + (int)(!isPowTwo)*(A % domainCellsCPU);
+    int globalWrappedIndex = (int)isPowTwo*(A & (domainCellsCPUWithHalo-1)) + (int)(!isPowTwo)*(A % domainCellsCPUWithHalo);
 
-    /* 
-     * Map the global index to local (CPU linear id) index by 
-     * searching the map-vector for globalIndex and return the
-     * local index (position of vector element globalWrappedIndex).
-     */
-    std::vector<int>::iterator localIndex;
-    localIndex = std::lower_bound(localToGlobalIndexMap->begin(), 
-                                    localToGlobalIndexMap->end(), 
-                                    globalWrappedIndex);
-    if (localIndex != localToGlobalIndexMap->end() && *localIndex == globalWrappedIndex)
-    {
-        return (int)(localIndex - localToGlobalIndexMap->begin());
-    }
-    else
-    {
-        return -1;
-    }
+#if !TOP_DOWN_DECOMPOSITION
+    return initLbmCPU->getLocalIndex(globalWrappedIndex);
+#else
+	return globalWrappedIndex;
+#endif
+
+//    /* 
+//     * Map the global index to local (CPU linear id) index by 
+//     * searching the map-vector for globalIndex and return the
+//     * local index (position of vector element globalWrappedIndex).
+//     */
+//    std::vector<int>::iterator localIndex;
+//    localIndex = std::lower_bound(localToGlobalIndexMap->begin(), 
+//                                    localToGlobalIndexMap->end(), 
+//                                    globalWrappedIndex);
+//    if (localIndex != localToGlobalIndexMap->end() && *localIndex == globalWrappedIndex)
+//    {
+//        return (int)(localIndex - localToGlobalIndexMap->begin());
+//    }
+//    else
+//    {
+//        return -1;
+//    }
 }
 
 
@@ -93,22 +98,72 @@ void CLbmBetaCPU<T>::betaKernelCPU(
         const bool storeDensities,
         const bool storeVelocities)
 {
-    const int startIndex = origin[0] + origin[1] * domainSize[0] + origin[2] * (domainSize[1] * domainSize[2]);
-    const int endIndex = (origin[0] + size[0]) + (origin[1] + size[1]) * domainSize[0] + (origin[2] + size[2]) * (domainSize[1] * domainSize[2]);
+    int cellID; // cell local linear id
+    int gid;    // cell global linear id
+	int startIndex, endIndex;
+
+    /*
+     * Check if computation has to be done for a sub-region, if yes then create a local vector
+     * containing the local linear indices of all the linear global cells for which we need to 
+     * do the computation (the global cells are specified in size parameter).
+     */
+    if (size[0] == domainSizeWithHalo[0] && size[1] == domainSizeWithHalo[1] && size[2] == domainSizeWithHalo[2])
+    {
+        startIndex = 0; 
+        endIndex = domainCellsCPUWithHalo;
+        isSubRegion = (bool)0;
+    }
+    else
+        isSubRegion = (bool)1;
+    
+    if (isSubRegion)
+    {
+        startIndex = 0; 
+        endIndex = size[0] * size[1] * size[2]; 
+        isSubRegion = (bool)1;
+        localIndices = new std::vector<int>(endIndex);
+
+        for (int i = 0; i < size[2]; i++)
+        {
+            for (int j = 0; j < size[1]; j++)
+            {
+                for (int k = 0; k < size[0]; k++)
+                {
+#if !TOP_DOWN_DECOMPOSITION
+                    localIndices->operator[](k + j * size[0] + i * size[0] * size[1]) = initLbmCPU->getLocalIndex((origin[0] +  k) + (origin[1] + j) * domainSizeWithHalo[0] + (origin[2] + i) * (domainSizeWithHalo[1] * domainSizeWithHalo[2]));
+#else
+					localIndices->operator[](k + j * size[0] + i * size[0] * size[1]) = (origin[0] +  k) + (origin[1] + j) * domainSizeWithHalo[0] + (origin[2] + i) * (domainSizeWithHalo[1] * domainSizeWithHalo[2]);
+#endif
+                }
+            }
+        }
+    }
 
     /*
      * Iterate over all CPU domain cells in the following order:
      * x-cells, y-cells, z-cells.
      */
-    for (int cellID = startIndex; cellID < endIndex; cellID++)
+    for (int id = startIndex; id < endIndex; id++)
     {
-        int gid = localToGlobalIndexMap->operator[](cellID);
+        if (isSubRegion)
+        {
+            cellID = localIndices->operator[](id);
+        }
+        else
+        {
+            cellID = id;
+        }
+#if !TOP_DOWN_DECOMPOSITION
+        gid = initLbmCPU->getGlobalIndex(cellID);
+#else
+		gid = cellID;
+#endif
 
         /*
          * dd 0-3: f(1,0,0), f(-1,0,0),  f(0,1,0),  f(0,-1,0)
          */
-        dd1 = densityDistributions[ domainWrap(gid + deltaPosX, domainCells, isDomainPowOfTwo) + 0*domainCellsCPU ];
-        dd0 = densityDistributions[ domainWrap(gid + deltaNegX, domainCells, isDomainPowOfTwo) + 1*domainCellsCPU ];  
+        dd1 = densityDistributions[ domainWrap(gid + deltaPosX, domainCells, isDomainPowOfTwo) + 0*domainCellsCPUWithHalo ];
+        dd0 = densityDistributions[ domainWrap(gid + deltaNegX, domainCells, isDomainPowOfTwo) + 1*domainCellsCPUWithHalo ];  
     
         rho = dd0;
         velocity_x = dd0;
@@ -120,8 +175,8 @@ void CLbmBetaCPU<T>::betaKernelCPU(
         rho += dd1;
         velocity_x -= dd1;
     
-        dd3 = densityDistributions[ domainWrap(gid + deltaPosY, domainCells, isDomainPowOfTwo) + 2*domainCellsCPU ];
-        dd2 = densityDistributions[ domainWrap(gid + deltaNegY, domainCells, isDomainPowOfTwo) + 3*domainCellsCPU ];      
+        dd3 = densityDistributions[ domainWrap(gid + deltaPosY, domainCells, isDomainPowOfTwo) + 2*domainCellsCPUWithHalo ];
+        dd2 = densityDistributions[ domainWrap(gid + deltaNegY, domainCells, isDomainPowOfTwo) + 3*domainCellsCPUWithHalo ];      
     
         rho += dd2;
         velocity_y = dd2;
@@ -132,8 +187,8 @@ void CLbmBetaCPU<T>::betaKernelCPU(
         /*
          * dd 4-7: f(1,1,0), f(-1,-1,0), f(1,-1,0), f(-1,1,0)
          */
-        dd5 = densityDistributions[ domainWrap(gid + (deltaPosX + deltaPosY), domainCells, isDomainPowOfTwo) + 4*domainCellsCPU ];
-        dd4 = densityDistributions[ domainWrap(gid + (deltaNegX + deltaNegY), domainCells, isDomainPowOfTwo) + 5*domainCellsCPU ];      
+        dd5 = densityDistributions[ domainWrap(gid + (deltaPosX + deltaPosY), domainCells, isDomainPowOfTwo) + 4*domainCellsCPUWithHalo ];
+        dd4 = densityDistributions[ domainWrap(gid + (deltaNegX + deltaNegY), domainCells, isDomainPowOfTwo) + 5*domainCellsCPUWithHalo ];      
     
         rho += dd4;
         velocity_x += dd4;
@@ -143,8 +198,8 @@ void CLbmBetaCPU<T>::betaKernelCPU(
         velocity_x -= dd5;
         velocity_y -= dd5;
     
-        dd7 = densityDistributions[ domainWrap(gid + (deltaPosX + deltaNegY), domainCells, isDomainPowOfTwo) + 6*domainCellsCPU ];      
-        dd6 = densityDistributions[ domainWrap(gid + (deltaNegX + deltaPosY), domainCells, isDomainPowOfTwo) + 7*domainCellsCPU ];
+        dd7 = densityDistributions[ domainWrap(gid + (deltaPosX + deltaNegY), domainCells, isDomainPowOfTwo) + 6*domainCellsCPUWithHalo ];      
+        dd6 = densityDistributions[ domainWrap(gid + (deltaNegX + deltaPosY), domainCells, isDomainPowOfTwo) + 7*domainCellsCPUWithHalo ];
     
         rho += dd6;
         velocity_x += dd6;
@@ -157,8 +212,8 @@ void CLbmBetaCPU<T>::betaKernelCPU(
         /*
          * dd 8-11: f(1,0,1), f(-1,0,-1), f(1,0,-1), f(-1,0,1)
          */
-        dd9 = densityDistributions[ domainWrap(gid + (deltaPosX + deltaPosZ), domainCells, isDomainPowOfTwo) + 8*domainCellsCPU ];
-        dd8 = densityDistributions[ domainWrap(gid + (deltaNegX + deltaNegZ), domainCells, isDomainPowOfTwo) + 9*domainCellsCPU ];
+        dd9 = densityDistributions[ domainWrap(gid + (deltaPosX + deltaPosZ), domainCells, isDomainPowOfTwo) + 8*domainCellsCPUWithHalo ];
+        dd8 = densityDistributions[ domainWrap(gid + (deltaNegX + deltaNegZ), domainCells, isDomainPowOfTwo) + 9*domainCellsCPUWithHalo ];
     
         rho += dd8;
         velocity_x += dd8;
@@ -168,8 +223,8 @@ void CLbmBetaCPU<T>::betaKernelCPU(
         velocity_x -= dd9;
         velocity_z -= dd9;
     
-        dd11 = densityDistributions[ domainWrap(gid + (deltaPosX + deltaNegZ), domainCells, isDomainPowOfTwo) + 10*domainCellsCPU ];
-        dd10 = densityDistributions[ domainWrap(gid + (deltaNegX + deltaPosZ), domainCells, isDomainPowOfTwo) + 11*domainCellsCPU ];
+        dd11 = densityDistributions[ domainWrap(gid + (deltaPosX + deltaNegZ), domainCells, isDomainPowOfTwo) + 10*domainCellsCPUWithHalo ];
+        dd10 = densityDistributions[ domainWrap(gid + (deltaNegX + deltaPosZ), domainCells, isDomainPowOfTwo) + 11*domainCellsCPUWithHalo ];
     
         rho += dd10;
         velocity_x += dd10;
@@ -182,8 +237,8 @@ void CLbmBetaCPU<T>::betaKernelCPU(
         /*
          * dd 12-15: f(0,1,1), f(0,-1,-1), f(0,1,-1), f(0,-1,1)
          */
-        dd13 = densityDistributions[ domainWrap(gid + (deltaPosY + deltaPosZ), domainCells, isDomainPowOfTwo) + 12*domainCellsCPU ];
-        dd12 = densityDistributions[ domainWrap(gid + (deltaNegY + deltaNegZ), domainCells, isDomainPowOfTwo) + 13*domainCellsCPU ];
+        dd13 = densityDistributions[ domainWrap(gid + (deltaPosY + deltaPosZ), domainCells, isDomainPowOfTwo) + 12*domainCellsCPUWithHalo ];
+        dd12 = densityDistributions[ domainWrap(gid + (deltaNegY + deltaNegZ), domainCells, isDomainPowOfTwo) + 13*domainCellsCPUWithHalo ];
     
         rho += dd12;
         velocity_y += dd12;
@@ -193,8 +248,8 @@ void CLbmBetaCPU<T>::betaKernelCPU(
         velocity_y -= dd13;
         velocity_z -= dd13;
     
-        dd15 = densityDistributions[ domainWrap(gid + (deltaPosY + deltaNegZ), domainCells, isDomainPowOfTwo) + 14*domainCellsCPU ];
-        dd14 = densityDistributions[ domainWrap(gid + (deltaNegY + deltaPosZ), domainCells, isDomainPowOfTwo) + 15*domainCellsCPU ];
+        dd15 = densityDistributions[ domainWrap(gid + (deltaPosY + deltaNegZ), domainCells, isDomainPowOfTwo) + 14*domainCellsCPUWithHalo ];
+        dd14 = densityDistributions[ domainWrap(gid + (deltaNegY + deltaPosZ), domainCells, isDomainPowOfTwo) + 15*domainCellsCPUWithHalo ];
     
         rho += dd14;
         velocity_y += dd14;
@@ -207,8 +262,8 @@ void CLbmBetaCPU<T>::betaKernelCPU(
         /*
          * dd 16-18: f(0,0,1), f(0,0,-1),  f(0,0,0),  (not used)
          */
-        dd17 = densityDistributions[ domainWrap(gid + deltaPosZ, domainCells, isDomainPowOfTwo) + 16*domainCellsCPU ];
-        dd16 = densityDistributions[ domainWrap(gid + deltaNegZ, domainCells, isDomainPowOfTwo) + 17*domainCellsCPU ];
+        dd17 = densityDistributions[ domainWrap(gid + deltaPosZ, domainCells, isDomainPowOfTwo) + 16*domainCellsCPUWithHalo ];
+        dd16 = densityDistributions[ domainWrap(gid + deltaNegZ, domainCells, isDomainPowOfTwo) + 17*domainCellsCPUWithHalo ];
     
         rho += dd16;
         velocity_z += dd16;
@@ -216,7 +271,7 @@ void CLbmBetaCPU<T>::betaKernelCPU(
         rho += dd17;
         velocity_z -= dd17;
     
-        dd18 = densityDistributions[cellID + 18*domainCellsCPU];
+        dd18 = densityDistributions[cellID + 18*domainCellsCPUWithHalo];
         rho += dd18;
     
         vela_velb = vel2;
@@ -424,33 +479,33 @@ void CLbmBetaCPU<T>::betaKernelCPU(
         }
 #endif
         /* f(1,0,0), f(-1,0,0),  f(0,1,0),  f(0,-1,0) */
-        densityDistributions[ domainWrap(gid + deltaPosX, domainCells, isDomainPowOfTwo) + 0*domainCellsCPU ] = dd0;
-        densityDistributions[ domainWrap(gid + deltaNegX, domainCells, isDomainPowOfTwo) + 1*domainCellsCPU ] = dd1;
-        densityDistributions[ domainWrap(gid + deltaPosY, domainCells, isDomainPowOfTwo) + 2*domainCellsCPU ] = dd2;
-        densityDistributions[ domainWrap(gid + deltaNegY, domainCells, isDomainPowOfTwo) + 3*domainCellsCPU ] = dd3;
+        densityDistributions[ domainWrap(gid + deltaPosX, domainCells, isDomainPowOfTwo) + 0*domainCellsCPUWithHalo ] = dd0;
+        densityDistributions[ domainWrap(gid + deltaNegX, domainCells, isDomainPowOfTwo) + 1*domainCellsCPUWithHalo ] = dd1;
+        densityDistributions[ domainWrap(gid + deltaPosY, domainCells, isDomainPowOfTwo) + 2*domainCellsCPUWithHalo ] = dd2;
+        densityDistributions[ domainWrap(gid + deltaNegY, domainCells, isDomainPowOfTwo) + 3*domainCellsCPUWithHalo ] = dd3;
     
         /* f(1,1,0), f(-1,-1,0), f(1,-1,0), f(-1,1,0) */
-        densityDistributions[ domainWrap(gid + deltaPosX + deltaPosY, domainCells, isDomainPowOfTwo) + 4*domainCellsCPU ] = dd4;
-        densityDistributions[ domainWrap(gid + deltaNegX + deltaNegY, domainCells, isDomainPowOfTwo) + 5*domainCellsCPU ] = dd5;
-        densityDistributions[ domainWrap(gid + deltaPosX + deltaNegY, domainCells, isDomainPowOfTwo) + 6*domainCellsCPU ] = dd6;
-        densityDistributions[ domainWrap(gid + deltaNegX + deltaPosY, domainCells, isDomainPowOfTwo) + 7*domainCellsCPU ] = dd7;
+        densityDistributions[ domainWrap(gid + deltaPosX + deltaPosY, domainCells, isDomainPowOfTwo) + 4*domainCellsCPUWithHalo ] = dd4;
+        densityDistributions[ domainWrap(gid + deltaNegX + deltaNegY, domainCells, isDomainPowOfTwo) + 5*domainCellsCPUWithHalo ] = dd5;
+        densityDistributions[ domainWrap(gid + deltaPosX + deltaNegY, domainCells, isDomainPowOfTwo) + 6*domainCellsCPUWithHalo ] = dd6;
+        densityDistributions[ domainWrap(gid + deltaNegX + deltaPosY, domainCells, isDomainPowOfTwo) + 7*domainCellsCPUWithHalo ] = dd7;
     
         /* f(1,0,1), f(-1,0,-1), f(1,0,-1), f(-1,0,1) */
-        densityDistributions[ domainWrap(gid + deltaPosX + deltaPosZ, domainCells, isDomainPowOfTwo) + 8*domainCellsCPU ] = dd8;
-        densityDistributions[ domainWrap(gid + deltaNegX + deltaNegZ, domainCells, isDomainPowOfTwo) + 9*domainCellsCPU ] = dd9;
-        densityDistributions[ domainWrap(gid + deltaPosX + deltaNegZ, domainCells, isDomainPowOfTwo) + 10*domainCellsCPU ] = dd10;
-        densityDistributions[ domainWrap(gid + deltaNegX + deltaPosZ, domainCells, isDomainPowOfTwo) + 11*domainCellsCPU ] = dd11;
+        densityDistributions[ domainWrap(gid + deltaPosX + deltaPosZ, domainCells, isDomainPowOfTwo) + 8*domainCellsCPUWithHalo ] = dd8;
+        densityDistributions[ domainWrap(gid + deltaNegX + deltaNegZ, domainCells, isDomainPowOfTwo) + 9*domainCellsCPUWithHalo ] = dd9;
+        densityDistributions[ domainWrap(gid + deltaPosX + deltaNegZ, domainCells, isDomainPowOfTwo) + 10*domainCellsCPUWithHalo ] = dd10;
+        densityDistributions[ domainWrap(gid + deltaNegX + deltaPosZ, domainCells, isDomainPowOfTwo) + 11*domainCellsCPUWithHalo ] = dd11;
     
         /* f(0,1,1), f(0,-1,-1), f(0,1,-1), f(0,-1,1) */
-        densityDistributions[ domainWrap(gid + deltaPosY + deltaPosZ, domainCells, isDomainPowOfTwo) + 12*domainCellsCPU ] = dd12;
-        densityDistributions[ domainWrap(gid + deltaNegY + deltaNegZ, domainCells, isDomainPowOfTwo) + 13*domainCellsCPU ] = dd13;
-        densityDistributions[ domainWrap(gid + deltaPosY + deltaNegZ, domainCells, isDomainPowOfTwo) + 14*domainCellsCPU ] = dd14;
-        densityDistributions[ domainWrap(gid + deltaNegY + deltaPosZ, domainCells, isDomainPowOfTwo) + 15*domainCellsCPU ] = dd15;
+        densityDistributions[ domainWrap(gid + deltaPosY + deltaPosZ, domainCells, isDomainPowOfTwo) + 12*domainCellsCPUWithHalo ] = dd12;
+        densityDistributions[ domainWrap(gid + deltaNegY + deltaNegZ, domainCells, isDomainPowOfTwo) + 13*domainCellsCPUWithHalo ] = dd13;
+        densityDistributions[ domainWrap(gid + deltaPosY + deltaNegZ, domainCells, isDomainPowOfTwo) + 14*domainCellsCPUWithHalo ] = dd14;
+        densityDistributions[ domainWrap(gid + deltaNegY + deltaPosZ, domainCells, isDomainPowOfTwo) + 15*domainCellsCPUWithHalo ] = dd15;
     
         /* f(0,0,1), f(0,0,-1),  f(0,0,0) */
-        densityDistributions[ domainWrap(gid + deltaPosZ, domainCells, isDomainPowOfTwo) + 16*domainCellsCPU ] = dd16;
-        densityDistributions[ domainWrap(gid + deltaNegZ, domainCells, isDomainPowOfTwo) + 17*domainCellsCPU ] = dd17;
-        densityDistributions[cellID + 18*domainCellsCPU] = dd18;
+        densityDistributions[ domainWrap(gid + deltaPosZ, domainCells, isDomainPowOfTwo) + 16*domainCellsCPUWithHalo ] = dd16;
+        densityDistributions[ domainWrap(gid + deltaNegZ, domainCells, isDomainPowOfTwo) + 17*domainCellsCPUWithHalo ] = dd17;
+        densityDistributions[cellID + 18*domainCellsCPUWithHalo] = dd18;
     
         if ( flags[cellID] == GHOST_LAYER)
             continue;
@@ -458,8 +513,8 @@ void CLbmBetaCPU<T>::betaKernelCPU(
         if (storeVelocities)
         {
             velocities[cellID] = velocity_x;
-            velocities[cellID + 1*domainCellsCPU] = velocity_y;
-            velocities[cellID + 2*domainCellsCPU] = velocity_z;
+            velocities[cellID + 1*domainCellsCPUWithHalo] = velocity_y;
+            velocities[cellID + 2*domainCellsCPUWithHalo] = velocity_z;
         }
     
         if (storeDensities)
