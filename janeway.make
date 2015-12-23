@@ -30,22 +30,15 @@ COMPUTE_CAPABILITY	:=	20
 
 ifeq ($(USE_MPI), 1)
 CC					:=	mpicc
-else
-CC					:=	gcc
-endif
-
-ifeq ($(USE_MPI), 1)
 CXX					:=	mpicxx
-else
-CXX					:=	g++
-endif
-NVCC				:=	$(CUDAINSTALLPATH)/bin/nvcc
-
-ifeq ($(USE_MPI), 1)
 LINKER				:=	mpicxx
 else
+CC					:=	gcc
+CXX					:=	g++
 LINKER				:=	g++
 endif
+
+NVCC				:=	$(CUDAINSTALLPATH)/bin/nvcc
 NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 
 ################################################################################

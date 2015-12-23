@@ -28,34 +28,29 @@ COMPUTE_CAPABILITY	:=	20
 # compilers and linkers
 ################################################################################
 
-ifeq ($(INSTRUMENT), 1)
-CC					:=	scorep mpicc
-else
-	ifeq ($(USE_MPI), 1)
-	CC				:=	mpicc
-	else
-	CC				:=	gcc
-	endif
+CC					:=	
+CXX					:=	
+LINKER				:=	
+
+ifeq ($(INSTRUMENT), scalasca)
+CC					+=	scalasca -instrument
+CXX					+=	scalasca -instrument
+LINKER				+=	scalasca -instrument
+endif
+ifeq ($(INSTRUMENT), scorep)
+CC					+=	scorep
+CXX					+=	scorep
+LINKER				+=	scorep
 endif
 
-ifeq ($(INSTRUMENT), 1)
-CXX					:=	scorep mpicxx
+ifeq ($(USE_MPI), 1)
+CC					+=	mpicc
+CXX					+=	mpicxx
+LINKER				+=	mpicxx
 else
-	ifeq ($(USE_MPI), 1)
-	CXX				:=	mpicxx
-	else
-	CXX				:=	g++
-	endif
-endif
-
-ifeq ($(INSTRUMENT), 1)
-LINKER				:=	scorep mpicxx
-else
-	ifeq ($(USE_MPI), 1)
-	LINKER			:=	mpicxx
-	else
-	LINKER			:=	g++
-	endif
+CC					+=	gcc
+CXX					+=	g++
+LINKER				+=	g++
 endif
 
 NVCC				:=	$(CUDAINSTALLPATH)/bin/nvcc
