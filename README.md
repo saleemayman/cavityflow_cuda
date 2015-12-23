@@ -1,7 +1,3 @@
-#+TITLE: README for lbm
-#+AUTHOR: Christoph Riesinger
-#+EMAIL: riesinge@in.tum.de
-
 Features
 ========
 
@@ -17,7 +13,7 @@ There are three options which can be passed to make:
 - INSTRUMENT: To profile lbm, the code has to be instrumented during compile time. Two different instrument options are available which lead to the usage of the corresponding tools: scalasca and scorep.
 
 A valid make call to compile lbm could look as follows:
-make -f mac-cluster.make -j32 all USE_MPI=1 PAR_NETCDF=1 INSTRUMENT=scorep
+`make -f mac-cluster.make -j32 all USE_MPI=1 PAR_NETCDF=1 INSTRUMENT=scorep`
 
 Running
 =======
