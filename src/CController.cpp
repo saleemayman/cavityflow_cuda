@@ -183,8 +183,8 @@ void CController<T>::stepAlpha()
     }
 
 #ifdef USE_MPI
-    CVector<3, int> boundaryOrigin, sendOrigin, recvOrigin;
-    CVector<3, int> boundarySize, sendSize, recvSize;
+    CVector<3, int> boundaryOrigin;
+    CVector<3, int> boundarySize;
 
     for (unsigned int i = 0; i < communication.size(); i++)
     {
@@ -263,6 +263,11 @@ void CController<T>::stepAlpha()
     solverGPU->simulationStepAlpha(innerOrigin, innerSize, &defaultStream);
 
 #ifdef USE_MPI
+    int sendIdx, recvIdx;
+    CVector<3, int> sendOrigin, recvOrigin;
+    CVector<3, int> sendSize, recvSize;
+
+    /*
     for (unsigned int i = 0; i < communication.size(); i++)
     {
         sendOrigin = communication[i].getSendOrigin();
@@ -298,6 +303,196 @@ void CController<T>::stepAlpha()
 
         solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(i), &streams->at(i));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(i)))
+    }
+    */
+
+    sendIdx = recvIdx = 0;
+
+    if (communication[sendIdx].getDirection() == LEFT)
+    {
+        sendOrigin = communication[sendIdx].getSendOrigin();
+        sendSize = communication[sendIdx].getSendSize();
+
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
+
+        MPI_Isend(
+                sendBuffers->at(sendIdx),
+                NUM_LATTICE_VECTORS * communication[sendIdx].getSendSize().elements(),
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                communication[sendIdx].getDstId(),
+                simulationStepCounter,
+                MPI_COMM_WORLD,
+                &sendRequests[sendIdx]);
+
+        sendIdx++;
+    }
+    if (communication[sendIdx].getDirection() == RIGHT)
+    {
+        sendOrigin = communication[sendIdx].getSendOrigin();
+        sendSize = communication[sendIdx].getSendSize();
+
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
+
+        MPI_Isend(
+                sendBuffers->at(sendIdx),
+                NUM_LATTICE_VECTORS * communication[sendIdx].getSendSize().elements(),
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                communication[sendIdx].getDstId(),
+                simulationStepCounter,
+                MPI_COMM_WORLD,
+                &sendRequests[sendIdx]);
+
+        sendIdx++;
+    }
+    if (communication[recvIdx].getDirection() == LEFT)
+    {
+        recvOrigin = communication[recvIdx].getRecvOrigin();
+        recvSize = communication[recvIdx].getRecvSize();
+
+        MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
+
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
+
+        recvIdx++;
+    }
+    if (communication[recvIdx].getDirection() == RIGHT)
+    {
+        recvOrigin = communication[recvIdx].getRecvOrigin();
+        recvSize = communication[recvIdx].getRecvSize();
+
+        MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
+
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
+
+        recvIdx++;
+    }
+    if (communication[sendIdx].getDirection() == BOTTOM)
+    {
+        sendOrigin = communication[sendIdx].getSendOrigin();
+        sendSize = communication[sendIdx].getSendSize();
+
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
+
+        MPI_Isend(
+                sendBuffers->at(sendIdx),
+                NUM_LATTICE_VECTORS * communication[sendIdx].getSendSize().elements(),
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                communication[sendIdx].getDstId(),
+                simulationStepCounter,
+                MPI_COMM_WORLD,
+                &sendRequests[sendIdx]);
+
+        sendIdx++;
+    }
+    if (communication[sendIdx].getDirection() == TOP)
+    {
+        sendOrigin = communication[sendIdx].getSendOrigin();
+        sendSize = communication[sendIdx].getSendSize();
+
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
+
+        MPI_Isend(
+                sendBuffers->at(sendIdx),
+                NUM_LATTICE_VECTORS * communication[sendIdx].getSendSize().elements(),
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                communication[sendIdx].getDstId(),
+                simulationStepCounter,
+                MPI_COMM_WORLD,
+                &sendRequests[sendIdx]);
+
+        sendIdx++;
+    }
+    if (communication[recvIdx].getDirection() == BOTTOM)
+    {
+        recvOrigin = communication[recvIdx].getRecvOrigin();
+        recvSize = communication[recvIdx].getRecvSize();
+
+        MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
+
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
+
+        recvIdx++;
+    }
+    if (communication[recvIdx].getDirection() == TOP)
+    {
+        recvOrigin = communication[recvIdx].getRecvOrigin();
+        recvSize = communication[recvIdx].getRecvSize();
+
+        MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
+
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
+
+        recvIdx++;
+    }
+    if (communication[sendIdx].getDirection() == BACK)
+    {
+        sendOrigin = communication[sendIdx].getSendOrigin();
+        sendSize = communication[sendIdx].getSendSize();
+
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
+
+        MPI_Isend(
+                sendBuffers->at(sendIdx),
+                NUM_LATTICE_VECTORS * communication[sendIdx].getSendSize().elements(),
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                communication[sendIdx].getDstId(),
+                simulationStepCounter,
+                MPI_COMM_WORLD,
+                &sendRequests[sendIdx]);
+
+        sendIdx++;
+    }
+    if (communication[sendIdx].getDirection() == FRONT)
+    {
+        sendOrigin = communication[sendIdx].getSendOrigin();
+        sendSize = communication[sendIdx].getSendSize();
+
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
+
+        MPI_Isend(
+                sendBuffers->at(sendIdx),
+                NUM_LATTICE_VECTORS * communication[sendIdx].getSendSize().elements(),
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                communication[sendIdx].getDstId(),
+                simulationStepCounter,
+                MPI_COMM_WORLD,
+                &sendRequests[sendIdx]);
+
+        sendIdx++;
+    }
+    if (communication[recvIdx].getDirection() == BACK)
+    {
+        recvOrigin = communication[recvIdx].getRecvOrigin();
+        recvSize = communication[recvIdx].getRecvSize();
+
+        MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
+
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
+
+        recvIdx++;
+    }
+    if (communication[recvIdx].getDirection() == FRONT)
+    {
+        recvOrigin = communication[recvIdx].getRecvOrigin();
+        recvSize = communication[recvIdx].getRecvSize();
+
+        MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
+
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
+
+        recvIdx++;
     }
 
     MPI_Waitall(communication.size(), sendRequests, MPI_STATUS_IGNORE);
@@ -336,8 +531,8 @@ void CController<T>::stepBeta()
     }
 
 #ifdef USE_MPI
-    CVector<3, int> boundaryOrigin, sendOrigin, recvOrigin;
-    CVector<3, int> boundarySize, sendSize, recvSize;
+    CVector<3, int> boundaryOrigin;
+    CVector<3, int> boundarySize;
 
     if (configuration->doLogging)
     {
@@ -422,6 +617,11 @@ void CController<T>::stepBeta()
     solverGPU->simulationStepBeta(innerOrigin, innerSize, &defaultStream);
 
 #ifdef USE_MPI
+    int sendIdx, recvIdx;
+    CVector<3, int> sendOrigin, recvOrigin;
+    CVector<3, int> sendSize, recvSize;
+
+    /*
     for (unsigned int i = 0; i < communication.size(); i++)
     {
         sendOrigin = communication[i].getRecvOrigin();
@@ -457,6 +657,196 @@ void CController<T>::stepBeta()
 
         solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[i].getDirection(), recvBuffers->at(i), &streams->at(i));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(i)))
+    }
+    */
+
+    sendIdx = recvIdx = 0;
+
+    if (communication[sendIdx].getDirection() == LEFT)
+    {
+        sendOrigin = communication[sendIdx].getRecvOrigin();
+        sendSize = communication[sendIdx].getRecvSize();
+
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
+
+        MPI_Isend(
+                sendBuffers->at(sendIdx),
+                NUM_LATTICE_VECTORS * communication[sendIdx].getSendSize().elements(),
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                communication[sendIdx].getDstId(),
+                simulationStepCounter,
+                MPI_COMM_WORLD,
+                &sendRequests[sendIdx]);
+
+        sendIdx++;
+    }
+    if (communication[sendIdx].getDirection() == RIGHT)
+    {
+        sendOrigin = communication[sendIdx].getRecvOrigin();
+        sendSize = communication[sendIdx].getRecvSize();
+
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
+
+        MPI_Isend(
+                sendBuffers->at(sendIdx),
+                NUM_LATTICE_VECTORS * communication[sendIdx].getSendSize().elements(),
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                communication[sendIdx].getDstId(),
+                simulationStepCounter,
+                MPI_COMM_WORLD,
+                &sendRequests[sendIdx]);
+
+        sendIdx++;
+    }
+    if (communication[recvIdx].getDirection() == LEFT)
+    {
+        recvOrigin = communication[recvIdx].getSendOrigin();
+        recvSize = communication[recvIdx].getSendSize();
+
+        MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
+
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
+
+        recvIdx++;
+    }
+    if (communication[recvIdx].getDirection() == RIGHT)
+    {
+        recvOrigin = communication[recvIdx].getSendOrigin();
+        recvSize = communication[recvIdx].getSendSize();
+
+        MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
+
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
+
+        recvIdx++;
+    }
+    if (communication[sendIdx].getDirection() == BOTTOM)
+    {
+        sendOrigin = communication[sendIdx].getRecvOrigin();
+        sendSize = communication[sendIdx].getRecvSize();
+
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
+
+        MPI_Isend(
+                sendBuffers->at(sendIdx),
+                NUM_LATTICE_VECTORS * communication[sendIdx].getSendSize().elements(),
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                communication[sendIdx].getDstId(),
+                simulationStepCounter,
+                MPI_COMM_WORLD,
+                &sendRequests[sendIdx]);
+
+        sendIdx++;
+    }
+    if (communication[sendIdx].getDirection() == TOP)
+    {
+        sendOrigin = communication[sendIdx].getRecvOrigin();
+        sendSize = communication[sendIdx].getRecvSize();
+
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
+
+        MPI_Isend(
+                sendBuffers->at(sendIdx),
+                NUM_LATTICE_VECTORS * communication[sendIdx].getSendSize().elements(),
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                communication[sendIdx].getDstId(),
+                simulationStepCounter,
+                MPI_COMM_WORLD,
+                &sendRequests[sendIdx]);
+
+        sendIdx++;
+    }
+    if (communication[recvIdx].getDirection() == BOTTOM)
+    {
+        recvOrigin = communication[recvIdx].getSendOrigin();
+        recvSize = communication[recvIdx].getSendSize();
+
+        MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
+
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
+
+        recvIdx++;
+    }
+    if (communication[recvIdx].getDirection() == TOP)
+    {
+        recvOrigin = communication[recvIdx].getSendOrigin();
+        recvSize = communication[recvIdx].getSendSize();
+
+        MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
+
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
+
+        recvIdx++;
+    }
+    if (communication[sendIdx].getDirection() == BACK)
+    {
+        sendOrigin = communication[sendIdx].getRecvOrigin();
+        sendSize = communication[sendIdx].getRecvSize();
+
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
+
+        MPI_Isend(
+                sendBuffers->at(sendIdx),
+                NUM_LATTICE_VECTORS * communication[sendIdx].getSendSize().elements(),
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                communication[sendIdx].getDstId(),
+                simulationStepCounter,
+                MPI_COMM_WORLD,
+                &sendRequests[sendIdx]);
+
+        sendIdx++;
+    }
+    if (communication[sendIdx].getDirection() == FRONT)
+    {
+        sendOrigin = communication[sendIdx].getRecvOrigin();
+        sendSize = communication[sendIdx].getRecvSize();
+
+        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
+
+        MPI_Isend(
+                sendBuffers->at(sendIdx),
+                NUM_LATTICE_VECTORS * communication[sendIdx].getSendSize().elements(),
+                ((typeid(T) == typeid(float)) ? MPI_FLOAT : MPI_DOUBLE),
+                communication[sendIdx].getDstId(),
+                simulationStepCounter,
+                MPI_COMM_WORLD,
+                &sendRequests[sendIdx]);
+
+        sendIdx++;
+    }
+    if (communication[recvIdx].getDirection() == BACK)
+    {
+        recvOrigin = communication[recvIdx].getSendOrigin();
+        recvSize = communication[recvIdx].getSendSize();
+
+        MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
+
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
+
+        recvIdx++;
+    }
+    if (communication[recvIdx].getDirection() == FRONT)
+    {
+        recvOrigin = communication[recvIdx].getSendOrigin();
+        recvSize = communication[recvIdx].getSendSize();
+
+        MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
+
+        solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
+
+        recvIdx++;
     }
 
     MPI_Waitall(communication.size(), sendRequests, MPI_STATUS_IGNORE);
