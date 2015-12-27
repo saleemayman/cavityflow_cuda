@@ -57,11 +57,6 @@ int main(int argc, char** argv)
 
     CConfiguration<TYPE>* configuration = new CConfiguration<TYPE>(argv[1]);
 
-    if (configuration->doLogging)
-    {
-        configuration->print();
-    }
-
 #ifdef USE_MPI
     /*
      * Setup MPI environment
@@ -76,13 +71,27 @@ int main(int argc, char** argv)
 
     if (configuration->doLogging)
     {
-        std::cout << "----- main() -----" << std::endl;
-        std::cout << "MPI has been successfully initialized." << std::endl;
-        std::cout << "------------------" << std::endl;
-        std::cout << "local rank number:     " << rank << std::endl;
-        std::cout << "total number of ranks: " << numOfRanks << std::endl;
-        std::cout << "local node name:       " << nodeName << std::endl;
-        std::cout << "------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << rank << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out);
+        if (loggingFile.is_open())
+        {
+        	loggingFile << "----- main() -----" << std::endl;
+        	loggingFile << "MPI has been successfully initialized." << std::endl;
+        	loggingFile << "------------------" << std::endl;
+        	loggingFile << "local rank number:     " << rank << std::endl;
+        	loggingFile << "total number of ranks: " << numOfRanks << std::endl;
+        	loggingFile << "local node name:       " << nodeName << std::endl;
+        	loggingFile << "------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- main() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     /*

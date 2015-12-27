@@ -57,6 +57,7 @@
     <!--  -->
     <logging>
       <do>0</do>
+      <output-dir>log</output-dir>
     </logging>
     <!--  -->
     <validation>

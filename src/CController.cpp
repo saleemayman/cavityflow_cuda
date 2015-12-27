@@ -58,17 +58,29 @@ CController<T>::CController(
 
     if (configuration->doLogging)
     {
-        std::cout << "----- CController<T>::CController() -----" << std::endl;
-        std::cout << "id:                   " << id << std::endl;
-        std::cout << "-----------------------------------------" << std::endl;
-        std::cout << "CPU subdomain size:   " << domainCPU.getSize() << std::endl;
-        std::cout << "CPU subdomain length: " << domainCPU.getLength() << std::endl;
-        std::cout << "CPU subdomain origin: " << domainCPU.getOrigin() << std::endl;
-        std::cout << "-----------------------------------------" << std::endl;
-        std::cout << "GPU subdomain size:   " << domainGPU.getSize() << std::endl;
-        std::cout << "GPU subdomain length: " << domainGPU.getLength() << std::endl;
-        std::cout << "GPU subdomain origin: " << domainGPU.getOrigin() << std::endl;
-        std::cout << "-----------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+        	loggingFile << "----- CController<T>::CController() -----" << std::endl;
+        	loggingFile << "CPU subdomain size:   " << domainCPU.getSize() << std::endl;
+        	loggingFile << "CPU subdomain length: " << domainCPU.getLength() << std::endl;
+        	loggingFile << "CPU subdomain origin: " << domainCPU.getOrigin() << std::endl;
+        	loggingFile << "-----------------------------------------" << std::endl;
+        	loggingFile << "GPU subdomain size:   " << domainGPU.getSize() << std::endl;
+        	loggingFile << "GPU subdomain length: " << domainGPU.getLength() << std::endl;
+        	loggingFile << "GPU subdomain origin: " << domainGPU.getOrigin() << std::endl;
+        	loggingFile << "-----------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CController::CController() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "--------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     solverGPU = new CLbmSolverGPU<T>(
@@ -177,9 +189,21 @@ void CController<T>::stepAlpha()
 
     if (configuration->doLogging)
     {
-        std::cout << "----- CController<T>::stepAlpha() -----" << std::endl;
-        std::cout << "id:                  " << id << std::endl;
-        std::cout << "---------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+        	loggingFile << "----- CController<T>::stepAlpha() -----" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CController<T>::stepAlpha() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "---------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
 #ifdef USE_MPI
@@ -242,10 +266,24 @@ void CController<T>::stepAlpha()
 
         if (configuration->doLogging)
         {
-            std::cout << "destination rank:       " << communication[i].getDstId() << std::endl;
-            std::cout << "boundary origin:        " << boundaryOrigin << std::endl;
-            std::cout << "boundary size:          " << boundarySize << std::endl;
-            std::cout << "---------------------------------------" << std::endl;
+            std::stringstream loggingFileName;
+            loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+            std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+            if (loggingFile.is_open())
+            {
+            	loggingFile << "destination rank:       " << communication[i].getDstId() << std::endl;
+            	loggingFile << "boundary origin:        " << boundaryOrigin << std::endl;
+            	loggingFile << "boundary size:          " << boundarySize << std::endl;
+            	loggingFile << "---------------------------------------" << std::endl;
+            	loggingFile.close();
+            } else {
+                std::cerr << "----- CController<T>::stepAlpha() -----" << std::endl;
+                std::cerr << "There is no open file to write logs." << std::endl;
+                std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+                std::cerr << "---------------------------------------" << std::endl;
+
+                exit (EXIT_FAILURE);
+            }
         }
 
         solverGPU->simulationStepAlpha(boundaryOrigin, boundarySize, &streams->at(i));
@@ -255,9 +293,23 @@ void CController<T>::stepAlpha()
 
     if (configuration->doLogging)
     {
-        std::cout << "inner origin:           " << innerOrigin << std::endl;
-        std::cout << "inner size:             " << innerSize << std::endl;
-        std::cout << "---------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+        	loggingFile << "inner origin:           " << innerOrigin << std::endl;
+        	loggingFile << "inner size:             " << innerSize << std::endl;
+        	loggingFile << "---------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CController<T>::stepAlpha() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "---------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     solverGPU->simulationStepAlpha(innerOrigin, innerSize, &defaultStream);
@@ -277,14 +329,28 @@ void CController<T>::stepAlpha()
 
         if (configuration->doLogging)
         {
-            std::cout << "destination rank:       " << communication[i].getDstId() << std::endl;
-            std::cout << "send origin:            " << sendOrigin << std::endl;
-            std::cout << "send size:              " << sendSize << std::endl;
-            std::cout << "receive origin:         " << recvOrigin << std::endl;
-            std::cout << "receive size:           " << recvSize << std::endl;
-            std::cout << "amount of send data:    " << ((T)(sendSize.elements() * NUM_LATTICE_VECTORS * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
-            std::cout << "amount of receive data: " << ((T)(recvSize.elements() * NUM_LATTICE_VECTORS * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
-            std::cout << "---------------------------------------" << std::endl;
+			std::stringstream loggingFileName;
+			loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+			std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+			if (loggingFile.is_open())
+			{
+				loggingFile << "destination rank:       " << communication[i].getDstId() << std::endl;
+				loggingFile << "send origin:            " << sendOrigin << std::endl;
+				loggingFile << "send size:              " << sendSize << std::endl;
+				loggingFile << "receive origin:         " << recvOrigin << std::endl;
+				loggingFile << "receive size:           " << recvSize << std::endl;
+				loggingFile << "amount of send data:    " << ((T)(sendSize.elements() * NUM_LATTICE_VECTORS * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+				loggingFile << "amount of receive data: " << ((T)(recvSize.elements() * NUM_LATTICE_VECTORS * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+				loggingFile << "---------------------------------------" << std::endl;
+				loggingFile.close();
+			} else {
+				std::cerr << "----- CController<T>::stepAlpha() -----" << std::endl;
+				std::cerr << "There is no open file to write logs." << std::endl;
+				std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+				std::cerr << "---------------------------------------" << std::endl;
+
+				exit (EXIT_FAILURE);
+			}
         }
 
         solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(i), &streams->at(i));
@@ -501,8 +567,22 @@ void CController<T>::stepAlpha()
 
     if (configuration->doLogging)
     {
-        std::cout << "Alpha step successful." << std::endl;
-        std::cout << "---------------------------------------" << std::endl;
+		std::stringstream loggingFileName;
+		loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+		std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+		if (loggingFile.is_open())
+		{
+			loggingFile << "Alpha step successful." << std::endl;
+			loggingFile << "---------------------------------------" << std::endl;
+			loggingFile.close();
+		} else {
+			std::cerr << "----- CController<T>::stepAlpha() -----" << std::endl;
+			std::cerr << "There is no open file to write logs." << std::endl;
+			std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+			std::cerr << "---------------------------------------" << std::endl;
+
+			exit (EXIT_FAILURE);
+		}
     }
 }
 
@@ -525,20 +605,26 @@ void CController<T>::stepBeta()
 
     if (configuration->doLogging)
     {
-        std::cout << "----- CController<T>::stepBeta() -----" << std::endl;
-        std::cout << "id:                  " << id << std::endl;
-        std::cout << "--------------------------------------" << std::endl;
+		std::stringstream loggingFileName;
+		loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+		std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+		if (loggingFile.is_open())
+		{
+			loggingFile << "----- CController<T>::stepBeta() -----" << std::endl;
+			loggingFile.close();
+		} else {
+			std::cerr << "----- CController<T>::stepBeta() -----" << std::endl;
+			std::cerr << "There is no open file to write logs." << std::endl;
+			std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+			std::cerr << "--------------------------------------" << std::endl;
+
+			exit (EXIT_FAILURE);
+		}
     }
 
 #ifdef USE_MPI
     CVector<3, int> boundaryOrigin;
     CVector<3, int> boundarySize;
-
-    if (configuration->doLogging)
-    {
-        std::cout << "id:                  " << id << std::endl;
-        std::cout << "--------------------------------------" << std::endl;
-    }
 
     for (unsigned int i = 0; i < communication.size(); i++)
     {
@@ -596,10 +682,24 @@ void CController<T>::stepBeta()
 
         if (configuration->doLogging)
         {
-            std::cout << "destination rank:       " << communication[i].getDstId() << std::endl;
-            std::cout << "boundary origin:        " << boundaryOrigin << std::endl;
-            std::cout << "boundary size:          " << boundarySize << std::endl;
-            std::cout << "--------------------------------------" << std::endl;
+    		std::stringstream loggingFileName;
+    		loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+    		std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+    		if (loggingFile.is_open())
+    		{
+    			loggingFile << "destination rank:       " << communication[i].getDstId() << std::endl;
+    			loggingFile << "boundary origin:        " << boundaryOrigin << std::endl;
+    			loggingFile << "boundary size:          " << boundarySize << std::endl;
+    			loggingFile << "--------------------------------------" << std::endl;
+    			loggingFile.close();
+    		} else {
+    			std::cerr << "----- CController<T>::stepBeta() -----" << std::endl;
+    			std::cerr << "There is no open file to write logs." << std::endl;
+    			std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+    			std::cerr << "--------------------------------------" << std::endl;
+
+    			exit (EXIT_FAILURE);
+    		}
         }
 
         solverGPU->simulationStepBeta(boundaryOrigin, boundarySize, &streams->at(i));
@@ -609,9 +709,23 @@ void CController<T>::stepBeta()
 
     if (configuration->doLogging)
     {
-        std::cout << "inner origin:           " << innerOrigin << std::endl;
-        std::cout << "inner size:             " << innerSize << std::endl;
-        std::cout << "--------------------------------------" << std::endl;
+		std::stringstream loggingFileName;
+		loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+		std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+		if (loggingFile.is_open())
+		{
+			loggingFile << "inner origin:           " << innerOrigin << std::endl;
+			loggingFile << "inner size:             " << innerSize << std::endl;
+			loggingFile << "--------------------------------------" << std::endl;
+			loggingFile.close();
+		} else {
+			std::cerr << "----- CController<T>::stepBeta() -----" << std::endl;
+			std::cerr << "There is no open file to write logs." << std::endl;
+			std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+			std::cerr << "--------------------------------------" << std::endl;
+
+			exit (EXIT_FAILURE);
+		}
     }
 
     solverGPU->simulationStepBeta(innerOrigin, innerSize, &defaultStream);
@@ -631,14 +745,28 @@ void CController<T>::stepBeta()
 
         if (configuration->doLogging)
         {
-            std::cout << "destination rank:       " << communication[i].getDstId() << std::endl;
-            std::cout << "send origin:            " << sendOrigin << std::endl;
-            std::cout << "send size:              " << sendSize << std::endl;
-            std::cout << "receive origin:         " << recvOrigin << std::endl;
-            std::cout << "receive size:           " << recvSize << std::endl;
-            std::cout << "amount of send data:    " << ((T)(sendSize.elements() * NUM_LATTICE_VECTORS * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
-            std::cout << "amount of receive data: " << ((T)(recvSize.elements() * NUM_LATTICE_VECTORS * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
-            std::cout << "--------------------------------------" << std::endl;
+			std::stringstream loggingFileName;
+			loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+			std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+			if (loggingFile.is_open())
+			{
+				loggingFile << "destination rank:       " << communication[i].getDstId() << std::endl;
+				loggingFile << "send origin:            " << sendOrigin << std::endl;
+				loggingFile << "send size:              " << sendSize << std::endl;
+				loggingFile << "receive origin:         " << recvOrigin << std::endl;
+				loggingFile << "receive size:           " << recvSize << std::endl;
+				loggingFile << "amount of send data:    " << ((T)(sendSize.elements() * NUM_LATTICE_VECTORS * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+				loggingFile << "amount of receive data: " << ((T)(recvSize.elements() * NUM_LATTICE_VECTORS * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+				loggingFile << "--------------------------------------" << std::endl;
+				loggingFile.close();
+			} else {
+				std::cerr << "----- CController<T>::stepBeta() -----" << std::endl;
+				std::cerr << "There is no open file to write logs." << std::endl;
+				std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+				std::cerr << "--------------------------------------" << std::endl;
+
+				exit (EXIT_FAILURE);
+			}
         }
 
         solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(i), &streams->at(i));
@@ -855,8 +983,22 @@ void CController<T>::stepBeta()
 
     if (configuration->doLogging)
     {
-        std::cout << "Beta step successful." << std::endl;
-        std::cout << "--------------------------------------" << std::endl;
+		std::stringstream loggingFileName;
+		loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+		std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+		if (loggingFile.is_open())
+		{
+			loggingFile << "Beta step successful." << std::endl;
+			loggingFile << "--------------------------------------" << std::endl;
+			loggingFile.close();
+		} else {
+			std::cerr << "----- CController<T>::stepBeta() -----" << std::endl;
+			std::cerr << "There is no open file to write logs." << std::endl;
+			std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+			std::cerr << "--------------------------------------" << std::endl;
+
+			exit (EXIT_FAILURE);
+		}
     }
 }
 
@@ -886,9 +1028,21 @@ void CController<T>::syncAlpha()
 
     if (configuration->doLogging)
     {
-        std::cout << "----- CController<T>::syncAlpha() -----" << std::endl;
-        std::cout << "id:                  " << id << std::endl;
-        std::cout << "---------------------------------------" << std::endl;
+		std::stringstream loggingFileName;
+		loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+		std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+		if (loggingFile.is_open())
+		{
+			loggingFile << "----- CController<T>::syncAlpha() -----" << std::endl;
+			loggingFile.close();
+		} else {
+			std::cerr << "----- CController<T>::syncAlpha() -----" << std::endl;
+			std::cerr << "There is no open file to write logs." << std::endl;
+			std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+			std::cerr << "---------------------------------------" << std::endl;
+
+			exit (EXIT_FAILURE);
+		}
     }
 
     for (typename std::vector<CComm<T> >::iterator it = communication.begin(); it != communication.end(); it++)
@@ -905,12 +1059,26 @@ void CController<T>::syncAlpha()
 
         if (configuration->doLogging)
         {
-            std::cout << "destination rank:           " << dstId << std::endl;
-            std::cout << "send origin (with halo):    " << sendOrigin << std::endl;
-            std::cout << "receive origin (with halo): " << recvOrigin << std::endl;
-            std::cout << "send buffer size:           " << ((T)(sendBufferSize * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
-            std::cout << "receive buffer size:        " << ((T)(recvBufferSize * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
-            std::cout << "---------------------------------------" << std::endl;
+			std::stringstream loggingFileName;
+			loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+			std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+			if (loggingFile.is_open())
+			{
+				loggingFile << "destination rank:           " << dstId << std::endl;
+				loggingFile << "send origin (with halo):    " << sendOrigin << std::endl;
+				loggingFile << "receive origin (with halo): " << recvOrigin << std::endl;
+				loggingFile << "send buffer size:           " << ((T)(sendBufferSize * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+				loggingFile << "receive buffer size:        " << ((T)(recvBufferSize * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+				loggingFile << "---------------------------------------" << std::endl;
+				loggingFile.close();
+			} else {
+				std::cerr << "----- CController<T>::syncAlpha() -----" << std::endl;
+				std::cerr << "There is no open file to write logs." << std::endl;
+				std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+				std::cerr << "---------------------------------------" << std::endl;
+
+				exit (EXIT_FAILURE);
+			}
         }
 
         solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffer);
@@ -935,8 +1103,22 @@ void CController<T>::syncAlpha()
 
         if (configuration->doLogging)
         {
-            std::cout << "Alpha synchronization successful." << std::endl;
-            std::cout << "---------------------------------------" << std::endl;
+			std::stringstream loggingFileName;
+			loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+			std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+			if (loggingFile.is_open())
+			{
+				loggingFile << "Alpha synchronization successful." << std::endl;
+				loggingFile << "---------------------------------------" << std::endl;
+				loggingFile.close();
+			} else {
+				std::cerr << "----- CController<T>::syncAlpha() -----" << std::endl;
+				std::cerr << "There is no open file to write logs." << std::endl;
+				std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+				std::cerr << "---------------------------------------" << std::endl;
+
+				exit (EXIT_FAILURE);
+			}
         }
 
         solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffer);
@@ -963,9 +1145,21 @@ void CController<T>::syncBeta()
 
     if (configuration->doLogging)
     {
-        std::cout << "----- CController<T>::syncBeta() -----" << std::endl;
-        std::cout << "id:                  " << id << std::endl;
-        std::cout << "--------------------------------------" << std::endl;
+		std::stringstream loggingFileName;
+		loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+		std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+		if (loggingFile.is_open())
+		{
+			loggingFile << "----- CController<T>::syncBeta() -----" << std::endl;
+			loggingFile.close();
+		} else {
+			std::cerr << "----- CController<T>::syncBeta() -----" << std::endl;
+			std::cerr << "There is no open file to write logs." << std::endl;
+			std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+			std::cerr << "--------------------------------------" << std::endl;
+
+			exit (EXIT_FAILURE);
+		}
     }
 
     for (typename std::vector<CComm<T> >::iterator it = communication.begin(); it != communication.end(); it++)
@@ -982,12 +1176,26 @@ void CController<T>::syncBeta()
 
         if (configuration->doLogging)
         {
-            std::cout << "destination rank:           " << dstId << std::endl;
-            std::cout << "send origin (with halo):    " << sendOrigin << std::endl;
-            std::cout << "receive origin (with halo): " << recvOrigin << std::endl;
-            std::cout << "send buffer size:           " << ((T)(sendBufferSize * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
-            std::cout << "receive buffer size:        " << ((T)(sendBufferSize * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
-            std::cout << "--------------------------------------" << std::endl;
+			std::stringstream loggingFileName;
+			loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+			std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+			if (loggingFile.is_open())
+			{
+				loggingFile << "destination rank:           " << dstId << std::endl;
+				loggingFile << "send origin (with halo):    " << sendOrigin << std::endl;
+				loggingFile << "receive origin (with halo): " << recvOrigin << std::endl;
+				loggingFile << "send buffer size:           " << ((T)(sendBufferSize * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+				loggingFile << "receive buffer size:        " << ((T)(sendBufferSize * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+				loggingFile << "--------------------------------------" << std::endl;
+				loggingFile.close();
+			} else {
+				std::cerr << "----- CController<T>::syncBeta() -----" << std::endl;
+				std::cerr << "There is no open file to write logs." << std::endl;
+				std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+				std::cerr << "--------------------------------------" << std::endl;
+
+				exit (EXIT_FAILURE);
+			}
         }
 
         solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffer);
@@ -1012,8 +1220,22 @@ void CController<T>::syncBeta()
 
         if (configuration->doLogging)
         {
-            std::cout << "Beta synchronization successful." << std::endl;
-            std::cout << "--------------------------------------" << std::endl;
+			std::stringstream loggingFileName;
+			loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+			std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+			if (loggingFile.is_open())
+			{
+				loggingFile << "Beta synchronization successful." << std::endl;
+				loggingFile << "--------------------------------------" << std::endl;
+				loggingFile.close();
+			} else {
+				std::cerr << "----- CController<T>::syncBeta() -----" << std::endl;
+				std::cerr << "There is no open file to write logs." << std::endl;
+				std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+				std::cerr << "--------------------------------------" << std::endl;
+
+				exit (EXIT_FAILURE);
+			}
         }
 
         solverGPU->setDensityDistributions(recvOrigin, recvSize, it->getDirection(), recvBuffer);
@@ -1041,11 +1263,23 @@ void CController<T>::setDrivenCavitySzenario()
 {
     if (configuration->doLogging)
     {
-        std::cout << "----- CController<T>::setDrivenCavitySzenario() -----" << std::endl;
-        std::cout << "Cells where velocity injection takes place due to driven cavity scenario are marked accordingly." << std::endl;
-        std::cout << "-----------------------------------------------------" << std::endl;
-        std::cout << "id:     " << id << std::endl;
-        std::cout << "-----------------------------------------------------" << std::endl;
+		std::stringstream loggingFileName;
+		loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+		std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+		if (loggingFile.is_open())
+		{
+			loggingFile << "----- CController<T>::setDrivenCavitySzenario() -----" << std::endl;
+			loggingFile << "Cells where velocity injection takes place due to driven cavity scenario are marked accordingly." << std::endl;
+			loggingFile << "-----------------------------------------------------" << std::endl;
+			loggingFile.close();
+		} else {
+			std::cerr << "----- CController<T>::setDrivenCavitySzenario() -----" << std::endl;
+			std::cerr << "There is no open file to write logs." << std::endl;
+			std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+			std::cerr << "-----------------------------------------------------" << std::endl;
+
+			exit (EXIT_FAILURE);
+		}
     }
 
     CVector<3, int> origin(1, domain.getSizeWithHalo()[1] - 2, 1);
@@ -1053,9 +1287,23 @@ void CController<T>::setDrivenCavitySzenario()
 
     if (configuration->doLogging)
     {
-        std::cout << "origin: " << origin << std::endl;
-        std::cout << "size:   " << size << std::endl;
-        std::cout << "-----------------------------------------------------" << std::endl;
+		std::stringstream loggingFileName;
+		loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+		std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+		if (loggingFile.is_open())
+		{
+			loggingFile << "origin: " << origin << std::endl;
+			loggingFile << "size:   " << size << std::endl;
+			loggingFile << "-----------------------------------------------------" << std::endl;
+			loggingFile.close();
+		} else {
+			std::cerr << "----- CController<T>::setDrivenCavitySzenario() -----" << std::endl;
+			std::cerr << "There is no open file to write logs." << std::endl;
+			std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+			std::cerr << "-----------------------------------------------------" << std::endl;
+
+			exit (EXIT_FAILURE);
+		}
     }
 
     Flag* src = new Flag[size.elements()];
@@ -1085,9 +1333,21 @@ void CController<T>::run()
 
     if (configuration->doLogging)
     {
-        std::cout << "----- CController<T>::run() -----" << std::endl;
-        std::cout << "id:     " << id << std::endl;
-        std::cout << "---------------------------------" << std::endl;
+		std::stringstream loggingFileName;
+		loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+		std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+		if (loggingFile.is_open())
+		{
+			loggingFile << "----- CController<T>::run() -----" << std::endl;
+			loggingFile.close();
+		} else {
+			std::cerr << "----- CController<T>::run() -----" << std::endl;
+			std::cerr << "There is no open file to write logs." << std::endl;
+			std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+			std::cerr << "---------------------------------" << std::endl;
+
+			exit (EXIT_FAILURE);
+		}
     }
 
     if (configuration->doBenchmark)
@@ -1117,7 +1377,23 @@ void CController<T>::run()
 
     for (int i = 0; i < configuration->loops || configuration->loops < 0; i++) {
         if (configuration->doLogging)
-            std::cout << "Do iteration " << i << ":" << std::endl;
+        {
+    		std::stringstream loggingFileName;
+    		loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+    		std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+    		if (loggingFile.is_open())
+    		{
+    			loggingFile << "Do iteration " << i << ":" << std::endl;
+    			loggingFile.close();
+    		} else {
+    			std::cerr << "----- CController<T>::run() -----" << std::endl;
+    			std::cerr << "There is no open file to write logs." << std::endl;
+    			std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+    			std::cerr << "---------------------------------" << std::endl;
+
+    			exit (EXIT_FAILURE);
+    		}
+        }
 
         computeNextStep();
 
@@ -1125,7 +1401,23 @@ void CController<T>::run()
             visualization->render(simulationStepCounter);
             
         if (configuration->doLogging)
-            std::cout << "Iteration " << i << " successful." << std::endl;
+        {
+    		std::stringstream loggingFileName;
+    		loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+    		std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+    		if (loggingFile.is_open())
+    		{
+    			loggingFile << "Iteration " << i << " successful." << std::endl;
+    			loggingFile.close();
+    		} else {
+    			std::cerr << "----- CController<T>::run() -----" << std::endl;
+    			std::cerr << "There is no open file to write logs." << std::endl;
+    			std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+    			std::cerr << "---------------------------------" << std::endl;
+
+    			exit (EXIT_FAILURE);
+    		}
+        }
     }
 
     if (configuration->doBenchmark)
@@ -1160,7 +1452,21 @@ void CController<T>::run()
 
     if (configuration->doLogging)
     {
-        std::cout << "---------------------------------" << std::endl;
+		std::stringstream loggingFileName;
+		loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+		std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+		if (loggingFile.is_open())
+		{
+			loggingFile << "---------------------------------" << std::endl;
+			loggingFile.close();
+		} else {
+			std::cerr << "----- CController<T>::run() -----" << std::endl;
+			std::cerr << "There is no open file to write logs." << std::endl;
+			std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+			std::cerr << "---------------------------------" << std::endl;
+
+			exit (EXIT_FAILURE);
+		}
     }
 }
 

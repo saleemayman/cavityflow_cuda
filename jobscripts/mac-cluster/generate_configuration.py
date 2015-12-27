@@ -41,6 +41,7 @@ ET.SubElement(benchmark, "do").text = str(sys.argv[11])
 ET.SubElement(benchmark, "output-dir").text = str(sys.argv[18]) + "/dissertation/lbm/benchmark"
 logging = ET.SubElement(simulation, "logging")
 ET.SubElement(logging, "do").text = str(sys.argv[12])
+ET.SubElement(logging, "output-dir").text = str(sys.argv[18]) + "/dissertation/lbm/log"
 validation = ET.SubElement(simulation, "validation")
 ET.SubElement(validation, "do").text = str(sys.argv[13])
 ET.SubElement(validation, "output-dir").text = str(sys.argv[18]) + "/dissertation/lbm/validation"

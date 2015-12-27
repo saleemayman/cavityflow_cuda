@@ -80,6 +80,7 @@ public:
     bool doValidation;
     bool doVisualization;
     std::string benchmarkOutputDir;
+    std::string loggingOutputDir;
     std::string validationOutputDir;
     std::string visualizationOutputDir;
     int visualizationRate;

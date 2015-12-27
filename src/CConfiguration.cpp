@@ -108,9 +108,11 @@ void CConfiguration<T>::interpretSimulationData(const tinyxml2::XMLNode* root)
     doVisualization = atoi(simulationChild->FirstChildElement("visualization")->FirstChildElement("do")->GetText());
 
     const char* benchmarkOutputDirChar = simulationChild->FirstChildElement("benchmark")->FirstChildElement("output-dir")->GetText();
+    const char* loggingOutputDirChar = simulationChild->FirstChildElement("logging")->FirstChildElement("output-dir")->GetText();
     const char* validationOutputDirChar = simulationChild->FirstChildElement("validation")->FirstChildElement("output-dir")->GetText();
     const char* visualizationOutputDirChar = simulationChild->FirstChildElement("visualization")->FirstChildElement("output-dir")->GetText();
     benchmarkOutputDir.assign(benchmarkOutputDirChar);
+    loggingOutputDir.assign(loggingOutputDirChar);
     validationOutputDir.assign(validationOutputDirChar);
     visualizationOutputDir.assign(visualizationOutputDirChar);
 
@@ -195,6 +197,7 @@ void CConfiguration<T>::print()
     std::cout << "do validation:                     " << doValidation << std::endl;
     std::cout << "do visualization:                  " << doVisualization << std::endl;
     std::cout << "benchmark directory:               " << benchmarkOutputDir << std::endl;
+    std::cout << "logging directory:                 " << loggingOutputDir << std::endl;
     std::cout << "validation directory:              " << validationOutputDir << std::endl;
     std::cout << "visualization directory:           " << visualizationOutputDir << std::endl;
     std::cout << "visualization rate:                " << visualizationRate << std::endl;

@@ -19,7 +19,8 @@
 
 #include "CManager.hpp"
 
-#include <iostream>
+#include <fstream>
+#include <sstream>
 
 #include "libmath/CVector.hpp"
 
@@ -58,18 +59,30 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
 
     if (configuration->doLogging)
     {
-        std::cout << "----- CManager<T>::CManager() -----" << std::endl;
-        std::cout << "id:                     " << rank << std::endl;
-        std::cout << "-----------------------------------" << std::endl;
-        std::cout << "domain size:            " << domain.getSize() << std::endl;
-        std::cout << "domain length:          " << domain.getLength() << std::endl;
-        std::cout << "domain origin:          " << domain.getOrigin() << std::endl;
-        std::cout << "-----------------------------------" << std::endl;
-        std::cout << "subdomain coordinates:  [" << subdomainX << ", " << subdomainY << ", " << subdomainZ << "]" << std::endl;
-        std::cout << "subdomain size:         " << subdomainSize << std::endl;
-        std::cout << "subdomain length:       " << subdomainLength << std::endl;
-        std::cout << "subdomain origin:       " << subdomainOrigin << std::endl;
-        std::cout << "-----------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << rank << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+        	loggingFile << "----- CManager<T>::CManager() -----" << std::endl;
+        	loggingFile << "domain size:            " << domain.getSize() << std::endl;
+        	loggingFile << "domain length:          " << domain.getLength() << std::endl;
+        	loggingFile << "domain origin:          " << domain.getOrigin() << std::endl;
+        	loggingFile << "-----------------------------------" << std::endl;
+        	loggingFile << "subdomain coordinates:  [" << subdomainX << ", " << subdomainY << ", " << subdomainZ << "]" << std::endl;
+        	loggingFile << "subdomain size:         " << subdomainSize << std::endl;
+        	loggingFile << "subdomain length:       " << subdomainLength << std::endl;
+        	loggingFile << "subdomain origin:       " << subdomainOrigin << std::endl;
+        	loggingFile << "-----------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CManager::CManager() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "--------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     /*
@@ -92,13 +105,27 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
 
     if (configuration->doLogging)
     {
-        std::cout << "boundaryConditions[0 = LEFT]:   " << boundaryConditions[0] << std::endl;
-        std::cout << "boundaryConditions[1 = RIGHT]:  " << boundaryConditions[1] << std::endl;
-        std::cout << "boundaryConditions[2 = BOTTOM]: " << boundaryConditions[2] << std::endl;
-        std::cout << "boundaryConditions[3 = TOP]:    " << boundaryConditions[3] << std::endl;
-        std::cout << "boundaryConditions[4 = BACK]:   " << boundaryConditions[4] << std::endl;
-        std::cout << "boundaryConditions[5 = FRONT]:  " << boundaryConditions[5] << std::endl;
-        std::cout << "-----------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << rank << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+        	loggingFile << "boundaryConditions[0 = LEFT]:   " << boundaryConditions[0] << std::endl;
+        	loggingFile << "boundaryConditions[1 = RIGHT]:  " << boundaryConditions[1] << std::endl;
+        	loggingFile << "boundaryConditions[2 = BOTTOM]: " << boundaryConditions[2] << std::endl;
+        	loggingFile << "boundaryConditions[3 = TOP]:    " << boundaryConditions[3] << std::endl;
+        	loggingFile << "boundaryConditions[4 = BACK]:   " << boundaryConditions[4] << std::endl;
+        	loggingFile << "boundaryConditions[5 = FRONT]:  " << boundaryConditions[5] << std::endl;
+        	loggingFile << "-----------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CManager::CManager() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "--------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     /*
