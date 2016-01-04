@@ -239,6 +239,12 @@ int main(int argc, char** argv)
             int globalIdx, velocitiesX, velocitiesY, velocitiesZ;
 
             std::stringstream validationFileName;
+            validationFileName << configuration->validationOutputDir << "/validation";
+#ifdef USE_MPI
+            validationFileName << "_" << numOfRanks;
+#endif
+            validationFileName << ".txt";
+
             validationFileName << configuration->validationOutputDir << "/validation.txt";
             std::ofstream validationFile(validationFileName.str().c_str(), std::ios::out);
 

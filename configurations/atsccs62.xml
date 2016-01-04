@@ -56,7 +56,7 @@
     </benchmark>
     <!--  -->
     <logging>
-      <do>1</do>
+      <do>0</do>
       <output-dir>/work_fast/riesinge/workspace/lbm/log</output-dir>
     </logging>
     <!--  -->

@@ -25,6 +25,10 @@
 #include <typeinfo>
 #include <sys/time.h>
 
+#ifdef USE_MPI
+#include <mpi.h>
+#endif
+
 #include "libvis/CLbmVisualizationNetCDF.hpp"
 
 template <class T>
@@ -1406,12 +1410,22 @@ void CController<T>::run()
         gettimeofday(&end, NULL);
         elapsed = (T)(end.tv_sec - start.tv_sec) + (T)(end.tv_usec - start.tv_usec) * (T)0.000001;
 
+#ifdef USE_MPI
+    	int numOfRanks;
+
+        MPI_Comm_size(MPI_COMM_WORLD, &numOfRanks);
+#endif
+
         T iterationsPerSecond = (T)(configuration->loops) / elapsed;
         T lups = iterationsPerSecond * (T)configuration->domainSize[0] * (T)configuration->domainSize[1] * (T)configuration->domainSize[2] * (T)0.000000001;
         T bandwidth = lups * (T)usedDataSize;
 
         std::stringstream benchmarkFileName;
-        benchmarkFileName << configuration->benchmarkOutputDir << "/benchmark_" << id << ".txt";
+        benchmarkFileName << configuration->benchmarkOutputDir << "/benchmark_";
+#ifdef USE_MPI
+        benchmarkFileName << numOfRanks << "_";
+#endif
+        benchmarkFileName << id << ".txt";
         std::ofstream benchmarkFile(benchmarkFileName.str().c_str(), std::ios::out);
         if (benchmarkFile.is_open())
         {
