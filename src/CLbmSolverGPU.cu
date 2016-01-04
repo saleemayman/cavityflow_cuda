@@ -20,6 +20,8 @@
 #include "CLbmSolverGPU.cuh"
 
 #include <cassert>
+#include <fstream>
+#include <sstream>
 
 #include "gpukernels/lbm_alpha.cuh"
 #include "gpukernels/lbm_beta.cuh"
@@ -28,66 +30,97 @@
 template <class T>
 CLbmSolverGPU<T>::CLbmSolverGPU(
         int id,
-        std::vector<dim3> threadsPerBlock,
-        CVector<3, T> &globalLength,
         CDomain<T> &domain,
         std::vector<Flag> boundaryConditions,
-        T timestepSize,
-        CVector<3, T> &velocity,
-        CVector<3, T> &acceleration,
-        T viscosity,
-        T maxVelocityDimLess,
-        T maxAccelerationDimLess,
-        bool storeDensities,
-        bool storeVelocities,
-        bool doLogging) :
-        CLbmSolver<T>(id, globalLength,
-                domain, boundaryConditions,
-                timestepSize, velocity, acceleration,
-                viscosity, maxVelocityDimLess, maxAccelerationDimLess,
-                storeDensities, storeVelocities, doLogging),
-        threadsPerBlock(threadsPerBlock)
+        CConfiguration<T>* configuration) :
+        CLbmSolver<T>(id,
+                domain,
+                boundaryConditions,
+                configuration),
+        threadsPerBlock(configuration->threadsPerBlock)
 {
     int numOfGPUsPerNode;
 
     GPU_ERROR_CHECK(cudaGetDeviceCount(&numOfGPUsPerNode))
     GPU_ERROR_CHECK(cudaSetDevice(this->id % numOfGPUsPerNode))
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::CLbmSolverGPU() -----" << std::endl;
-        std::cout << "id:                                                 " << this->id << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
-        std::cout << "number of GPUs per node:                            " << numOfGPUsPerNode << std::endl;
-        std::cout << "number of selected GPU:                             " << (this->id % numOfGPUsPerNode) << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+        	loggingFile << "----- CLbmSolverGPU<T>::CLbmSolverGPU() -----" << std::endl;
+        	loggingFile << "id:                                                 " << this->id << std::endl;
+        	loggingFile << "---------------------------------------------" << std::endl;
+        	loggingFile << "number of GPUs per node:                            " << numOfGPUsPerNode << std::endl;
+        	loggingFile << "number of selected GPU:                             " << (this->id % numOfGPUsPerNode) << std::endl;
+        	loggingFile << "---------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::CLbmSolverGPU() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "---------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     GPU_ERROR_CHECK(cudaMalloc(&densityDistributions, NUM_LATTICE_VECTORS * this->domain.getNumOfCellsWithHalo() * sizeof(T)))
     GPU_ERROR_CHECK(cudaMalloc(&flags, this->domain.getNumOfCellsWithHalo() * sizeof(Flag)))
-    if(this->storeDensities)
+    if(storeDensities)
         GPU_ERROR_CHECK(cudaMalloc(&densities, this->domain.getNumOfCellsWithHalo() * sizeof(T)))
-    if(this->storeVelocities)
+    if(storeVelocities)
         GPU_ERROR_CHECK(cudaMalloc(&velocities, 3 * this->domain.getNumOfCellsWithHalo() * sizeof(T)))
 
-    if (doLogging) {
-        std::cout << "size of allocated memory for density distributions: " << ((T)(NUM_LATTICE_VECTORS * this->domain.getNumOfCellsWithHalo() * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
-        std::cout << "size of allocated memory for flags:                 " << ((T)(this->domain.getNumOfCellsWithHalo() * sizeof(Flag)) / (T)(1<<20)) << " MBytes" << std::endl;
-        if(this->storeDensities)
-            std::cout << "size of allocated memory for velocities:            " << ((T)(3 * this->domain.getNumOfCellsWithHalo() * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
-        if(this->storeVelocities)
-            std::cout << "size of allocated memory for densities:             " << ((T)(this->domain.getNumOfCellsWithHalo() * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+    if (configuration->doLogging) {
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+        	loggingFile << "size of allocated memory for density distributions: " << ((T)(NUM_LATTICE_VECTORS * this->domain.getNumOfCellsWithHalo() * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+            loggingFile << "size of allocated memory for flags:                 " << ((T)(this->domain.getNumOfCellsWithHalo() * sizeof(Flag)) / (T)(1<<20)) << " MBytes" << std::endl;
+            if(storeDensities)
+            	loggingFile << "size of allocated memory for velocities:            " << ((T)(3 * this->domain.getNumOfCellsWithHalo() * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+            if(storeVelocities)
+            	loggingFile << "size of allocated memory for densities:             " << ((T)(this->domain.getNumOfCellsWithHalo() * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::CLbmSolverGPU() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "---------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
-    dim3 blocksPerGrid = getBlocksPerGrid(3, this->domain.getSizeWithHalo(), this->threadsPerBlock[0]);
+    dim3 blocksPerGrid = getBlocksPerGrid(3, this->domain.getSizeWithHalo(), threadsPerBlock[0]);
 
-    if (doLogging) {
-        std::cout << "threads per block:                                  [" << this->threadsPerBlock[0].x << ", " << this->threadsPerBlock[0].y << ", " << this->threadsPerBlock[0].z << "]" << std::endl;
-        std::cout << "blocks per grid:                                    [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
+    if (configuration->doLogging) {
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+        	loggingFile << "threads per block:                                  [" << threadsPerBlock[0].x << ", " << threadsPerBlock[0].y << ", " << threadsPerBlock[0].z << "]" << std::endl;
+            loggingFile << "blocks per grid:                                    [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::CLbmSolverGPU() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "---------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
-    lbm_init<T><<<blocksPerGrid, this->threadsPerBlock[0]>>>(
+    lbm_init<T><<<blocksPerGrid, threadsPerBlock[0]>>>(
         densityDistributions,
         flags,
         velocities,
@@ -106,9 +139,23 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
         storeVelocities);
     GPU_ERROR_CHECK(cudaPeekAtLastError())
     
-    if (doLogging) {
-        std::cout << "Domain successfully initialized." << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
+    if (configuration->doLogging) {
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+        	loggingFile << "Domain successfully initialized." << std::endl;
+        	loggingFile << "---------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::CLbmSolverGPU() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "---------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 }
 
@@ -128,14 +175,28 @@ void CLbmSolverGPU<T>::simulationStepAlpha(cudaStream_t* stream)
 {
     dim3 blocksPerGrid = getBlocksPerGrid(3, domain.getSizeWithHalo(), threadsPerBlock[1]);
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::simulationStepAlpha() -----" << std::endl;
-        std::cout << "id:                " << id << std::endl;
-        std::cout << "---------------------------------------------------" << std::endl;
-        std::cout << "threads per block: [" << threadsPerBlock[1].x << ", " << threadsPerBlock[1].y << ", " << threadsPerBlock[1].z << "]" << std::endl;
-        std::cout << "blocks per grid:   [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
-        std::cout << "---------------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "----- CLbmSolverGPU<T>::simulationStepAlpha() -----" << std::endl;
+            loggingFile << "id:                " << id << std::endl;
+            loggingFile << "---------------------------------------------------" << std::endl;
+            loggingFile << "threads per block: [" << threadsPerBlock[1].x << ", " << threadsPerBlock[1].y << ", " << threadsPerBlock[1].z << "]" << std::endl;
+            loggingFile << "blocks per grid:   [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+            loggingFile << "---------------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::simulationStepAlpha() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "---------------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     lbm_kernel_alpha<T><<<blocksPerGrid, threadsPerBlock[1], 0, ((stream == NULL) ? 0 : *stream)>>>(
@@ -161,10 +222,24 @@ void CLbmSolverGPU<T>::simulationStepAlpha(cudaStream_t* stream)
             storeVelocities);
     GPU_ERROR_CHECK(cudaPeekAtLastError())
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "Alpha kernel was successfully executed on the whole subdomain." << std::endl;
-        std::cout << "---------------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "Alpha kernel was successfully executed on the whole subdomain." << std::endl;
+            loggingFile << "---------------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::simulationStepAlpha() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "---------------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 }
 
@@ -185,14 +260,28 @@ void CLbmSolverGPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, in
 
     dim3 blocksPerGrid = getBlocksPerGrid(3, size, threadsPerBlock[1]);
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::simulationStepAlpha() -----" << std::endl;
-        std::cout << "id:                " << id << std::endl;
-        std::cout << "---------------------------------------------------" << std::endl;
-        std::cout << "threads per block: [" << threadsPerBlock[1].x << ", " << threadsPerBlock[1].y << ", " << threadsPerBlock[1].z << "]" << std::endl;
-        std::cout << "blocks per grid:   [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
-        std::cout << "---------------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "----- CLbmSolverGPU<T>::simulationStepAlpha() -----" << std::endl;
+            loggingFile << "id:                " << id << std::endl;
+            loggingFile << "---------------------------------------------------" << std::endl;
+            loggingFile << "threads per block: [" << threadsPerBlock[1].x << ", " << threadsPerBlock[1].y << ", " << threadsPerBlock[1].z << "]" << std::endl;
+            loggingFile << "blocks per grid:   [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+            loggingFile << "---------------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::simulationStepAlpha() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "---------------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     lbm_kernel_alpha<T><<<blocksPerGrid, threadsPerBlock[1], 0, ((stream == NULL) ? 0 : *stream)>>>(
@@ -218,12 +307,26 @@ void CLbmSolverGPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, in
             storeVelocities);
     GPU_ERROR_CHECK(cudaPeekAtLastError())
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "Alpha kernel was successfully executed on the following subdomain:" << std::endl;
-        std::cout << "origin:            " << origin << std::endl;
-        std::cout << "size:              " << size << std::endl;
-        std::cout << "---------------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "Alpha kernel was successfully executed on the following subdomain:" << std::endl;
+            loggingFile << "origin:            " << origin << std::endl;
+            loggingFile << "size:              " << size << std::endl;
+            loggingFile << "---------------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::simulationStepAlpha() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "---------------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 }
 
@@ -239,15 +342,29 @@ void CLbmSolverGPU<T>::simulationStepBeta(cudaStream_t* stream)
     dim3 blocksPerGrid = getBlocksPerGrid(3, domain.getSizeWithHalo(), threadsPerBlock[2]);
     // size_t sMemSize = 12 * sizeof(T) * getSize(threadsPerBlock[2]);
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::simulationStepBeta() -----" << std::endl;
-        std::cout << "id:                 " << id << std::endl;
-        std::cout << "--------------------------------------------------" << std::endl;
-        std::cout << "threads per block:  [" << threadsPerBlock[2].x << ", " << threadsPerBlock[2].y << ", " << threadsPerBlock[2].z << "]" << std::endl;
-        std::cout << "blocks per grid:    [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
-        // std::cout << "shared memory size: " << ((T)sMemSize / (T)(1<<10)) << " KB" << std::endl;
-        std::cout << "--------------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "----- CLbmSolverGPU<T>::simulationStepBeta() -----" << std::endl;
+            loggingFile << "id:                 " << id << std::endl;
+            loggingFile << "--------------------------------------------------" << std::endl;
+            loggingFile << "threads per block:  [" << threadsPerBlock[2].x << ", " << threadsPerBlock[2].y << ", " << threadsPerBlock[2].z << "]" << std::endl;
+            loggingFile << "blocks per grid:    [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+            // loggingFile << "shared memory size: " << ((T)sMemSize / (T)(1<<10)) << " KB" << std::endl;
+            loggingFile << "--------------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::simulationStepBeta() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "--------------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     lbm_kernel_beta<T><<<blocksPerGrid, threadsPerBlock[2], 0, ((stream == NULL) ? 0 : *stream)>>>(
@@ -276,10 +393,24 @@ void CLbmSolverGPU<T>::simulationStepBeta(cudaStream_t* stream)
             storeVelocities);
     GPU_ERROR_CHECK(cudaPeekAtLastError())
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "Beta kernel was successfully executed on the whole subdomain." << std::endl;
-        std::cout << "--------------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "Beta kernel was successfully executed on the whole subdomain." << std::endl;
+            loggingFile << "--------------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::simulationStepBeta() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "--------------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 }
 
@@ -301,15 +432,29 @@ void CLbmSolverGPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int
     dim3 blocksPerGrid = getBlocksPerGrid(3, size, threadsPerBlock[2]);
     // size_t sMemSize = 12 * sizeof(T) * getSize(threadsPerBlock[2]);
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::simulationStepBeta() -----" << std::endl;
-        std::cout << "id:                 " << id << std::endl;
-        std::cout << "--------------------------------------------------" << std::endl;
-        std::cout << "threads per block:  [" << threadsPerBlock[2].x << ", " << threadsPerBlock[2].y << ", " << threadsPerBlock[2].z << "]" << std::endl;
-        std::cout << "blocks per grid:    [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
-        // std::cout << "shared memory size: " << ((T)sMemSize / (T)(1<<10)) << " KB" << std::endl;
-        std::cout << "--------------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "----- CLbmSolverGPU<T>::simulationStepBeta() -----" << std::endl;
+            loggingFile << "id:                 " << id << std::endl;
+            loggingFile << "--------------------------------------------------" << std::endl;
+            loggingFile << "threads per block:  [" << threadsPerBlock[2].x << ", " << threadsPerBlock[2].y << ", " << threadsPerBlock[2].z << "]" << std::endl;
+            loggingFile << "blocks per grid:    [" << blocksPerGrid.x << ", " << blocksPerGrid.y << ", " << blocksPerGrid.z << "]" << std::endl;
+            // loggingFile << "shared memory size: " << ((T)sMemSize / (T)(1<<10)) << " KB" << std::endl;
+            loggingFile << "--------------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::simulationStepBeta() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "--------------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     lbm_kernel_beta<T><<<blocksPerGrid, threadsPerBlock[2], 0, ((stream == NULL) ? 0 : *stream)>>>(
@@ -338,12 +483,26 @@ void CLbmSolverGPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int
             storeVelocities);
     GPU_ERROR_CHECK(cudaPeekAtLastError())
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "Beta kernel was successfully executed on the following subdomain." << std::endl;
-        std::cout << "origin:             " << origin << std::endl;
-        std::cout << "size:               " << size << std::endl;
-        std::cout << "--------------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "Beta kernel was successfully executed on the following subdomain." << std::endl;
+            loggingFile << "origin:             " << origin << std::endl;
+            loggingFile << "size:               " << size << std::endl;
+            loggingFile << "--------------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::simulationStepBeta() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "--------------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 }
 
@@ -364,17 +523,31 @@ void CLbmSolverGPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<
 
     cudaMemcpy3DParms params = {0};
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::getDensityDistributions() -----" << std::endl;
-        std::cout << "id:                " << id << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:       " << domain.getSize() << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "cuboid origin:     " << origin << std::endl;
-        std::cout << "cuboid size:       " << size << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "----- CLbmSolverGPU<T>::getDensityDistributions() -----" << std::endl;
+            loggingFile << "id:                " << id << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+            loggingFile << "domain origin:     " << domain.getOrigin() << std::endl;
+            loggingFile << "domain size:       " << domain.getSize() << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+            loggingFile << "cuboid origin:     " << origin << std::endl;
+            loggingFile << "cuboid size:       " << size << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::getDensityDistributions() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "-------------------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     for(int latticeVector = 0; latticeVector < NUM_LATTICE_VECTORS; latticeVector++)
@@ -394,10 +567,24 @@ void CLbmSolverGPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<
         GPU_ERROR_CHECK(cudaMemcpy3DAsync(&params, (stream == NULL) ? 0 : *stream))
     }
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "A copy operation from device to host was performed." << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "A copy operation from device to host was performed." << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::getDensityDistributions() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "-------------------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 }
 
@@ -457,17 +644,32 @@ void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
         break;
     }
 
-    if (doLogging) {
-        std::cout << "----- CLbmSolverGPU<T>::setDensityDistributions() -----" << std::endl;
-        std::cout << "id:                " << id << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:       " << domain.getSize() << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "cuboid origin:     " << origin << std::endl;
-        std::cout << "cuboid size:       " << size << std::endl;
-        std::cout << "direction:         " << norm << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
+    if (configuration->doLogging)
+    {
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "----- CLbmSolverGPU<T>::setDensityDistributions() -----" << std::endl;
+            loggingFile << "id:                " << id << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+            loggingFile << "domain origin:     " << domain.getOrigin() << std::endl;
+            loggingFile << "domain size:       " << domain.getSize() << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+            loggingFile << "cuboid origin:     " << origin << std::endl;
+            loggingFile << "cuboid size:       " << size << std::endl;
+            loggingFile << "direction:         " << norm << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::setDensityDistributions() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "-------------------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     for (int latticeVector = 0; latticeVector < NUM_LATTICE_VECTORS; latticeVector++)
@@ -490,9 +692,24 @@ void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
         }
     }
 
-    if (doLogging) {
-        std::cout << "A copy operation from host to device for lattice vectors in direction " << direction << " was performed." << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
+    if (configuration->doLogging)
+    {
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "A copy operation from host to device for lattice vectors in direction " << direction << " was performed." << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::setDensityDistributions() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "-------------------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 }
 
@@ -513,19 +730,33 @@ void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
 
     cudaMemcpy3DParms params = {0};
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::setDensityDistributions() -----" << std::endl;
-        std::cout << "A copy operation from host to device was performed." << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "id:                " << id << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:       " << domain.getSize() << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "cuboid origin:     " << origin << std::endl;
-        std::cout << "cuboid size:       " << size << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "----- CLbmSolverGPU<T>::setDensityDistributions() -----" << std::endl;
+            loggingFile << "A copy operation from host to device was performed." << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+            loggingFile << "id:                " << id << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+            loggingFile << "domain origin:     " << domain.getOrigin() << std::endl;
+            loggingFile << "domain size:       " << domain.getSize() << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+            loggingFile << "cuboid origin:     " << origin << std::endl;
+            loggingFile << "cuboid size:       " << size << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::setDensityDistributions() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "-------------------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     for (int latticeVector = 0; latticeVector < NUM_LATTICE_VECTORS; latticeVector++)
@@ -545,10 +776,24 @@ void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
         GPU_ERROR_CHECK(cudaMemcpy3DAsync(&params, (stream == NULL) ? 0 : *stream))
     }
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "A copy operation from host to device was performed." << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "A copy operation from host to device was performed." << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::setDensityDistributions() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "-------------------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 }
 
@@ -584,17 +829,31 @@ void CLbmSolverGPU<T>::getFlags(CVector<3, int> &origin, CVector<3, int> &size, 
 
     cudaMemcpy3DParms params = {0};
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::getFlags() -----" << std::endl;
-        std::cout << "id:                " << id << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:       " << domain.getSize() << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "cuboid origin:     " << origin << std::endl;
-        std::cout << "cuboid size:       " << size << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "----- CLbmSolverGPU<T>::getFlags() -----" << std::endl;
+            loggingFile << "id:                " << id << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+            loggingFile << "domain origin:     " << domain.getOrigin() << std::endl;
+            loggingFile << "domain size:       " << domain.getSize() << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+            loggingFile << "cuboid origin:     " << origin << std::endl;
+            loggingFile << "cuboid size:       " << size << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::getFlags() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "----------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     // domain location and size
@@ -611,10 +870,24 @@ void CLbmSolverGPU<T>::getFlags(CVector<3, int> &origin, CVector<3, int> &size, 
 
     GPU_ERROR_CHECK(cudaMemcpy3D(&params))
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "A copy operation from device to host was performed." << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "A copy operation from device to host was performed." << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::getFlags() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "----------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 }
 
@@ -638,19 +911,33 @@ void CLbmSolverGPU<T>::setFlags(CVector<3, int> &origin, CVector<3, int> &size, 
 
     cudaMemcpy3DParms params = {0};
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::setFlags() -----" << std::endl;
-        std::cout << "A copy operation from host to device was performed." << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "id:                " << id << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:       " << domain.getSize() << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
-        std::cout << "cuboid origin:     " << origin << std::endl;
-        std::cout << "cuboid size:       " << size << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "----- CLbmSolverGPU<T>::setFlags() -----" << std::endl;
+            loggingFile << "A copy operation from host to device was performed." << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+            loggingFile << "id:                " << id << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+            loggingFile << "domain origin:     " << domain.getOrigin() << std::endl;
+            loggingFile << "domain size:       " << domain.getSize() << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+            loggingFile << "cuboid origin:     " << origin << std::endl;
+            loggingFile << "cuboid size:       " << size << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::setFlags() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "----------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     // hFlags location and size
@@ -667,10 +954,24 @@ void CLbmSolverGPU<T>::setFlags(CVector<3, int> &origin, CVector<3, int> &size, 
 
     GPU_ERROR_CHECK(cudaMemcpy3D(&params))
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "A copy operation from host to device was performed." << std::endl;
-        std::cout << "-------------------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "A copy operation from host to device was performed." << std::endl;
+            loggingFile << "-------------------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::setFlags() ------" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "-----------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 }
 
@@ -694,19 +995,33 @@ void CLbmSolverGPU<T>::getVelocities(CVector<3, int> &origin, CVector<3, int> &s
 
     cudaMemcpy3DParms params = {0};
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::getVelocities() -----" << std::endl;
-        std::cout << "A copy operation from device to host was performed." << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
-        std::cout << "id:                " << id << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
-        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:       " << domain.getSize() << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
-        std::cout << "cuboid origin:     " << origin << std::endl;
-        std::cout << "cuboid size:       " << size << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "----- CLbmSolverGPU<T>::getVelocities() -----" << std::endl;
+            loggingFile << "A copy operation from device to host was performed." << std::endl;
+            loggingFile << "---------------------------------------------" << std::endl;
+            loggingFile << "id:                " << id << std::endl;
+            loggingFile << "---------------------------------------------" << std::endl;
+            loggingFile << "domain origin:     " << domain.getOrigin() << std::endl;
+            loggingFile << "domain size:       " << domain.getSize() << std::endl;
+            loggingFile << "---------------------------------------------" << std::endl;
+            loggingFile << "cuboid origin:     " << origin << std::endl;
+            loggingFile << "cuboid size:       " << size << std::endl;
+            loggingFile << "---------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::getVelocities() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "---------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     for (int dim = 0; dim < 3; dim++)
@@ -726,10 +1041,24 @@ void CLbmSolverGPU<T>::getVelocities(CVector<3, int> &origin, CVector<3, int> &s
         GPU_ERROR_CHECK(cudaMemcpy3D(&params))
     }
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "A copy operation from device to host was performed." << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "A copy operation from device to host was performed." << std::endl;
+            loggingFile << "---------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::getVelocities() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "---------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 }
 
@@ -753,19 +1082,33 @@ void CLbmSolverGPU<T>::setVelocities(CVector<3, int> &origin, CVector<3, int> &s
 
     cudaMemcpy3DParms params = {0};
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::setVelocities() -----" << std::endl;
-        std::cout << "A copy operation from host to device was performed." << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
-        std::cout << "id:                " << id << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
-        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:       " << domain.getSize() << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
-        std::cout << "cuboid origin:     " << origin << std::endl;
-        std::cout << "cuboid size:       " << size << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "----- CLbmSolverGPU<T>::setVelocities() -----" << std::endl;
+            loggingFile << "A copy operation from host to device was performed." << std::endl;
+            loggingFile << "---------------------------------------------" << std::endl;
+            loggingFile << "id:                " << id << std::endl;
+            loggingFile << "---------------------------------------------" << std::endl;
+            loggingFile << "domain origin:     " << domain.getOrigin() << std::endl;
+            loggingFile << "domain size:       " << domain.getSize() << std::endl;
+            loggingFile << "---------------------------------------------" << std::endl;
+            loggingFile << "cuboid origin:     " << origin << std::endl;
+            loggingFile << "cuboid size:       " << size << std::endl;
+            loggingFile << "---------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::setVelocities() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "---------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     for (int dim = 0; dim < 3; dim++)
@@ -785,10 +1128,24 @@ void CLbmSolverGPU<T>::setVelocities(CVector<3, int> &origin, CVector<3, int> &s
         GPU_ERROR_CHECK(cudaMemcpy3D(&params))
     }
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "A copy operation from host to device was performed." << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "A copy operation from host to device was performed." << std::endl;
+            loggingFile << "---------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::setVelocities() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "---------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 }
 
@@ -812,19 +1169,33 @@ void CLbmSolverGPU<T>::getDensities(CVector<3, int> &origin, CVector<3, int> &si
 
     cudaMemcpy3DParms params = {0};
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::getDensities() -----" << std::endl;
-        std::cout << "A copy operation from device to host was performed." << std::endl;
-        std::cout << "--------------------------------------------" << std::endl;
-        std::cout << "id:                " << id << std::endl;
-        std::cout << "--------------------------------------------" << std::endl;
-        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:       " << domain.getSize() << std::endl;
-        std::cout << "--------------------------------------------" << std::endl;
-        std::cout << "cuboid origin:     " << origin << std::endl;
-        std::cout << "cuboid size:       " << size << std::endl;
-        std::cout << "--------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "----- CLbmSolverGPU<T>::getDensities() -----" << std::endl;
+            loggingFile << "A copy operation from device to host was performed." << std::endl;
+            loggingFile << "--------------------------------------------" << std::endl;
+            loggingFile << "id:                " << id << std::endl;
+            loggingFile << "--------------------------------------------" << std::endl;
+            loggingFile << "domain origin:     " << domain.getOrigin() << std::endl;
+            loggingFile << "domain size:       " << domain.getSize() << std::endl;
+            loggingFile << "--------------------------------------------" << std::endl;
+            loggingFile << "cuboid origin:     " << origin << std::endl;
+            loggingFile << "cuboid size:       " << size << std::endl;
+            loggingFile << "--------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::getDensities() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "--------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     // domain location and size
@@ -841,10 +1212,24 @@ void CLbmSolverGPU<T>::getDensities(CVector<3, int> &origin, CVector<3, int> &si
 
     GPU_ERROR_CHECK(cudaMemcpy3D(&params))
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "A copy operation from device to host was performed." << std::endl;
-        std::cout << "--------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "A copy operation from device to host was performed." << std::endl;
+            loggingFile << "--------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::getDensities() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "--------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 }
 
@@ -868,19 +1253,33 @@ void CLbmSolverGPU<T>::setDensities(CVector<3, int> &origin, CVector<3, int> &si
 
     cudaMemcpy3DParms params = {0};
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "----- CLbmSolverGPU<T>::setDensities() -----" << std::endl;
-        std::cout << "A copy operation from host to device was performed." << std::endl;
-        std::cout << "--------------------------------------------" << std::endl;
-        std::cout << "id:                " << id << std::endl;
-        std::cout << "--------------------------------------------" << std::endl;
-        std::cout << "domain origin:     " << domain.getOrigin() << std::endl;
-        std::cout << "domain size:       " << domain.getSize() << std::endl;
-        std::cout << "--------------------------------------------" << std::endl;
-        std::cout << "cuboid origin:     " << origin << std::endl;
-        std::cout << "cuboid size:       " << size << std::endl;
-        std::cout << "--------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "----- CLbmSolverGPU<T>::setDensities() -----" << std::endl;
+            loggingFile << "A copy operation from host to device was performed." << std::endl;
+            loggingFile << "--------------------------------------------" << std::endl;
+            loggingFile << "id:                " << id << std::endl;
+            loggingFile << "--------------------------------------------" << std::endl;
+            loggingFile << "domain origin:     " << domain.getOrigin() << std::endl;
+            loggingFile << "domain size:       " << domain.getSize() << std::endl;
+            loggingFile << "--------------------------------------------" << std::endl;
+            loggingFile << "cuboid origin:     " << origin << std::endl;
+            loggingFile << "cuboid size:       " << size << std::endl;
+            loggingFile << "--------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::setDensities() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "--------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     // hDensities location and size
@@ -897,10 +1296,24 @@ void CLbmSolverGPU<T>::setDensities(CVector<3, int> &origin, CVector<3, int> &si
 
     GPU_ERROR_CHECK(cudaMemcpy3D(&params))
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "A copy operation from host to device was performed." << std::endl;
-        std::cout << "--------------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+            loggingFile << "A copy operation from host to device was performed." << std::endl;
+            loggingFile << "--------------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolverGPU<T>::setDensities() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "--------------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 }
 

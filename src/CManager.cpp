@@ -76,10 +76,10 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
         	loggingFile << "-----------------------------------" << std::endl;
         	loggingFile.close();
         } else {
-            std::cerr << "----- CManager::CManager() -----" << std::endl;
+            std::cerr << "----- CManager<T>::CManager() -----" << std::endl;
             std::cerr << "There is no open file to write logs." << std::endl;
             std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
-            std::cerr << "--------------------------------" << std::endl;
+            std::cerr << "-----------------------------------" << std::endl;
 
             exit (EXIT_FAILURE);
         }
@@ -119,10 +119,10 @@ CManager<T>::CManager(int rank, CConfiguration<T>* configuration) :
         	loggingFile << "-----------------------------------" << std::endl;
         	loggingFile.close();
         } else {
-            std::cerr << "----- CManager::CManager() -----" << std::endl;
+            std::cerr << "----- CManager<T>::CManager() -----" << std::endl;
             std::cerr << "There is no open file to write logs." << std::endl;
             std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
-            std::cerr << "--------------------------------" << std::endl;
+            std::cerr << "-----------------------------------" << std::endl;
 
             exit (EXIT_FAILURE);
         }

@@ -74,10 +74,10 @@ CController<T>::CController(
         	loggingFile << "-----------------------------------------" << std::endl;
         	loggingFile.close();
         } else {
-            std::cerr << "----- CController::CController() -----" << std::endl;
+            std::cerr << "----- CController<T>::CController() -----" << std::endl;
             std::cerr << "There is no open file to write logs." << std::endl;
             std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
-            std::cerr << "--------------------------------------" << std::endl;
+            std::cerr << "-----------------------------------------" << std::endl;
 
             exit (EXIT_FAILURE);
         }
@@ -85,35 +85,16 @@ CController<T>::CController(
 
     solverGPU = new CLbmSolverGPU<T>(
             this->id,
-            this->configuration->threadsPerBlock,
-            this->configuration->domainLength,
             domainGPU,
             this->boundaryConditions,
-            this->configuration->timestep,
-            this->configuration->velocity,
-            this->configuration->acceleration,
-            this->configuration->viscosity,
-            this->configuration->maxVelocityDimLess,
-            this->configuration->maxAccelerationDimLess,
-            this->configuration->doValidation || this->configuration->doVisualization,
-            this->configuration->doValidation || this->configuration->doVisualization,
-            this->configuration->doLogging);
+            this->configuration);
     solverCPU = new CLbmSolverCPU<T>(
             this->id,
-            this->configuration->domainLength,
             // domainCPU,
             domainGPU,
-            this->boundaryConditions,
             solverGPU,
-            this->configuration->timestep,
-            this->configuration->velocity,
-            this->configuration->acceleration,
-            this->configuration->viscosity,
-            this->configuration->maxVelocityDimLess,
-            this->configuration->maxAccelerationDimLess,
-            this->configuration->doValidation || this->configuration->doVisualization,
-            this->configuration->doValidation || this->configuration->doVisualization,
-            this->configuration->doLogging);
+            this->boundaryConditions,
+            this->configuration);
 
 #ifdef USE_MPI
     sendBuffers = new std::vector<T*>(this->communication.size());
@@ -127,8 +108,8 @@ CController<T>::CController(
 #ifdef USE_MPI
     for (unsigned int i = 0; i < this->communication.size(); i++)
     {
-        sendBuffers->at(i) = new T[NUM_LATTICE_VECTORS * communication[i].getSendSize().elements()];
-        recvBuffers->at(i) = new T[NUM_LATTICE_VECTORS * communication[i].getRecvSize().elements()];
+        sendBuffers->at(i) = new T[NUM_LATTICE_VECTORS * this->communication[i].getSendSize().elements()];
+        recvBuffers->at(i) = new T[NUM_LATTICE_VECTORS * this->communication[i].getRecvSize().elements()];
         GPU_ERROR_CHECK(cudaStreamCreate(&streams->at(i)))
     }
 #endif

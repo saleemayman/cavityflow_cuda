@@ -25,27 +25,17 @@
 template <class T>
 CLbmSolverCPU<T>::CLbmSolverCPU(
         int id,
-        CVector<3, T> &globalLength,
         CDomain<T> &domain,
-        std::vector<Flag> boundaryConditions,
         CLbmSolverGPU<T>* solverGPU,
-        T timestepSize,
-        CVector<3, T>& velocity,
-        CVector<3, T>& acceleration,
-        T viscocity,
-        T maxVelocityDimLess,
-        T maxAccelerationDimLess,
-        bool storeDensities,
-        bool storeVelocities,
-        bool doLogging) :
-        CLbmSolver<T>(id, globalLength,
-                domain, boundaryConditions,
-                timestepSize, velocity, acceleration,
-                viscocity, maxVelocityDimLess, maxAccelerationDimLess,
-                storeDensities, storeVelocities, doLogging),
+        std::vector<Flag> boundaryConditions,
+        CConfiguration<T>* configuration) :
+        CLbmSolver<T>(id,
+        		domain,
+        		boundaryConditions,
+        		configuration),
         solverGPU(solverGPU)
 {
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "----- CLbmSolverCPU<T>::CLbmSolverCPU() -----" << std::endl;
         std::cout << "id:                                          " << this->id << std::endl;
@@ -86,12 +76,12 @@ CLbmSolverCPU<T>::CLbmSolverCPU(
     if (storeVelocities)
         velocities.resize(3 * domainCellsCPUWithHalo);
 
-    if (doLogging) {
+    if (configuration->doLogging) {
         std::cout << "size of allocated memory for density distributions: " << ((T)(NUM_LATTICE_VECTORS * domainCellsCPUWithHalo * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
         std::cout << "size of allocated memory for flags:                 " << ((T)(domainCellsCPUWithHalo * sizeof(Flag)) / (T)(1<<20)) << " MBytes" << std::endl;
-        if(this->storeDensities)
+        if(storeDensities)
             std::cout << "size of allocated memory for velocities:            " << ((T)(3 * domainCellsCPUWithHalo * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
-        if(this->storeVelocities)
+        if(storeVelocities)
             std::cout << "size of allocated memory for densities:             " << ((T)(domainCellsCPUWithHalo * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
     }
 
@@ -119,7 +109,7 @@ CLbmSolverCPU<T>::CLbmSolverCPU(
                     storeDensities, 
                     storeVelocities);
 
-    if (doLogging) {
+    if (configuration->doLogging) {
         std::cout << "CPU Domain successfully initialized!" <<  std::endl;
         std::cout << "---------------------------------------------" << std::endl;
     }
@@ -130,29 +120,29 @@ CLbmSolverCPU<T>::CLbmSolverCPU(
 #if !TOP_DOWN_DECOMPOSITION
     alphaLbmCPU = new CLbmAlphaCPU<T>(
                             domainCellsCPUWithHalo,
-                            this->domain.getSizeWithHalo(), 
+                            this->domain.getSizeWithHalo(),
                             //initLbmCPU->getCellIndexMap(),
                             initLbmCPU,
-                            acceleration);
+                            accelerationDimLess);
     betaLbmCPU = new CLbmBetaCPU<T>(
                             domainCellsCPUWithHalo,
-                            this->domain.getSizeWithHalo(), 
+                            this->domain.getSizeWithHalo(),
                             //initLbmCPU->getCellIndexMap(),
                             initLbmCPU,
-                            acceleration);
+                            accelerationDimLess);
 #else
     alphaLbmCPU = new CLbmAlphaCPU<T>(
                             domainCellsCPUWithHalo,
-                            domainSizeCPUWithHalo, 
+                            domainSizeCPUWithHalo,
                             //initLbmCPU->getCellIndexMap(),
                             initLbmCPU,
-                            acceleration);
+                            accelerationDimLess);
     betaLbmCPU = new CLbmBetaCPU<T>(
                             domainCellsCPUWithHalo,
-                            domainSizeCPUWithHalo, 
+                            domainSizeCPUWithHalo,
                             //initLbmCPU->getCellIndexMap(),
                             initLbmCPU,
-                            acceleration);
+                            accelerationDimLess);
 #endif
 }
 
@@ -327,7 +317,7 @@ template <class T>
 void CLbmSolverCPU<T>::simulationStepAlpha()
 {
     // TODO: possible code duplication. Similar to simulationStepAlpha(origin, size). Check if possible to replace.
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "----- CLbmSolverCPU<T>::simulationStepAlpha() -----" << std::endl;
         std::cout << "id:                " << id << std::endl;
@@ -363,7 +353,7 @@ void CLbmSolverCPU<T>::simulationStepAlpha()
                     storeVelocities);
 #endif
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "Alpha kernel was successfully executed on the whole CPU subdomain." << std::endl;
         std::cout << "---------------------------------------------------" << std::endl;
@@ -384,7 +374,7 @@ void CLbmSolverCPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, in
     assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
 #endif
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "----- CLbmSolverCPU<T>::simulationStepAlpha() -----" << std::endl;
         std::cout << "id:                " << id << std::endl;
@@ -406,7 +396,7 @@ void CLbmSolverCPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, in
                     storeDensities,
                     storeVelocities);
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "Alpha kernel was successfully executed on the following CPU subdomain:" << std::endl;
         std::cout << "origin:            " << origin << std::endl;
@@ -419,7 +409,7 @@ template <class T>
 void CLbmSolverCPU<T>::simulationStepBeta()
 {
     // TODO: possible code duplication. Similar to simulationStepBeta(origin, size). Check if possible to replace.
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "----- CLbmSolverCPU<T>::simulationStepBeta() -----" << std::endl;
         std::cout << "id:                 " << id << std::endl;
@@ -454,7 +444,7 @@ void CLbmSolverCPU<T>::simulationStepBeta()
                     storeVelocities);
 #endif
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "Beta kernel was successfully executed on the whole CPU subdomain." << std::endl;
         std::cout << "--------------------------------------------------" << std::endl;
@@ -475,7 +465,7 @@ void CLbmSolverCPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int
     assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
 #endif
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "----- CLbmSolverCPU<T>::simulationStepBeta() -----" << std::endl;
         std::cout << "id:                 " << id << std::endl;
@@ -510,7 +500,7 @@ void CLbmSolverCPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int
                     storeVelocities);
 #endif
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "Beta kernel was successfully executed on the following CPU subdomain." << std::endl;
         std::cout << "origin:             " << origin << std::endl;
@@ -533,7 +523,7 @@ void CLbmSolverCPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<
     assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
 #endif
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "----- CLbmSolverCPU<T>::getDensityDistributions() -----" << std::endl;
         std::cout << "id:                " << id << std::endl;
@@ -548,7 +538,7 @@ void CLbmSolverCPU<T>::getDensityDistributions(CVector<3, int> &origin, CVector<
     
 	getVariable(origin, size, densityDistributions, dst, NUM_LATTICE_VECTORS);
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "A copy operation with in the host was performed." << std::endl;
         std::cout << "-------------------------------------------------------" << std::endl;
@@ -578,7 +568,7 @@ void CLbmSolverCPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
     assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
 #endif
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "----- CLbmSolverCPU<T>::setDensityDistributions() -----" << std::endl;
         std::cout << "A copy operation within the host will be performed." << std::endl;
@@ -595,7 +585,7 @@ void CLbmSolverCPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<
 
 	setVariable(origin, size, densityDistributions, src, NUM_LATTICE_VECTORS);
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "A copy operation with in the host was performed." << std::endl;
         std::cout << "-------------------------------------------------------" << std::endl;
@@ -625,7 +615,7 @@ void CLbmSolverCPU<T>::getFlags(CVector<3, int> &origin, CVector<3, int> &size, 
     assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
 #endif
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "----- CLbmSolverCPU<T>::getFlags() -----" << std::endl;
         std::cout << "id:                " << id << std::endl;
@@ -640,7 +630,7 @@ void CLbmSolverCPU<T>::getFlags(CVector<3, int> &origin, CVector<3, int> &size, 
 
 	getVariable(origin, size, flags, dst, 1);
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "A copy operation within the host was performed." << std::endl;
         std::cout << "-------------------------------------------------------" << std::endl;
@@ -670,7 +660,7 @@ void CLbmSolverCPU<T>::setFlags(CVector<3, int> &origin, CVector<3, int> &size, 
     assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
 #endif
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "----- CLbmSolverCPU<T>::setFlags() -----" << std::endl;
         std::cout << "A copy operation within the host will be performed." << std::endl;
@@ -687,7 +677,7 @@ void CLbmSolverCPU<T>::setFlags(CVector<3, int> &origin, CVector<3, int> &size, 
 
 	setVariable(origin, size, flags, src, 1);
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "A copy operation within the host was performed." << std::endl;
         std::cout << "-------------------------------------------------------" << std::endl;
@@ -717,7 +707,7 @@ void CLbmSolverCPU<T>::getVelocities(CVector<3, int> &origin, CVector<3, int> &s
     assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
 #endif
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "----- CLbmSolverCPU<T>::getVelocities() -----" << std::endl;
         std::cout << "id:                " << id << std::endl;
@@ -732,7 +722,7 @@ void CLbmSolverCPU<T>::getVelocities(CVector<3, int> &origin, CVector<3, int> &s
 
 	getVariable(origin, size, velocities, dst, 3);
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "A copy operation within the host was performed." << std::endl;
         std::cout << "-------------------------------------------------------" << std::endl;
@@ -762,7 +752,7 @@ void CLbmSolverCPU<T>::setVelocities(CVector<3, int> &origin, CVector<3, int> &s
     assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
 #endif
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "----- CLbmSolverCPU<T>::setVelocities() -----" << std::endl;
         std::cout << "A copy operation within the host will be performed." << std::endl;
@@ -779,7 +769,7 @@ void CLbmSolverCPU<T>::setVelocities(CVector<3, int> &origin, CVector<3, int> &s
 
 	setVariable(origin, size, velocities, src, 3);
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "A copy operation with in the host was performed." << std::endl;
         std::cout << "-------------------------------------------------------" << std::endl;
@@ -809,7 +799,7 @@ void CLbmSolverCPU<T>::getDensities(CVector<3, int> &origin, CVector<3, int> &si
     assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
 #endif
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "----- CLbmSolverCPU<T>::getDensities() -----" << std::endl;
         std::cout << "A copy operation within the host will be performed." << std::endl;
@@ -826,7 +816,7 @@ void CLbmSolverCPU<T>::getDensities(CVector<3, int> &origin, CVector<3, int> &si
 
 	getVariable(origin, size, densities, dst, 1);
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "A copy operation within the host was performed." << std::endl;
         std::cout << "--------------------------------------------" << std::endl;
@@ -856,7 +846,7 @@ void CLbmSolverCPU<T>::setDensities(CVector<3, int> &origin, CVector<3, int> &si
     assert(origin[1] + size[1] <= domainSizeCPUWithHalo[1]);
 #endif
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "----- CLbmSolverCPU<T>::setDensities() -----" << std::endl;
         std::cout << "A copy operation within the host will be performed." << std::endl;
@@ -873,7 +863,7 @@ void CLbmSolverCPU<T>::setDensities(CVector<3, int> &origin, CVector<3, int> &si
 
 	setVariable(origin, size, densities, src, 1);
 
-    if (doLogging)
+    if (configuration->doLogging)
     {
         std::cout << "A copy operation within the host was performed." << std::endl;
         std::cout << "--------------------------------------------" << std::endl;

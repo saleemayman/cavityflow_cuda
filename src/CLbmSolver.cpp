@@ -19,41 +19,51 @@
 
 #include "CLbmSolver.hpp"
 
+#include <fstream>
 #include <limits>
+#include <sstream>
 
 #include "libmath/CMath.hpp"
 
 template <class T>
 CLbmSolver<T>::CLbmSolver(
         int id,
-        CVector<3, T> &globalLength,
         CDomain<T> &domain,
         std::vector<Flag> boundaryConditions,
-        T timestepSize,
-        CVector<3, T> &velocity,
-        CVector<3, T> &acceleration,
-        T viscosity,
-        T maxVelocityDimLess,
-        T maxAccelerationDimLess,
-        bool storeDensities,
-        bool storeVelocities,
-        bool doLogging) :
-        id(id), globalLength(globalLength),
-        domain(domain), boundaryConditions(boundaryConditions),
-        timestepSize(timestepSize), velocity(velocity), acceleration(acceleration), viscosity(viscosity),
-        maxVelocityDimLess(maxVelocityDimLess), maxAccelerationDimLess(maxAccelerationDimLess),
-        storeDensities(storeDensities), storeVelocities(storeVelocities), doLogging(doLogging)
+        CConfiguration<T>* configuration) :
+        id(id),
+        domain(domain),
+        boundaryConditions(boundaryConditions),
+        configuration(configuration),
+        timestepSize(configuration->timestep),
+        viscosity(configuration->viscosity),
+        storeDensities(configuration->doValidation || configuration->doVisualization),
+        storeVelocities(configuration->doValidation || configuration->doVisualization)
 {
     bool limitedByVelocity = false;
     bool limitedByAcceleration = false;
     T cellLength = domain.getLength()[0] / (T)domain.getSize()[0];
     T oldTimestepSize;
 
-    if (this->doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
-        std::cout << "id:                                      " << this->id << std::endl;
-        std::cout << "---------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+        	loggingFile << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
+        	loggingFile << "id:                                      " << this->id << std::endl;
+        	loggingFile << "---------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "---------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 
     /*
@@ -62,37 +72,79 @@ CLbmSolver<T>::CLbmSolver(
      * viscosity can be further adapted if the timestep size has to adapted.
      * The predefined reynolds number is always kept and stays constant.
      */
-    if (this->viscosity <= (T)0)
+    if (viscosity <= (T)0)
     {
-        if (this->doLogging)
+        if (configuration->doLogging)
         {
-            std::cout << "No viscosity has been passed!" << std::endl;
-            std::cout << "Artificial viscosity is set!" << std::endl;
+            std::stringstream loggingFileName;
+            loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+            std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+            if (loggingFile.is_open())
+            {
+            	loggingFile << "No viscosity has been passed!" << std::endl;
+            	loggingFile << "Artificial viscosity is set!" << std::endl;
+            	loggingFile.close();
+            } else {
+                std::cerr << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
+                std::cerr << "There is no open file to write logs." << std::endl;
+                std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+                std::cerr << "---------------------------------------" << std::endl;
+
+                exit (EXIT_FAILURE);
+            }
         }
 
         // definition reynolds number
-        this->viscosity = this->globalLength.max() * this->velocity[0] / REYNOLDS_DEFAULT;
+        viscosity = configuration->domainLength.max() * configuration->velocity[0] / REYNOLDS_DEFAULT;
 
-        if (this->doLogging)
+        if (configuration->doLogging)
         {
-            std::cout << "viscosity:         " << this->viscosity << std::endl;
-            std::cout << "---------------------------------------" << std::endl;
+            std::stringstream loggingFileName;
+            loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+            std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+            if (loggingFile.is_open())
+            {
+            	loggingFile << "viscosity:         " << viscosity << std::endl;
+            	loggingFile << "---------------------------------------" << std::endl;
+            	loggingFile.close();
+            } else {
+                std::cerr << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
+                std::cerr << "There is no open file to write logs." << std::endl;
+                std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+                std::cerr << "---------------------------------------" << std::endl;
+
+                exit (EXIT_FAILURE);
+            }
         }
     }
 
     while (true)
     {
-        if (this->doLogging)
+        if (configuration->doLogging)
         {
-            std::cout << "New iteration of finding timestep size started." << std::endl;
-            std::cout << "---------------------------------------" << std::endl;
+            std::stringstream loggingFileName;
+            loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+            std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+            if (loggingFile.is_open())
+            {
+            	loggingFile << "New iteration of finding timestep size started." << std::endl;
+            	loggingFile << "---------------------------------------" << std::endl;
+            	loggingFile.close();
+            } else {
+                std::cerr << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
+                std::cerr << "There is no open file to write logs." << std::endl;
+                std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+                std::cerr << "---------------------------------------" << std::endl;
+
+                exit (EXIT_FAILURE);
+            }
         }
 
         // (4.11)
-        velocityDimLess = this->velocity * (this->timestepSize / cellLength);
-        accelerationDimLess = this->acceleration * ((this->timestepSize * this->timestepSize) / cellLength);
+        velocityDimLess = configuration->velocity * (timestepSize / cellLength);
+        accelerationDimLess = configuration->acceleration * ((timestepSize * timestepSize) / cellLength);
         // (4.9)
-        viscosityDimLess = this->viscosity * (this->timestepSize / (cellLength * cellLength));
+        viscosityDimLess = viscosity * (timestepSize / (cellLength * cellLength));
 
         /*
          * If the dimension less velocity is larger than the specified maximum
@@ -100,19 +152,33 @@ CLbmSolver<T>::CLbmSolver(
          * size is adapted accordingly and a valid dimension less velocity is
          * set in the next iteration of this loop.
          */
-        if (velocityDimLess.length() > this->maxVelocityDimLess + std::numeric_limits<T>::epsilon())
+        if (velocityDimLess.length() > configuration->maxVelocityDimLess + std::numeric_limits<T>::epsilon())
         {
             limitedByVelocity= true;
-            oldTimestepSize = this->timestepSize;
-            this->timestepSize = (this->maxVelocityDimLess * cellLength) / this->velocity.length();
+            oldTimestepSize = timestepSize;
+            timestepSize = (configuration->maxVelocityDimLess * cellLength) / configuration->velocity.length();
 
-            if (this->doLogging)
+            if (configuration->doLogging)
             {
-                std::cout << "Velocity (dimension less) is too large so the simulation could get unstable!" << std::endl;
-                std::cout << "Timestep size is adapted!" << std::endl;
-                std::cout << "old timestep size: " << oldTimestepSize << std::endl;
-                std::cout << "new timestep size: " << this->timestepSize << std::endl;
-                std::cout << "---------------------------------------" << std::endl;
+                std::stringstream loggingFileName;
+                loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+                std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+                if (loggingFile.is_open())
+                {
+                	loggingFile << "Velocity (dimension less) is too large so the simulation could get unstable!" << std::endl;
+                	loggingFile << "Timestep size is adapted!" << std::endl;
+                	loggingFile << "old timestep size: " << oldTimestepSize << std::endl;
+                	loggingFile << "new timestep size: " << this->timestepSize << std::endl;
+                	loggingFile << "---------------------------------------" << std::endl;
+                	loggingFile.close();
+                } else {
+                    std::cerr << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
+                    std::cerr << "There is no open file to write logs." << std::endl;
+                    std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+                    std::cerr << "---------------------------------------" << std::endl;
+
+                    exit (EXIT_FAILURE);
+                }
             }
 
             continue;
@@ -124,20 +190,34 @@ CLbmSolver<T>::CLbmSolver(
          * timestep size is adapted accordingly and a valid dimension less
          * acceleration is set in the next iteration of this loop.
          */
-        if (accelerationDimLess.length() > this->maxAccelerationDimLess + std::numeric_limits<T>::epsilon())
+        if (accelerationDimLess.length() > configuration->maxAccelerationDimLess + std::numeric_limits<T>::epsilon())
         {
             limitedByAcceleration = true;
-            oldTimestepSize = this->timestepSize;
+            oldTimestepSize = timestepSize;
             // (4.12)
-            this->timestepSize = CMath<T>::sqrt((this->maxAccelerationDimLess * cellLength) / this->acceleration.length());
+            timestepSize = CMath<T>::sqrt((configuration->maxAccelerationDimLess * cellLength) / configuration->acceleration.length());
 
-            if (this->doLogging)
+            if (configuration->doLogging)
             {
-                std::cout << "Acceleration (dimension less) is too large so the simulation could get unstable!" << std::endl;
-                std::cout << "Timestep size is adapted!" << std::endl;
-                std::cout << "old timestep size: " << oldTimestepSize << std::endl;
-                std::cout << "new timestep size: " << this->timestepSize << std::endl;
-                std::cout << "---------------------------------------" << std::endl;
+                std::stringstream loggingFileName;
+                loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+                std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+                if (loggingFile.is_open())
+                {
+                	loggingFile << "Acceleration (dimension less) is too large so the simulation could get unstable!" << std::endl;
+                	loggingFile << "Timestep size is adapted!" << std::endl;
+                	loggingFile << "old timestep size: " << oldTimestepSize << std::endl;
+                	loggingFile << "new timestep size: " << timestepSize << std::endl;
+                	loggingFile << "---------------------------------------" << std::endl;
+                	loggingFile.close();
+                } else {
+                    std::cerr << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
+                    std::cerr << "There is no open file to write logs." << std::endl;
+                    std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+                    std::cerr << "---------------------------------------" << std::endl;
+
+                    exit (EXIT_FAILURE);
+                }
             }
 
             continue;
@@ -153,25 +233,39 @@ CLbmSolver<T>::CLbmSolver(
          */
         if (tau - std::numeric_limits<T>::epsilon() < (T)TAU_LOWER_LIMIT || tau + std::numeric_limits<T>::epsilon() > (T)TAU_UPPER_LIMIT)
         {
-            oldTimestepSize = this->timestepSize;
+            oldTimestepSize = timestepSize;
             // 4.9 & 4.10
-            this->timestepSize = (cellLength * cellLength) * (((T)2 * TAU_DEFAULT - (T)1) / ((T)6 * this->viscosity));
+            timestepSize = (cellLength * cellLength) * (((T)2 * TAU_DEFAULT - (T)1) / ((T)6 * viscosity));
 
-            if (this->doLogging)
+            if (configuration->doLogging)
             {
-                std::cout << "Tau " << tau << " not within the range [" << TAU_LOWER_LIMIT <<"; " << TAU_UPPER_LIMIT << "]." << std::endl;
-                std::cout << "Timestep size is adapted!" << std::endl;
-                std::cout << "old timestep size: " << oldTimestepSize << std::endl;
-                std::cout << "new timestep size: " << this->timestepSize << std::endl;
-                std::cout << "---------------------------------------" << std::endl;
+                std::stringstream loggingFileName;
+                loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+                std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+                if (loggingFile.is_open())
+                {
+                	loggingFile << "Tau " << tau << " not within the range [" << TAU_LOWER_LIMIT <<"; " << TAU_UPPER_LIMIT << "]." << std::endl;
+                	loggingFile << "Timestep size is adapted!" << std::endl;
+                	loggingFile << "old timestep size: " << oldTimestepSize << std::endl;
+                	loggingFile << "new timestep size: " << timestepSize << std::endl;
+                	loggingFile << "---------------------------------------" << std::endl;
+                	loggingFile.close();
+                } else {
+                    std::cerr << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
+                    std::cerr << "There is no open file to write logs." << std::endl;
+                    std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+                    std::cerr << "---------------------------------------" << std::endl;
+
+                    exit (EXIT_FAILURE);
+                }
             }
 
-            if ((limitedByVelocity || limitedByAcceleration) && this->timestepSize > oldTimestepSize) {
+            if ((limitedByVelocity || limitedByAcceleration) && timestepSize > oldTimestepSize) {
                 std::cerr << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
                 std::cerr << "No valid timestep size could be determined which satisfies" << std::endl;
-                std::cerr << "- viscosity:                         " << this->viscosity << std::endl;
-                std::cerr << "- max velocity (dimension less):     " << this->maxVelocityDimLess << std::endl;
-                std::cerr << "- max acceleration (dimension less): " << this->maxAccelerationDimLess << std::endl;
+                std::cerr << "- viscosity:                         " << viscosity << std::endl;
+                std::cerr << "- max velocity (dimension less):     " << configuration->maxVelocityDimLess << std::endl;
+                std::cerr << "- max acceleration (dimension less): " << configuration->maxAccelerationDimLess << std::endl;
                 std::cerr << "- tau:                               " << tau << std::endl;
                 std::cerr << "so the simulation stays stable!" << std::endl;
 
@@ -187,34 +281,48 @@ CLbmSolver<T>::CLbmSolver(
     tauInv = (T)1 / tau;
     // tauInv = (T)1 / ((T)0.5 + (T)3 / ((T)16 * tau - (T)8));
 
-    int reynolds = this->globalLength.max() * this->velocity[0] / this->viscosity;
+    int reynolds = configuration->domainLength.max() * configuration->velocity[0] / viscosity;
 
-    if (this->doLogging)
+    if (configuration->doLogging)
     {
-        std::cout << "global length (without halo):      " << this->globalLength << std::endl;
-        std::cout << "---------------------------------------" << std::endl;
-        std::cout << "domain size (without halo):        " << this->domain.getSize() << std::endl;
-        std::cout << "domain length (without halo):      " << this->domain.getLength() << std::endl;
-        std::cout << "domain origin (without halo):      " << this->domain.getOrigin() << std::endl;
-        std::cout << "---------------------------------------" << std::endl;
-        std::cout << "timestep size:                     " << this->timestepSize << std::endl;
-        std::cout << "---------------------------------------" << std::endl;
-        std::cout << "velocity:                          " << this->velocity << std::endl;
-        std::cout << "velocity (dimension less):         " << velocityDimLess << std::endl;
-        std::cout << "acceleration:                      " << this->acceleration << std::endl;
-        std::cout << "acceleration (dimension less):     " << accelerationDimLess << std::endl;
-        std::cout << "---------------------------------------" << std::endl;
-        std::cout << "viscosity:                         " << this->viscosity << std::endl;
-        std::cout << "viscosity (dimension less):        " << viscosityDimLess << std::endl;
-        std::cout << "tau:                               " << this->tau << std::endl;
-        std::cout << "reynolds number (dimension less):  " << reynolds << std::endl;
-        std::cout << "max velocity (dimension less):     " << this->maxVelocityDimLess << std::endl;
-        std::cout << "max acceleration (dimension less): " << this->maxAccelerationDimLess << std::endl;
-        std::cout << "inv tau:                           " << this->tauInv << std::endl;
-        std::cout << "---------------------------------------" << std::endl;
-        std::cout << "store densities:                   " << this->storeDensities << std::endl;
-        std::cout << "store velocities:                  " << this->storeVelocities << std::endl;
-        std::cout << "---------------------------------------" << std::endl;
+        std::stringstream loggingFileName;
+        loggingFileName << configuration->loggingOutputDir << "/log_" << id << ".txt";
+        std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
+        if (loggingFile.is_open())
+        {
+        	loggingFile << "global length (without halo):      " << configuration->domainLength << std::endl;
+        	loggingFile << "---------------------------------------" << std::endl;
+        	loggingFile << "domain size (without halo):        " << this->domain.getSize() << std::endl;
+        	loggingFile << "domain length (without halo):      " << this->domain.getLength() << std::endl;
+            loggingFile << "domain origin (without halo):      " << this->domain.getOrigin() << std::endl;
+            loggingFile << "---------------------------------------" << std::endl;
+            loggingFile << "timestep size:                     " << timestepSize << std::endl;
+            loggingFile << "---------------------------------------" << std::endl;
+            loggingFile << "velocity:                          " << configuration->velocity << std::endl;
+            loggingFile << "velocity (dimension less):         " << velocityDimLess << std::endl;
+            loggingFile << "acceleration:                      " << configuration->acceleration << std::endl;
+            loggingFile << "acceleration (dimension less):     " << accelerationDimLess << std::endl;
+            loggingFile << "---------------------------------------" << std::endl;
+            loggingFile << "viscosity:                         " << viscosity << std::endl;
+            loggingFile << "viscosity (dimension less):        " << viscosityDimLess << std::endl;
+            loggingFile << "tau:                               " << tau << std::endl;
+            loggingFile << "reynolds number (dimension less):  " << reynolds << std::endl;
+            loggingFile << "max velocity (dimension less):     " << configuration->maxVelocityDimLess << std::endl;
+            loggingFile << "max acceleration (dimension less): " << configuration->maxAccelerationDimLess << std::endl;
+            loggingFile << "inv tau:                           " << tauInv << std::endl;
+            loggingFile << "---------------------------------------" << std::endl;
+            loggingFile << "store densities:                   " << storeDensities << std::endl;
+            loggingFile << "store velocities:                  " << storeVelocities << std::endl;
+            loggingFile << "---------------------------------------" << std::endl;
+        	loggingFile.close();
+        } else {
+            std::cerr << "----- CLbmSolver<T>::CLbmSolver() -----" << std::endl;
+            std::cerr << "There is no open file to write logs." << std::endl;
+            std::cerr << "EXECUTION WILL BE TERMINATED IMMEDIATELY" << std::endl;
+            std::cerr << "---------------------------------------" << std::endl;
+
+            exit (EXIT_FAILURE);
+        }
     }
 }
 

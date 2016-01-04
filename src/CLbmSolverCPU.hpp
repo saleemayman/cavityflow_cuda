@@ -33,15 +33,12 @@ class CLbmSolverCPU : public CLbmSolver<T>
 {
 private:
     using CLbmSolver<T>::id;
-    using CLbmSolver<T>::globalLength;
     using CLbmSolver<T>::domain;
-    using CLbmSolver<T>::velocity;
+    using CLbmSolver<T>::configuration;
     using CLbmSolver<T>::velocityDimLess;
-    using CLbmSolver<T>::acceleration;
     using CLbmSolver<T>::accelerationDimLess;
     using CLbmSolver<T>::storeDensities;
     using CLbmSolver<T>::storeVelocities;
-    using CLbmSolver<T>::doLogging;
     using CLbmSolver<T>::tauInv;
 
     CLbmSolverGPU<T>* solverGPU;
@@ -82,19 +79,10 @@ public:
     CLbmSolverCPU();
     CLbmSolverCPU(
             int id,
-            CVector<3, T> &globalLength,
             CDomain<T> &domain,
-            std::vector<Flag> boundaryConditions,
             CLbmSolverGPU<T>* solverGPU,
-            T timestepSize,
-            CVector<3, T>& velocity,
-            CVector<3, T>& acceleration,
-            T viscocity,
-            T maxVelocityDimLess,
-            T maxAccelerationDimLess,
-            bool storeDensities,
-            bool storeVelocities,
-            bool doLogging);
+            std::vector<Flag> boundaryConditions,
+            CConfiguration<T>* configuration);
     ~CLbmSolverCPU();
 
     using CLbmSolver<T>::simulationStepAlpha;

@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "libmath/CVector.hpp"
+#include "CConfiguration.hpp"
 #include "CDomain.hpp"
 #include "common.h"
 
@@ -31,7 +32,6 @@ class CLbmSolver
 {
 protected:
     int id;
-    CVector<3, T> globalLength;
     CDomain<T> domain;
     /*
      * Vector for the boundary conditions of the six faces of a cuboid.
@@ -43,18 +43,16 @@ protected:
      * boundaryConditions[5]: boundary condition for front face (largest z-coordinate)
      */
     std::vector<Flag> boundaryConditions;
+    CConfiguration<T>* configuration;
 
     T timestepSize;
-    CVector<3, T> velocity, velocityDimLess;
-    CVector<3, T> acceleration, accelerationDimLess;
+    CVector<3, T> velocityDimLess;
+    CVector<3, T> accelerationDimLess;
     T viscosity, viscosityDimLess;
     T tau;
-    T maxVelocityDimLess;
-    T maxAccelerationDimLess;
 
     bool storeDensities;
     bool storeVelocities;
-    bool doLogging;
 
     T tauInv;
 
@@ -62,18 +60,9 @@ public:
     CLbmSolver();
     CLbmSolver(
             int id,
-            CVector<3, T> &globalLength,
             CDomain<T> &domain,
             std::vector<Flag> boundaryConditions,
-            T timestepSize,
-            CVector<3, T> &velocity,
-            CVector<3, T> &acceleration,
-            T viscosity,
-            T maxVelocityDimLess,
-            T maxAccelerationDimLess,
-            bool storeDensities,
-            bool storeVelocities,
-            bool doLogging);
+            CConfiguration<T>* configuration);
     virtual ~CLbmSolver() {}
     
     virtual void simulationStepAlpha() {}
