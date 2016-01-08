@@ -70,10 +70,10 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
 
     GPU_ERROR_CHECK(cudaMalloc(&densityDistributions, NUM_LATTICE_VECTORS * this->domain.getNumOfCellsWithHalo() * sizeof(T)))
     GPU_ERROR_CHECK(cudaMalloc(&flags, this->domain.getNumOfCellsWithHalo() * sizeof(Flag)))
-    if(storeDensities)
-        GPU_ERROR_CHECK(cudaMalloc(&densities, this->domain.getNumOfCellsWithHalo() * sizeof(T)))
-    if(storeVelocities)
+    if (storeVelocities)
         GPU_ERROR_CHECK(cudaMalloc(&velocities, 3 * this->domain.getNumOfCellsWithHalo() * sizeof(T)))
+    if (storeDensities)
+        GPU_ERROR_CHECK(cudaMalloc(&densities, this->domain.getNumOfCellsWithHalo() * sizeof(T)))
 
     if (configuration->doLogging) {
         std::stringstream loggingFileName;
@@ -83,9 +83,9 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
         {
         	loggingFile << "size of allocated memory for density distributions: " << ((T)(NUM_LATTICE_VECTORS * this->domain.getNumOfCellsWithHalo() * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
             loggingFile << "size of allocated memory for flags:                 " << ((T)(this->domain.getNumOfCellsWithHalo() * sizeof(Flag)) / (T)(1<<20)) << " MBytes" << std::endl;
-            if(storeDensities)
+            if (storeVelocities)
             	loggingFile << "size of allocated memory for velocities:            " << ((T)(3 * this->domain.getNumOfCellsWithHalo() * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
-            if(storeVelocities)
+            if (storeDensities)
             	loggingFile << "size of allocated memory for densities:             " << ((T)(this->domain.getNumOfCellsWithHalo() * sizeof(T)) / (T)(1<<20)) << " MBytes" << std::endl;
         	loggingFile.close();
         } else {
@@ -145,7 +145,7 @@ CLbmSolverGPU<T>::CLbmSolverGPU(
         std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
         if (loggingFile.is_open())
         {
-        	loggingFile << "Domain successfully initialized." << std::endl;
+        	loggingFile << "GPU domain successfully initialized." << std::endl;
         	loggingFile << "---------------------------------------------" << std::endl;
         	loggingFile.close();
         } else {
@@ -229,7 +229,7 @@ void CLbmSolverGPU<T>::simulationStepAlpha(cudaStream_t* stream)
         std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
         if (loggingFile.is_open())
         {
-            loggingFile << "Alpha kernel was successfully executed on the whole subdomain." << std::endl;
+            loggingFile << "Alpha kernel was successfully executed on the whole GPU subdomain." << std::endl;
             loggingFile << "---------------------------------------------------" << std::endl;
         	loggingFile.close();
         } else {
@@ -314,7 +314,7 @@ void CLbmSolverGPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, in
         std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
         if (loggingFile.is_open())
         {
-            loggingFile << "Alpha kernel was successfully executed on the following subdomain:" << std::endl;
+            loggingFile << "Alpha kernel was successfully executed on the following GPU subdomain:" << std::endl;
             loggingFile << "origin:            " << origin << std::endl;
             loggingFile << "size:              " << size << std::endl;
             loggingFile << "---------------------------------------------------" << std::endl;
@@ -400,7 +400,7 @@ void CLbmSolverGPU<T>::simulationStepBeta(cudaStream_t* stream)
         std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
         if (loggingFile.is_open())
         {
-            loggingFile << "Beta kernel was successfully executed on the whole subdomain." << std::endl;
+            loggingFile << "Beta kernel was successfully executed on the whole GPU subdomain." << std::endl;
             loggingFile << "--------------------------------------------------" << std::endl;
         	loggingFile.close();
         } else {
@@ -490,7 +490,7 @@ void CLbmSolverGPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int
         std::ofstream loggingFile(loggingFileName.str().c_str(), std::ios::out | std::ios::app);
         if (loggingFile.is_open())
         {
-            loggingFile << "Beta kernel was successfully executed on the following subdomain." << std::endl;
+            loggingFile << "Beta kernel was successfully executed on the following GPU subdomain." << std::endl;
             loggingFile << "origin:             " << origin << std::endl;
             loggingFile << "size:               " << size << std::endl;
             loggingFile << "--------------------------------------------------" << std::endl;
@@ -612,7 +612,7 @@ void CLbmSolverGPU<T>::getDensityDistributions(T* hDensityDistributions)
 template <class T>
 void CLbmSolverGPU<T>::setDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, Direction direction, T* hDensityDistributions, cudaStream_t* stream)
 {
-    assert(0 <= direction < 6);
+    assert(0 <= direction && direction < 6);
     assert(origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0);
     assert(size[0] > 0 && size[1] > 0 && size[2] > 0);
     assert(origin[0] + size[0] <= domain.getSizeWithHalo()[0]);

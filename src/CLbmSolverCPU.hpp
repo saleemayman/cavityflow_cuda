@@ -41,40 +41,21 @@ private:
     using CLbmSolver<T>::storeVelocities;
     using CLbmSolver<T>::tauInv;
 
+    T* densityDistributions;
+    Flag* flags;
+    T* velocities;
+    T* densities;
+
     CLbmSolverGPU<T>* solverGPU;
+
     CLbmInitCPU<T>* initLbmCPU;
     CLbmAlphaCPU<T>* alphaLbmCPU;
     CLbmBetaCPU<T>* betaLbmCPU;
 
-#if !TOP_DOWN_DECOMPOSITION
-    CVector<3, int> hollowCPULeftLimit;
-    CVector<3, int> hollowCPURightLimit;
-#endif
-    CVector<3, int> domainSizeGPU;
-    CVector<3, int> domainSizeCPUWithHalo;
-
-    std::vector<T> densityDistributions;
-    std::vector<Flag> flags;
-    std::vector<T> velocities;
-    std::vector<T> densities;
-
-    int domainCellsCPUWithHalo;    
-
-    /*
-     * Maybe these members are not required if data copy operations during sync
-     * operations and "inner cells operations"/"boundary cells operations" can
-     * be achieved "in place", e.g. via memcpy().
-     */
-    /*
-    T** getDensityDistributionsIntraHalo, setDensityDistributionsIntraHalo;
-    T** getDensityDistributionsInterHalo, setDensityDistributionsInterHalo;
-    */
-    std::vector<CComm<T>*> commContainer;
-
-	void getVariable(CVector<3, int> &origin, CVector<3, int> &size, std::vector<T> &variableData, T* src, int numDimensions);
-	void getVariable(CVector<3, int> &origin, CVector<3, int> &size, std::vector<Flag> &variableData, Flag* src, int numDimensions);
-	void setVariable(CVector<3, int> &origin, CVector<3, int> &size, std::vector<T> &variableData, T* src, int numDimensions);
-	void setVariable(CVector<3, int> &origin, CVector<3, int> &size, std::vector<Flag> &variableData, Flag* src, int numDimensions);
+    void getVariable(CVector<3, int> &origin, CVector<3, int> &size, T* src, T* dst);
+    void getVariable(CVector<3, int> &origin, CVector<3, int> &size, Flag* src, Flag* dst);
+    void setVariable(CVector<3, int> &origin, CVector<3, int> &size, T* src, T* dst);
+    void setVariable(CVector<3, int> &origin, CVector<3, int> &size, Flag* src, Flag* dst);
 public:
     CLbmSolverCPU();
     CLbmSolverCPU(
@@ -96,6 +77,7 @@ public:
     void simulationStepBeta(CVector<3, int> origin, CVector<3, int> size);
     void getDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* dst);
     void getDensityDistributions(T* dst);
+    void setDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, Direction direction, T* src);
     void setDensityDistributions(CVector<3, int> &origin, CVector<3, int> &size, T* src);
     void setDensityDistributions(T* src);
     void getFlags(CVector<3, int> &origin, CVector<3, int> &size, Flag* dst);

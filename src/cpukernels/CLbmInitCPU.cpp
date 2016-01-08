@@ -19,218 +19,90 @@
 
 #include "CLbmInitCPU.hpp"
 
-#if !TOP_DOWN_DECOMPOSITION
 template<class T>
 CLbmInitCPU<T>::CLbmInitCPU(
-                    int domainCellsCPUWithHalo,
-                    CVector<3, int> domainSizeWithHalo,
-                    CVector<3, int> hollowCPULeftLimit,
-                    CVector<3, int> hollowCPURightLimit,
-                    std::vector<Flag>& boundaryConditions) : 
-                        domainCellsCPUWithHalo(domainCellsCPUWithHalo),
-                        domainSizeWithHalo(domainSizeWithHalo),
-                        hollowCPULeftLimit(hollowCPULeftLimit),
-                        hollowCPURightLimit(hollowCPURightLimit),
-                        boundaryConditionRight(boundaryConditions[0]),
-                        boundaryConditionLeft(boundaryConditions[1]),
-                        boundaryConditionTop(boundaryConditions[2]),
-                        boundaryConditionBottom(boundaryConditions[3]),
-                        boundaryConditionFront(boundaryConditions[4]),
-                        boundaryConditionBack(boundaryConditions[5])
-{
-    localToGlobalIndexMap = new std::vector<int>(domainCellsCPUWithHalo);
-}
-#else
-template<class T>
-CLbmInitCPU<T>::CLbmInitCPU(
-                    int domainCellsCPUWithHalo,
-                    CVector<3, int> domainSizeWithHalo,
-                    std::vector<Flag>& boundaryConditions) : 
-                        domainCellsCPUWithHalo(domainCellsCPUWithHalo),
-                        domainSizeWithHalo(domainSizeWithHalo),
-                        boundaryConditionRight(boundaryConditions[0]),
-                        boundaryConditionLeft(boundaryConditions[1]),
-                        boundaryConditionTop(boundaryConditions[2]),
-                        boundaryConditionBottom(boundaryConditions[3]),
-                        boundaryConditionFront(boundaryConditions[4]),
-                        boundaryConditionBack(boundaryConditions[5])
+        CVector<3, int> domainSize,
+        std::vector<Flag> boundaryConditions) :
+        domainSize(domainSize),
+        boundaryConditions(boundaryConditions),
+        numOfCells(domainSize.elements())
 {
 }
-#endif
 
 template<class T>
 CLbmInitCPU<T>::~CLbmInitCPU()
 {
-#if !TOP_DOWN_DECOMPOSITION
-    delete localToGlobalIndexMap;
-#endif
 }
 
-
 template<class T>
-void CLbmInitCPU<T>::setFlags(std::vector<Flag> &flags)
+void CLbmInitCPU<T>::setFlags(Flag* flags)
 {
-    // linear cell index
-    int cellID = 0;
-    int globalID = 0;
+    int id = 0;
     Flag flag;
 
-    /*
-     * Iterate over all CPU domain cells in the following order:
-     * x-cells, y-cells, z-cells.
-     */
-    for (int z = 0; z < domainSizeWithHalo[2]; z++)
+    for (int z = 0; z < domainSize[2]; z++)
     {
-        for (int y = 0; y < domainSizeWithHalo[1]; y++)
+        for (int y = 0; y < domainSize[1]; y++)
         {
-            for (int x = 0; x < domainSizeWithHalo[0]; x++)
+            for (int x = 0; x < domainSize[0]; x++)
             {
                 // initialize flag field
                 flag = FLUID;
-
-#if !TOP_DOWN_DECOMPOSITION
-                // if inside GPU domain then skip cell
-                if ((x > (hollowCPULeftLimit[0] + 1) && x < (hollowCPURightLimit[0] - 1)) &&
-                    (y > (hollowCPULeftLimit[1] + 1) && y < (hollowCPURightLimit[1] - 1)) &&
-                    (z > (hollowCPULeftLimit[2] + 1) && z < (hollowCPURightLimit[2] - 1)))
-                {
-                    globalID++;
-                    continue;
-                }
-#endif
                 // set the flags for x-direction                
                 if (x == 0)
-                    flag = boundaryConditionRight;
-#if !TOP_DOWN_DECOMPOSITION
-                if (x == hollowCPULeftLimit[0] + 1 &&
-                        (y > hollowCPULeftLimit[1] && y < hollowCPURightLimit[1]) &&
-                        (z > hollowCPULeftLimit[2] && z < hollowCPURightLimit[2]) &&
-                        flag != OBSTACLE)
-                    flag = GHOST_LAYER;
-                if (x == hollowCPURightLimit[0] - 1 &&
-                        (y > hollowCPULeftLimit[1] && y < hollowCPURightLimit[1]) && 
-                        (z > hollowCPULeftLimit[2] && z < hollowCPURightLimit[2]) &&
-                        flag != OBSTACLE)
-                    flag = GHOST_LAYER;
-#endif
-                if (x == domainSizeWithHalo[0]-1 && flag != OBSTACLE)
-                    flag = boundaryConditionLeft;
+                    flag = boundaryConditions[0];
+                if (x == domainSize[0]-1 && flag != OBSTACLE)
+                    flag = boundaryConditions[1];
                 
                 // set the flags for y-direction                
                 if (y == 0 && flag != OBSTACLE)
-                    flag = boundaryConditionTop;
-#if !TOP_DOWN_DECOMPOSITION
-                if (y == hollowCPULeftLimit[1] + 1 && 
-                        (x > hollowCPULeftLimit[0] && x < hollowCPURightLimit[0]) && 
-                        (z > hollowCPULeftLimit[2] && z < hollowCPURightLimit[2]) && 
-                        flag != OBSTACLE)
-                    flag = GHOST_LAYER;
-                if (y == hollowCPURightLimit[1] - 1 && 
-                        (x > hollowCPULeftLimit[0] && x < hollowCPURightLimit[0]) && 
-                        (z > hollowCPULeftLimit[2] && z < hollowCPURightLimit[2]) && 
-                        flag != OBSTACLE)
-                    flag = GHOST_LAYER;
-#endif
-                if (y == domainSizeWithHalo[1]-1 && flag != OBSTACLE)
-                    flag = boundaryConditionBottom;
+                    flag = boundaryConditions[2];
+                if (y == domainSize[1]-1 && flag != OBSTACLE)
+                    flag = boundaryConditions[3];
                 
                 // set the flags for z-direction                
                 if (z == 0 && flag != OBSTACLE)
-                    flag = boundaryConditionFront;
-#if !TOP_DOWN_DECOMPOSITION
-                if (z == hollowCPULeftLimit[2] + 1 && 
-                        (x > hollowCPULeftLimit[0] && x < hollowCPURightLimit[0]) &&
-                        (y > hollowCPULeftLimit[1] && y < hollowCPURightLimit[1]) &&  
-                        flag != OBSTACLE)
-                    flag = GHOST_LAYER;
-                if (z == hollowCPURightLimit[2] - 1 && 
-                        (x > hollowCPULeftLimit[0] && x < hollowCPURightLimit[0]) &&
-                        (y > hollowCPULeftLimit[1] && y < hollowCPURightLimit[1]) && 
-                        flag != OBSTACLE)
-                    flag = GHOST_LAYER;
-#endif
-                if (z == domainSizeWithHalo[2]-1 && flag != OBSTACLE)
-                    flag = boundaryConditionBack;
+                    flag = boundaryConditions[4];
+                if (z == domainSize[2]-1 && flag != OBSTACLE)
+                    flag = boundaryConditions[5];
 
-                flags[cellID] = flag;
+                flags[id] = flag;
 
-#if !TOP_DOWN_DECOMPOSITION
-                // add the global cell index to an array
-                localToGlobalIndexMap->operator[](cellID) = globalID;
-                globalID++;
-#endif
-                // increment cell linear id
-                cellID++;
+                id++;
             }
         }
     }
 }
 
-#if !TOP_DOWN_DECOMPOSITION
-template<class T>
-int CLbmInitCPU<T>::getLocalIndex(int globalId)
-{
-    std::vector<int>::iterator localIndex;
-    localIndex = std::lower_bound(localToGlobalIndexMap->begin(), localToGlobalIndexMap->end(), globalId);
-
-    if (localIndex != localToGlobalIndexMap->end() && *localIndex == globalId)
-    {
-        return (int)(localIndex - localToGlobalIndexMap->begin());
-    }
-    else
-    {
-        return -1;
-    }
-}
-
-template<class T>
-int CLbmInitCPU<T>::getGlobalIndex(int localId)
-{
-    return localToGlobalIndexMap->operator[](localId);
-}
-
-template<class T>
-std::vector<int>* CLbmInitCPU<T>::getCellIndexMap()
-{
-    return localToGlobalIndexMap;
-}
-#endif
-
-
 template<class T>
 void CLbmInitCPU<T>::initLbm(
-            std::vector<T> &densityDistributions,
-            std::vector<Flag> &flags,
-            std::vector<T> &velocities,
-            std::vector<T> &densities,
-            const bool storeDensities,
-            const bool storeVelocities)
+        T* densityDistributions,
+        Flag* flags,
+        T* densities,
+        T* velocities,
+        const bool storeDensities,
+        const bool storeVelocities)
 {
-    // initialize the flag field
     setFlags(flags);
 
-    /*
-     * Iterate over all CPU domain cells.
-     * 
-     */
-    for (int i = 0; i < domainCellsCPUWithHalo; i++)
+    for (int id = 0; id < numOfCells; id++)
     {
         // initialize the cell density distributions
-        velocity_x = 0;
-        velocity_y = 0;
-        velocity_z = 0;
-        rho = 1.0f;
+        velocity_x = (T)0;
+        velocity_y = (T)0;
+        velocity_z = (T)0;
+        rho = (T)1;
 
         // compute and store velocity
         vela2 = velocity_x*velocity_x;
-        dd_param = rho - (T)(3.0f/2.0f)*(vela2);
+        dd_param = rho - ((T)3/(T)2)*(vela2);
 
-        densityDistributions[i + 0*domainCellsCPUWithHalo] = eq_dd_a0(velocity_x, vela2, dd_param);
-        densityDistributions[i + 1*domainCellsCPUWithHalo] = eq_dd_a1(velocity_x, vela2, dd_param);
+        densityDistributions[id + 0*numOfCells] = eq_dd_a0(velocity_x, vela2, dd_param);
+        densityDistributions[id + 1*numOfCells] = eq_dd_a1(velocity_x, vela2, dd_param);
 
         vela2 = velocity_y*velocity_y;
-        densityDistributions[i + 2*domainCellsCPUWithHalo] = eq_dd_a0(velocity_y, vela2, dd_param);
-        densityDistributions[i + 3*domainCellsCPUWithHalo] = eq_dd_a1(velocity_y, vela2, dd_param);
+        densityDistributions[id + 2*numOfCells] = eq_dd_a0(velocity_y, vela2, dd_param);
+        densityDistributions[id + 3*numOfCells] = eq_dd_a1(velocity_y, vela2, dd_param);
 
         /***********************
          * DD1
@@ -238,14 +110,14 @@ void CLbmInitCPU<T>::initLbm(
         vela_velb = velocity_x+velocity_y;
         vela_velb_2 = vela_velb*vela_velb;
 
-        densityDistributions[i + 4*domainCellsCPUWithHalo] = eq_dd4(vela_velb, vela_velb_2, dd_param);
-        densityDistributions[i + 5*domainCellsCPUWithHalo] = eq_dd5(vela_velb, vela_velb_2, dd_param);
+        densityDistributions[id + 4*numOfCells] = eq_dd4(vela_velb, vela_velb_2, dd_param);
+        densityDistributions[id + 5*numOfCells] = eq_dd5(vela_velb, vela_velb_2, dd_param);
 
 
         vela_velb = velocity_x-velocity_y;
         vela_velb_2 = vela_velb*vela_velb;
-        densityDistributions[i + 6*domainCellsCPUWithHalo] = eq_dd4(vela_velb, vela_velb_2, dd_param);
-        densityDistributions[i + 7*domainCellsCPUWithHalo] = eq_dd5(vela_velb, vela_velb_2, dd_param);
+        densityDistributions[id + 6*numOfCells] = eq_dd4(vela_velb, vela_velb_2, dd_param);
+        densityDistributions[id + 7*numOfCells] = eq_dd5(vela_velb, vela_velb_2, dd_param);
 
         /***********************
          * DD2
@@ -253,14 +125,14 @@ void CLbmInitCPU<T>::initLbm(
         vela_velb = velocity_x+velocity_z;
         vela_velb_2 = vela_velb*vela_velb;
 
-        densityDistributions[i + 8*domainCellsCPUWithHalo] = eq_dd4(vela_velb, vela_velb_2, dd_param);
-        densityDistributions[i + 9*domainCellsCPUWithHalo] = eq_dd5(vela_velb, vela_velb_2, dd_param);
+        densityDistributions[id + 8*numOfCells] = eq_dd4(vela_velb, vela_velb_2, dd_param);
+        densityDistributions[id + 9*numOfCells] = eq_dd5(vela_velb, vela_velb_2, dd_param);
 
         vela_velb = velocity_x-velocity_z;
         vela_velb_2 = vela_velb*vela_velb;
 
-        densityDistributions[i + 10*domainCellsCPUWithHalo] = eq_dd4(vela_velb, vela_velb_2, dd_param);
-        densityDistributions[i + 11*domainCellsCPUWithHalo] = eq_dd5(vela_velb, vela_velb_2, dd_param);
+        densityDistributions[id + 10*numOfCells] = eq_dd4(vela_velb, vela_velb_2, dd_param);
+        densityDistributions[id + 11*numOfCells] = eq_dd5(vela_velb, vela_velb_2, dd_param);
 
         /***********************
          * DD3
@@ -268,38 +140,35 @@ void CLbmInitCPU<T>::initLbm(
         vela_velb = velocity_y+velocity_z;
         vela_velb_2 = vela_velb*vela_velb;
 
-        densityDistributions[i + 12*domainCellsCPUWithHalo] = eq_dd4(vela_velb, vela_velb_2, dd_param);
-        densityDistributions[i + 13*domainCellsCPUWithHalo] = eq_dd5(vela_velb, vela_velb_2, dd_param);
+        densityDistributions[id + 12*numOfCells] = eq_dd4(vela_velb, vela_velb_2, dd_param);
+        densityDistributions[id + 13*numOfCells] = eq_dd5(vela_velb, vela_velb_2, dd_param);
 
         vela_velb = velocity_y-velocity_z;
         vela_velb_2 = vela_velb*vela_velb;
 
-        densityDistributions[i + 14*domainCellsCPUWithHalo] = eq_dd4(vela_velb, vela_velb_2, dd_param);
-        densityDistributions[i + 15*domainCellsCPUWithHalo] = eq_dd5(vela_velb, vela_velb_2, dd_param);
+        densityDistributions[id + 14*numOfCells] = eq_dd4(vela_velb, vela_velb_2, dd_param);
+        densityDistributions[id + 15*numOfCells] = eq_dd5(vela_velb, vela_velb_2, dd_param);
 
         /***********************
          * DD4
          ***********************/
         vela2 = velocity_z*velocity_z;
 
-        densityDistributions[i + 16*domainCellsCPUWithHalo] = eq_dd_a0(velocity_z, vela2, dd_param);
-        densityDistributions[i + 17*domainCellsCPUWithHalo] = eq_dd_a1(velocity_z, vela2, dd_param);
-        densityDistributions[i + 18*domainCellsCPUWithHalo] = eq_dd18(dd_param);
+        densityDistributions[id + 16*numOfCells] = eq_dd_a0(velocity_z, vela2, dd_param);
+        densityDistributions[id + 17*numOfCells] = eq_dd_a1(velocity_z, vela2, dd_param);
+        densityDistributions[id + 18*numOfCells] = eq_dd18(dd_param);
 
         if (storeVelocities)
         {
-            velocities[i] = velocity_x;
-            velocities[i + domainCellsCPUWithHalo] = velocity_y;
-            velocities[i + 2*domainCellsCPUWithHalo] = velocity_z;
+            velocities[id] = velocity_x;
+            velocities[id + numOfCells] = velocity_y;
+            velocities[id + 2*numOfCells] = velocity_z;
         }
 
         if (storeDensities)
-        {
-            densities[i] = rho;
-        }
+            densities[id] = rho;
     }
 }
-
 
 template class CLbmInitCPU<double>;
 template class CLbmInitCPU<float>;

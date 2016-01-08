@@ -20,55 +20,39 @@
 #ifndef LBM_BETACPU_HPP
 #define LBM_BETACPU_HPP
 
-#include <vector>
-#include <algorithm>
-
-#include "CLbmInitCPU.hpp"
 #include "../common.h"
 #include "../libmath/CVector.hpp"
-#include "../CDomain.hpp"
 
 template<class T>
 class CLbmBetaCPU
 {
 private:
-    int domainCellsCPUWithHalo;
-    CVector<3, int> domainSizeWithHalo;
-    //std::vector<int> *localToGlobalIndexMap;
-    CLbmInitCPU<T> *initLbmCPU;
+    CVector<3, int> domainSize;
     CVector<3, T> gravitation;
-	std::vector<int> *localIndices;
+    int numOfCellsWithHalo;
 
-	bool isSubRegion;
-
-    int domainCells;
-    int domainCellsInXYPlane;
     int deltaPosX, deltaNegX;
     int deltaPosY, deltaNegY;
     int deltaPosZ, deltaNegZ;
 
-    // physical variables
+    T dd_param;
+    T dd0, dd1, dd2, dd3, dd4, dd5, dd6, dd7, dd8, dd9, dd10, dd11, dd12, dd13, dd14, dd15, dd16, dd17, dd18;
+    T rho;
     T vel2, vela2, vela_velb, vela_velb_2;
     T velocity_x, velocity_y, velocity_z;
-    T rho, dd_param;
-    T dd0, dd1, dd2, dd3, dd4, dd5, dd6, dd7, dd8, dd9;
-    T dd10, dd11, dd12, dd13, dd14, dd15, dd16, dd17, dd18;
 
     int domainWrap(int A, int domainCells, bool isPowTwo);
 public:
     CLbmBetaCPU(
-            int domainCellsCPUWithHalo,
-            CVector<3, int> domainSizeWithHalo,
-            //std::vector<int> *localToGlobalIndexMap,
-            CLbmInitCPU<T> *initLbmCPU,
+            CVector<3, int> domainSize,
             CVector<3, T> gravitation);
     ~CLbmBetaCPU();
 
     void betaKernelCPU(
-            std::vector<T> &densityDistributions,
-            std::vector<Flag> &flags,
-            std::vector<T> &velocities,
-            std::vector<T> &densities,
+            T* densityDistributions,
+            Flag* flags,
+            T* densities,
+            T* velocities,
             const T inv_tau,
             const T drivenCavityVelocity,
             CVector<3, int> origin,
@@ -76,6 +60,5 @@ public:
             const bool isDomainPowOfTwo,
             const bool storeDensities,
             const bool storeVelocities);
-
 };
 #endif

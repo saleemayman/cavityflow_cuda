@@ -94,8 +94,7 @@ CController<T>::CController(
             this->configuration);
     solverCPU = new CLbmSolverCPU<T>(
             this->id,
-            // domainCPU,
-            domainGPU,
+            domainCPU,
             solverGPU,
             this->boundaryConditions,
             this->configuration);
@@ -271,7 +270,8 @@ void CController<T>::stepAlpha()
             }
         }
 
-        solverGPU->simulationStepAlpha(boundaryOrigin, boundarySize, &streams->at(i));
+        // solverGPU->simulationStepAlpha(boundaryOrigin, boundarySize, &streams->at(i));
+        solverCPU->simulationStepAlpha(boundaryOrigin, boundarySize);
     }
     GPU_ERROR_CHECK(cudaDeviceSynchronize())
 #endif
@@ -297,7 +297,8 @@ void CController<T>::stepAlpha()
         }
     }
 
-    solverGPU->simulationStepAlpha(innerOrigin, innerSize, &defaultStream);
+    // solverGPU->simulationStepAlpha(innerOrigin, innerSize, &defaultStream);
+    solverCPU->simulationStepAlpha(innerOrigin, innerSize);
 
 #ifdef USE_MPI
     int sendIdx, recvIdx;
@@ -364,7 +365,8 @@ void CController<T>::stepAlpha()
         sendOrigin = communication[sendIdx].getSendOrigin();
         sendSize = communication[sendIdx].getSendSize();
 
-        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        // solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        solverCPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
 
         MPI_Isend(
@@ -383,7 +385,8 @@ void CController<T>::stepAlpha()
         sendOrigin = communication[sendIdx].getSendOrigin();
         sendSize = communication[sendIdx].getSendSize();
 
-        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        // solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        solverCPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
 
         MPI_Isend(
@@ -404,7 +407,8 @@ void CController<T>::stepAlpha()
 
         MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
 
-        solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        // solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        solverCPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
 
         recvIdx++;
@@ -416,7 +420,8 @@ void CController<T>::stepAlpha()
 
         MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
 
-        solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        // solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        solverCPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
 
         recvIdx++;
@@ -426,7 +431,8 @@ void CController<T>::stepAlpha()
         sendOrigin = communication[sendIdx].getSendOrigin();
         sendSize = communication[sendIdx].getSendSize();
 
-        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        // solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        solverCPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
 
         MPI_Isend(
@@ -445,7 +451,8 @@ void CController<T>::stepAlpha()
         sendOrigin = communication[sendIdx].getSendOrigin();
         sendSize = communication[sendIdx].getSendSize();
 
-        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        // solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        solverCPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
 
         MPI_Isend(
@@ -466,7 +473,8 @@ void CController<T>::stepAlpha()
 
         MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
 
-        solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        // solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        solverCPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
 
         recvIdx++;
@@ -478,7 +486,8 @@ void CController<T>::stepAlpha()
 
         MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
 
-        solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        // solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        solverCPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
 
         recvIdx++;
@@ -488,7 +497,8 @@ void CController<T>::stepAlpha()
         sendOrigin = communication[sendIdx].getSendOrigin();
         sendSize = communication[sendIdx].getSendSize();
 
-        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        // solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        solverCPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
 
         MPI_Isend(
@@ -507,7 +517,8 @@ void CController<T>::stepAlpha()
         sendOrigin = communication[sendIdx].getSendOrigin();
         sendSize = communication[sendIdx].getSendSize();
 
-        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        // solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        solverCPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
 
         MPI_Isend(
@@ -528,7 +539,8 @@ void CController<T>::stepAlpha()
 
         MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
 
-        solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        // solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        solverCPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
 
         recvIdx++;
@@ -540,7 +552,8 @@ void CController<T>::stepAlpha()
 
         MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
 
-        solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        // solverGPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        solverCPU->setDensityDistributions(recvOrigin, recvSize, recvBuffers->at(recvIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
 
         recvIdx++;
@@ -687,7 +700,8 @@ void CController<T>::stepBeta()
     		}
         }
 
-        solverGPU->simulationStepBeta(boundaryOrigin, boundarySize, &streams->at(i));
+        // solverGPU->simulationStepBeta(boundaryOrigin, boundarySize, &streams->at(i));
+        solverCPU->simulationStepBeta(boundaryOrigin, boundarySize);
     }
     GPU_ERROR_CHECK(cudaDeviceSynchronize())
 #endif
@@ -713,7 +727,8 @@ void CController<T>::stepBeta()
 		}
     }
 
-    solverGPU->simulationStepBeta(innerOrigin, innerSize, &defaultStream);
+    // solverGPU->simulationStepBeta(innerOrigin, innerSize, &defaultStream);
+    solverCPU->simulationStepBeta(innerOrigin, innerSize);
 
 #ifdef USE_MPI
     int sendIdx, recvIdx;
@@ -780,7 +795,8 @@ void CController<T>::stepBeta()
         sendOrigin = communication[sendIdx].getRecvOrigin();
         sendSize = communication[sendIdx].getRecvSize();
 
-        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        // solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        solverCPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
 
         MPI_Isend(
@@ -799,7 +815,8 @@ void CController<T>::stepBeta()
         sendOrigin = communication[sendIdx].getRecvOrigin();
         sendSize = communication[sendIdx].getRecvSize();
 
-        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        // solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        solverCPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
 
         MPI_Isend(
@@ -820,7 +837,8 @@ void CController<T>::stepBeta()
 
         MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
 
-        solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        // solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        solverCPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
 
         recvIdx++;
@@ -832,7 +850,8 @@ void CController<T>::stepBeta()
 
         MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
 
-        solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        // solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        solverCPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
 
         recvIdx++;
@@ -842,7 +861,8 @@ void CController<T>::stepBeta()
         sendOrigin = communication[sendIdx].getRecvOrigin();
         sendSize = communication[sendIdx].getRecvSize();
 
-        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        // solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        solverCPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
 
         MPI_Isend(
@@ -861,7 +881,8 @@ void CController<T>::stepBeta()
         sendOrigin = communication[sendIdx].getRecvOrigin();
         sendSize = communication[sendIdx].getRecvSize();
 
-        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        // solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        solverCPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
 
         MPI_Isend(
@@ -882,7 +903,8 @@ void CController<T>::stepBeta()
 
         MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
 
-        solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        // solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        solverCPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
 
         recvIdx++;
@@ -894,7 +916,8 @@ void CController<T>::stepBeta()
 
         MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
 
-        solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        // solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        solverCPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
 
         recvIdx++;
@@ -904,7 +927,8 @@ void CController<T>::stepBeta()
         sendOrigin = communication[sendIdx].getRecvOrigin();
         sendSize = communication[sendIdx].getRecvSize();
 
-        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        // solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        solverCPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
 
         MPI_Isend(
@@ -923,7 +947,8 @@ void CController<T>::stepBeta()
         sendOrigin = communication[sendIdx].getRecvOrigin();
         sendSize = communication[sendIdx].getRecvSize();
 
-        solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        // solverGPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx), &streams->at(sendIdx));
+        solverCPU->getDensityDistributions(sendOrigin, sendSize, sendBuffers->at(sendIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(sendIdx)))
 
         MPI_Isend(
@@ -944,7 +969,8 @@ void CController<T>::stepBeta()
 
         MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
 
-        solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        // solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        solverCPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
 
         recvIdx++;
@@ -956,7 +982,8 @@ void CController<T>::stepBeta()
 
         MPI_Wait(&recvRequests[recvIdx], MPI_STATUS_IGNORE);
 
-        solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        // solverGPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx), &streams->at(recvIdx));
+        solverCPU->setDensityDistributions(recvOrigin, recvSize, communication[recvIdx].getDirection(), recvBuffers->at(recvIdx));
         GPU_ERROR_CHECK(cudaStreamSynchronize(streams->at(recvIdx)))
 
         recvIdx++;
@@ -1267,8 +1294,8 @@ void CController<T>::setDrivenCavitySzenario()
 		}
     }
 
-    CVector<3, int> origin(1, domain.getSizeWithHalo()[1] - 2, 1);
-    CVector<3, int> size(domain.getSize()[0], 1, domain.getSize()[2]);
+    CVector<3, int> origin(1, solverCPU->getDomain()->getSizeWithHalo()[1] - 2, 1);
+    CVector<3, int> size(solverCPU->getDomain()->getSize()[0], 1, solverCPU->getDomain()->getSize()[2]);
 
     if (configuration->doLogging)
     {
@@ -1298,7 +1325,8 @@ void CController<T>::setDrivenCavitySzenario()
         src[i] = VELOCITY_INJECTION;
     }
 
-    solverGPU->setFlags(origin, size, src);
+    // solverGPU->setFlags(origin, size, src);
+    solverCPU->setFlags(origin, size, src);
 
     delete[] src;
 }
@@ -1433,7 +1461,7 @@ void CController<T>::run()
             benchmarkFile << "time:            " << elapsed << "s" << std::endl;
             benchmarkFile << "iterations:      " << iterationsPerSecond << "s^-1" << std::endl;
             benchmarkFile << "lattice updates: " << lups << "GLUPS" << std::endl;
-            benchmarkFile << "bandwidth:       " << bandwidth << "GB/s" << std::endl;
+            benchmarkFile << "bandwidth:       " << bandwidth << "GBytes/s" << std::endl;
             benchmarkFile.close();
         } else {
             std::cerr << "----- CController<T>::run() -----" << std::endl;
@@ -1477,8 +1505,8 @@ CDomain<T>* CController<T>::getDomain() {
 
 template <class T>
 CLbmSolver<T>* CController<T>::getSolver() {
+    return solverCPU;
     // return solverGPU;
-    return solverGPU;
 }
 
 template class CController<double>;
