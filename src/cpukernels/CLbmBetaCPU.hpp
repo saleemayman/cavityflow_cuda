@@ -29,7 +29,7 @@ class CLbmBetaCPU
 private:
     CVector<3, int> domainSize;
     CVector<3, T> gravitation;
-    int numOfCellsWithHalo;
+    int numOfCells;
 
     int deltaPosX, deltaNegX;
     int deltaPosY, deltaNegY;

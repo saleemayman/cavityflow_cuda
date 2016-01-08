@@ -360,7 +360,7 @@ void CController<T>::stepAlpha()
 
     sendIdx = recvIdx = 0;
 
-    if (communication[sendIdx].getDirection() == LEFT)
+    if (sendIdx < communication.size() && communication[sendIdx].getDirection() == LEFT)
     {
         sendOrigin = communication[sendIdx].getSendOrigin();
         sendSize = communication[sendIdx].getSendSize();
@@ -380,7 +380,7 @@ void CController<T>::stepAlpha()
 
         sendIdx++;
     }
-    if (communication[sendIdx].getDirection() == RIGHT)
+    if (sendIdx < communication.size() && communication[sendIdx].getDirection() == RIGHT)
     {
         sendOrigin = communication[sendIdx].getSendOrigin();
         sendSize = communication[sendIdx].getSendSize();
@@ -400,7 +400,7 @@ void CController<T>::stepAlpha()
 
         sendIdx++;
     }
-    if (communication[recvIdx].getDirection() == LEFT)
+    if (recvIdx < communication.size() && communication[recvIdx].getDirection() == LEFT)
     {
         recvOrigin = communication[recvIdx].getRecvOrigin();
         recvSize = communication[recvIdx].getRecvSize();
@@ -413,7 +413,7 @@ void CController<T>::stepAlpha()
 
         recvIdx++;
     }
-    if (communication[recvIdx].getDirection() == RIGHT)
+    if (recvIdx < communication.size() && communication[recvIdx].getDirection() == RIGHT)
     {
         recvOrigin = communication[recvIdx].getRecvOrigin();
         recvSize = communication[recvIdx].getRecvSize();
@@ -426,7 +426,7 @@ void CController<T>::stepAlpha()
 
         recvIdx++;
     }
-    if (communication[sendIdx].getDirection() == BOTTOM)
+    if (sendIdx < communication.size() && communication[sendIdx].getDirection() == BOTTOM)
     {
         sendOrigin = communication[sendIdx].getSendOrigin();
         sendSize = communication[sendIdx].getSendSize();
@@ -446,7 +446,7 @@ void CController<T>::stepAlpha()
 
         sendIdx++;
     }
-    if (communication[sendIdx].getDirection() == TOP)
+    if (sendIdx < communication.size() && communication[sendIdx].getDirection() == TOP)
     {
         sendOrigin = communication[sendIdx].getSendOrigin();
         sendSize = communication[sendIdx].getSendSize();
@@ -466,7 +466,7 @@ void CController<T>::stepAlpha()
 
         sendIdx++;
     }
-    if (communication[recvIdx].getDirection() == BOTTOM)
+    if (recvIdx < communication.size() && communication[recvIdx].getDirection() == BOTTOM)
     {
         recvOrigin = communication[recvIdx].getRecvOrigin();
         recvSize = communication[recvIdx].getRecvSize();
@@ -479,7 +479,7 @@ void CController<T>::stepAlpha()
 
         recvIdx++;
     }
-    if (communication[recvIdx].getDirection() == TOP)
+    if (recvIdx < communication.size() && communication[recvIdx].getDirection() == TOP)
     {
         recvOrigin = communication[recvIdx].getRecvOrigin();
         recvSize = communication[recvIdx].getRecvSize();
@@ -492,7 +492,7 @@ void CController<T>::stepAlpha()
 
         recvIdx++;
     }
-    if (communication[sendIdx].getDirection() == BACK)
+    if (sendIdx < communication.size() && communication[sendIdx].getDirection() == BACK)
     {
         sendOrigin = communication[sendIdx].getSendOrigin();
         sendSize = communication[sendIdx].getSendSize();
@@ -512,7 +512,7 @@ void CController<T>::stepAlpha()
 
         sendIdx++;
     }
-    if (communication[sendIdx].getDirection() == FRONT)
+    if (sendIdx < communication.size() && communication[sendIdx].getDirection() == FRONT)
     {
         sendOrigin = communication[sendIdx].getSendOrigin();
         sendSize = communication[sendIdx].getSendSize();
@@ -532,7 +532,7 @@ void CController<T>::stepAlpha()
 
         sendIdx++;
     }
-    if (communication[recvIdx].getDirection() == BACK)
+    if (recvIdx < communication.size() && communication[recvIdx].getDirection() == BACK)
     {
         recvOrigin = communication[recvIdx].getRecvOrigin();
         recvSize = communication[recvIdx].getRecvSize();
@@ -545,7 +545,7 @@ void CController<T>::stepAlpha()
 
         recvIdx++;
     }
-    if (communication[recvIdx].getDirection() == FRONT)
+    if (recvIdx < communication.size() && communication[recvIdx].getDirection() == FRONT)
     {
         recvOrigin = communication[recvIdx].getRecvOrigin();
         recvSize = communication[recvIdx].getRecvSize();
@@ -790,7 +790,7 @@ void CController<T>::stepBeta()
 
     sendIdx = recvIdx = 0;
 
-    if (communication[sendIdx].getDirection() == LEFT)
+    if (sendIdx < communication.size() && communication[sendIdx].getDirection() == LEFT)
     {
         sendOrigin = communication[sendIdx].getRecvOrigin();
         sendSize = communication[sendIdx].getRecvSize();
@@ -810,7 +810,7 @@ void CController<T>::stepBeta()
 
         sendIdx++;
     }
-    if (communication[sendIdx].getDirection() == RIGHT)
+    if (sendIdx < communication.size() && communication[sendIdx].getDirection() == RIGHT)
     {
         sendOrigin = communication[sendIdx].getRecvOrigin();
         sendSize = communication[sendIdx].getRecvSize();
@@ -830,7 +830,7 @@ void CController<T>::stepBeta()
 
         sendIdx++;
     }
-    if (communication[recvIdx].getDirection() == LEFT)
+    if (recvIdx < communication.size() && communication[recvIdx].getDirection() == LEFT)
     {
         recvOrigin = communication[recvIdx].getSendOrigin();
         recvSize = communication[recvIdx].getSendSize();
@@ -843,7 +843,7 @@ void CController<T>::stepBeta()
 
         recvIdx++;
     }
-    if (communication[recvIdx].getDirection() == RIGHT)
+    if (recvIdx < communication.size() && communication[recvIdx].getDirection() == RIGHT)
     {
         recvOrigin = communication[recvIdx].getSendOrigin();
         recvSize = communication[recvIdx].getSendSize();
@@ -856,7 +856,7 @@ void CController<T>::stepBeta()
 
         recvIdx++;
     }
-    if (communication[sendIdx].getDirection() == BOTTOM)
+    if (sendIdx < communication.size() && communication[sendIdx].getDirection() == BOTTOM)
     {
         sendOrigin = communication[sendIdx].getRecvOrigin();
         sendSize = communication[sendIdx].getRecvSize();
@@ -876,7 +876,7 @@ void CController<T>::stepBeta()
 
         sendIdx++;
     }
-    if (communication[sendIdx].getDirection() == TOP)
+    if (sendIdx < communication.size() && communication[sendIdx].getDirection() == TOP)
     {
         sendOrigin = communication[sendIdx].getRecvOrigin();
         sendSize = communication[sendIdx].getRecvSize();
@@ -896,7 +896,7 @@ void CController<T>::stepBeta()
 
         sendIdx++;
     }
-    if (communication[recvIdx].getDirection() == BOTTOM)
+    if (recvIdx < communication.size() && communication[recvIdx].getDirection() == BOTTOM)
     {
         recvOrigin = communication[recvIdx].getSendOrigin();
         recvSize = communication[recvIdx].getSendSize();
@@ -909,7 +909,7 @@ void CController<T>::stepBeta()
 
         recvIdx++;
     }
-    if (communication[recvIdx].getDirection() == TOP)
+    if (recvIdx < communication.size() && communication[recvIdx].getDirection() == TOP)
     {
         recvOrigin = communication[recvIdx].getSendOrigin();
         recvSize = communication[recvIdx].getSendSize();
@@ -922,7 +922,7 @@ void CController<T>::stepBeta()
 
         recvIdx++;
     }
-    if (communication[sendIdx].getDirection() == BACK)
+    if (sendIdx < communication.size() && communication[sendIdx].getDirection() == BACK)
     {
         sendOrigin = communication[sendIdx].getRecvOrigin();
         sendSize = communication[sendIdx].getRecvSize();
@@ -942,7 +942,7 @@ void CController<T>::stepBeta()
 
         sendIdx++;
     }
-    if (communication[sendIdx].getDirection() == FRONT)
+    if (sendIdx < communication.size() && communication[sendIdx].getDirection() == FRONT)
     {
         sendOrigin = communication[sendIdx].getRecvOrigin();
         sendSize = communication[sendIdx].getRecvSize();
@@ -962,7 +962,7 @@ void CController<T>::stepBeta()
 
         sendIdx++;
     }
-    if (communication[recvIdx].getDirection() == BACK)
+    if (recvIdx < communication.size() && communication[recvIdx].getDirection() == BACK)
     {
         recvOrigin = communication[recvIdx].getSendOrigin();
         recvSize = communication[recvIdx].getSendSize();
@@ -975,7 +975,7 @@ void CController<T>::stepBeta()
 
         recvIdx++;
     }
-    if (communication[recvIdx].getDirection() == FRONT)
+    if (recvIdx < communication.size() && communication[recvIdx].getDirection() == FRONT)
     {
         recvOrigin = communication[recvIdx].getSendOrigin();
         recvSize = communication[recvIdx].getSendSize();

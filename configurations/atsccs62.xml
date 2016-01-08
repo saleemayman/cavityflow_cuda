@@ -25,9 +25,9 @@
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-      <x>256</x>
-      <y>256</y>
-      <z>256</z>
+      <x>128</x>
+      <y>128</y>
+      <z>128</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
@@ -37,8 +37,8 @@
     </domian-length>
     <!-- number of subdomains in x, y and z direction (unit: scalar) -->
     <subdomain-num>
-      <x>1</x>
-      <y>4</y>
+      <x>2</x>
+      <y>2</y>
       <z>2</z>
     </subdomain-num>
     <!-- ratio of the part of the subdomain which is processed by the CPU to the total size of the sub domain ([0.0, 1.0]) (unit: scalar factor) -->
@@ -56,7 +56,7 @@
     </benchmark>
     <!--  -->
     <logging>
-      <do>1</do>
+      <do>0</do>
       <output-dir>/work_fast/riesinge/workspace/lbm/log</output-dir>
     </logging>
     <!--  -->

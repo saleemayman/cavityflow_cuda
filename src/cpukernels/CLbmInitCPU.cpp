@@ -40,11 +40,11 @@ void CLbmInitCPU<T>::setFlags(Flag* flags)
     int id = 0;
     Flag flag;
 
-    for (int z = 0; z < domainSize[2]; z++)
+    for (int x = 0; x < domainSize[0]; x++)
     {
         for (int y = 0; y < domainSize[1]; y++)
         {
-            for (int x = 0; x < domainSize[0]; x++)
+        	for (int z = 0; z < domainSize[2]; z++)
             {
                 // initialize flag field
                 flag = FLUID;

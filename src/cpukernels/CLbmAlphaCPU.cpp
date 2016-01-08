@@ -49,9 +49,12 @@ void CLbmAlphaCPU<T>::alphaKernelCPU(
 {
     int id;
 
-    for (int i = 0; i < size[0]; i++) {
-        for (int j = 0; j < size[1]; j++) {
-            for (int k = 0; k < size[2]; k++) {
+    for (int k = 0; k < size[2]; k++)
+    {
+        for (int j = 0; j < size[1]; j++)
+        {
+        	for (int i = 0; i < size[0]; i++)
+        	{
                 id = (origin[2] + k) * (domainSize[0] * domainSize[1]) + (origin[1] + j) * domainSize[0] + (origin[0] + i);
 
                 /*
