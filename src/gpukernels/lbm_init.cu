@@ -98,12 +98,12 @@ __global__ void lbm_init(
     T dd_param;
     T vela2;
     T vela_velb;
-    T rho = 1.0f;
+    T rho = (T)1;
 
     // compute and store velocity
 
     vela2 = velocity_x*velocity_x;
-    dd_param = rho - (T)(3.0f/2.0f)*(vela2);
+    dd_param = rho - ((T)3/(T)2)*(vela2);
 
     dd0 = eq_dd_a0(velocity_x, vela2, dd_param);
     *current_dds = dd0;     current_dds += DOMAIN_CELLS;
