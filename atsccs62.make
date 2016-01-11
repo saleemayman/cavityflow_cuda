@@ -18,8 +18,10 @@ CXXINCLUDES			+=	-I/usr/lib/openmpi/include
 endif
 CUDAINCLUDES		:=	
 
-CCLIB				:=	
-CXXLIB				:=	
+CCLIB				:=	-lgomp \
+						-lnetcdf
+CXXLIB				:=	-lgomp \
+						-lnetcdf
 CUDALIB				:=	
 
 COMPUTE_CAPABILITY	:=	50
@@ -45,9 +47,11 @@ NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 # compiler arguments and flags
 ################################################################################
 
-CCFLAGS				:=	-O3 \
+CCFLAGS				:=	-fopenmp \
+						-O3 \
 #						-std=c11
-CXXFLAGS			:=	-O3 \
+CXXFLAGS			:=	-fopenmp \
+						-O3 \
 #						-std=c++11
 
 # arch: specifies the compatibility from source code to PTX stage. Can be a

@@ -271,7 +271,11 @@ void CController<T>::stepAlpha()
         }
 
         // solverGPU->simulationStepAlpha(boundaryOrigin, boundarySize, &streams->at(i));
-        solverCPU->simulationStepAlpha(boundaryOrigin, boundarySize);
+		#pragma omp parallel
+		#pragma omp single
+		{
+			solverCPU->simulationStepAlpha(boundaryOrigin, boundarySize);
+		}
     }
     GPU_ERROR_CHECK(cudaDeviceSynchronize())
 #endif
@@ -298,7 +302,11 @@ void CController<T>::stepAlpha()
     }
 
     // solverGPU->simulationStepAlpha(innerOrigin, innerSize, &defaultStream);
-    solverCPU->simulationStepAlpha(innerOrigin, innerSize);
+	#pragma omp parallel
+	#pragma omp single
+	{
+		solverCPU->simulationStepAlpha(innerOrigin, innerSize);
+	}
 
 #ifdef USE_MPI
     int sendIdx, recvIdx;
@@ -701,7 +709,11 @@ void CController<T>::stepBeta()
         }
 
         // solverGPU->simulationStepBeta(boundaryOrigin, boundarySize, &streams->at(i));
-        solverCPU->simulationStepBeta(boundaryOrigin, boundarySize);
+		#pragma omp parallel
+		#pragma omp single
+		{
+			solverCPU->simulationStepBeta(boundaryOrigin, boundarySize);
+		}
     }
     GPU_ERROR_CHECK(cudaDeviceSynchronize())
 #endif
@@ -728,7 +740,11 @@ void CController<T>::stepBeta()
     }
 
     // solverGPU->simulationStepBeta(innerOrigin, innerSize, &defaultStream);
-    solverCPU->simulationStepBeta(innerOrigin, innerSize);
+	#pragma omp parallel
+	#pragma omp single
+	{
+		solverCPU->simulationStepBeta(innerOrigin, innerSize);
+	}
 
 #ifdef USE_MPI
     int sendIdx, recvIdx;

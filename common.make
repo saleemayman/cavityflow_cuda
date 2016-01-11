@@ -14,10 +14,8 @@ CCINCLUDES		+=	-I$(CUDAINSTALLPATH)/include
 CXXINCLUDES		+=	-I$(CUDAINSTALLPATH)/include
 CUDAINCLUDES	+=	-I$(CUDAINSTALLPATH)/include
 
-CCLIB			+=	-lnetcdf \
-					-lrt
-CXXLIB			+=	-lnetcdf \
-					-lrt
+CCLIB			+=	-lrt
+CXXLIB			+=	-lrt
 # libcuda:      required for access to driver api
 # libcudart:    required for execution of a cuda program
 # libcudadevrt: required for dynamic parallelism which is again required for

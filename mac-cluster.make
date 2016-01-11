@@ -18,8 +18,8 @@ CXXINCLUDES			+=	$(MPI_INC)
 endif
 CUDAINCLUDES		:=	
 
-CCLIB				:=	
-CXXLIB				:=	
+CCLIB				:=	-lnetcdf
+CXXLIB				:=	-lnetcdf
 CUDALIB				:=	
 
 COMPUTE_CAPABILITY	:=	20

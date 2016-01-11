@@ -12,8 +12,8 @@ CCINCLUDES			:=	-I$(NETCDF_HOME)/include
 CXXINCLUDES			:=	-I$(NETCDF_HOME)/include
 CUDAINCLUDES		:=	
 
-CCLIB				:=	
-CXXLIB				:=	
+CCLIB				:=	-lnetcdf
+CXXLIB				:=	-lnetcdf
 CUDALIB				:=	
 
 COMPUTE_CAPABILITY	:=	35

@@ -18,8 +18,8 @@ CXXINCLUDES			+=	-I/usr/lib/openmpi/include
 endif
 CUDAINCLUDES		:=	
 
-CCLIB				:=	
-CXXLIB				:=	
+CCLIB				:=	-lnetcdf
+CXXLIB				:=	-lnetcdf
 CUDALIB				:=	
 
 COMPUTE_CAPABILITY	:=	20

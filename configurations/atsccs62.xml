@@ -37,16 +37,16 @@
     </domian-length>
     <!-- number of subdomains in x, y and z direction (unit: scalar) -->
     <subdomain-num>
-      <x>2</x>
-      <y>2</y>
-      <z>2</z>
+      <x>1</x>
+      <y>1</y>
+      <z>1</z>
     </subdomain-num>
     <!-- ratio of the part of the subdomain which is processed by the CPU to the total size of the sub domain ([0.0, 1.0]) (unit: scalar factor) -->
     <cpu-subdomain-ratio>1.0</cpu-subdomain-ratio>
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>1280</loops>
+    <loops>100</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>0.01</timestep>
     <!--  -->
