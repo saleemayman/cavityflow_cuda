@@ -15,7 +15,7 @@ code += "# Number of tasks/ranks/processes per node:\n";
 code += "# @ tasks_per_node   = " + str(sys.argv[2]) + "\n";
 code += "# Number of threads per task/rank/process:\n";
 code += "# @ resources        = ConsumableCpus(" + str(sys.argv[3]) + ") ConsumableMemory(" + str(sys.argv[4]) + "gb)\n";
-code += "# @ wall_clock_limit = 24:00:00\n";
+code += "# @ wall_clock_limit = 03:00:00\n";
 code += "#\n";
 code += "# @ network.MPI      = sn_all,not_shared,us\n";
 code += "# @ notification     = complete\n";
