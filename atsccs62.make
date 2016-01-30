@@ -47,11 +47,13 @@ NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 # compiler arguments and flags
 ################################################################################
 
-CCFLAGS				:=	-fopenmp \
-						-O3 \
+CCFLAGS				:=	-O3 \
+						-fopenmp \
+						-g \
 #						-std=c11
-CXXFLAGS			:=	-fopenmp \
-						-O3 \
+CXXFLAGS			:=	-O3 \
+						-fopenmp \
+						-g \
 #						-std=c++11
 
 # arch: specifies the compatibility from source code to PTX stage. Can be a

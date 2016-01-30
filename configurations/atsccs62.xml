@@ -46,7 +46,7 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>100</loops>
+    <loops>10</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>0.01</timestep>
     <!--  -->
