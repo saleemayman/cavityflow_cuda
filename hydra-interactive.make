@@ -27,9 +27,9 @@ CC					:=	mpicc
 CXX					:=	mpicxx
 LINKER				:=	mpicxx
 else
-CC					:=	gcc
-CXX					:=	g++
-LINKER				:=	g++
+CC					:=	icc
+CXX					:=	icc
+LINKER				:=	icc
 endif
 
 NVCC				:=	$(CUDAINSTALLPATH)/bin/nvcc
@@ -40,9 +40,15 @@ NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 ################################################################################
 
 CCFLAGS				:=	-O3 \
-#						-std=c0x
+						-openmp \
+						-parallel \
+						-g \
+#						-std=c11
 CXXFLAGS			:=	-O3 \
-#						-std=c++0x
+						-openmp \
+						-parallel \
+						-g \
+#						-std=c11
 
 # arch: specifies the compatibility from source code to PTX stage. Can be a
 #       virtual (compute_*) or real (sm_*) compatibility.
@@ -61,7 +67,7 @@ NVCCFLAGS			:=	-O3 \
 # linker arguments and flags
 ################################################################################
 
-LINKERFLAGS			:=	
+LINKERFLAGS			:=	-parallel
 
 # -dlink: Necessary linker option to link multiple CUDA object files together.
 NVCCLINKERFLAGS		:=	-arch=sm_$(COMPUTE_CAPABILITY)
