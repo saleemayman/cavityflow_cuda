@@ -18,8 +18,10 @@ CXXINCLUDES			+=	-I/usr/lib/openmpi/include
 endif
 CUDAINCLUDES		:=	
 
-CCLIB				:=	-lnetcdf
-CXXLIB				:=	-lnetcdf
+CCLIB				:=	-lgomp \
+						-lnetcdf
+CXXLIB				:=	-lgomp \
+						-lnetcdf
 CUDALIB				:=	
 
 COMPUTE_CAPABILITY	:=	20
@@ -45,9 +47,13 @@ NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 # compiler arguments and flags
 ################################################################################
 
-CCFLAGS				:=	-O3 \
+CCFLAGS				:=	-fopenmp \
+						-g \
+						-O0 \
 #						-std=c11
-CXXFLAGS			:=	-O3 \
+CXXFLAGS			:=	-fopenmp \
+						-g \
+						-O0 \
 #						-std=c++11
 
 # arch: specifies the compatibility from source code to PTX stage. Can be a
@@ -57,7 +63,7 @@ CXXFLAGS			:=	-O3 \
 # -rdc: -rdc is short for --relocatable-device-code which generates relocatable
 #       device code. This is necessary to generate multiple CUDA object files
 #       which can then be linked together.
-NVCCFLAGS			:=	-O3 \
+NVCCFLAGS			:=	-O0 \
 						-gencode arch=compute_$(COMPUTE_CAPABILITY),code=sm_$(COMPUTE_CAPABILITY) \
 #						--ptxas-options -v
 #						-Xcompiler "-std=c++11"
