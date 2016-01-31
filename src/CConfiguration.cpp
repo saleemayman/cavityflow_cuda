@@ -120,9 +120,27 @@ void CConfiguration<T>::interpretSimulationData(const tinyxml2::XMLNode* root)
 }
 
 template <class T>
-void CConfiguration<T>::interpretDeviceData(const tinyxml2::XMLNode* root)
+void CConfiguration<T>::interpretCPUData(const tinyxml2::XMLNode* root)
 {
-    const tinyxml2::XMLNode* deviceChild = root->FirstChildElement(TAG_NAME_CHILD_DEVICE);
+    const tinyxml2::XMLNode* deviceChild = root->FirstChildElement(TAG_NAME_CHILD_CPU);
+
+    CVector<3, int> elementsPerBlockAlpha(
+    		atoi(deviceChild->FirstChildElement("block-configuration")->FirstChildElement("alpha-block-configuration")->FirstChildElement("x")->GetText()),
+    		atoi(deviceChild->FirstChildElement("block-configuration")->FirstChildElement("alpha-block-configuration")->FirstChildElement("y")->GetText()),
+    		atoi(deviceChild->FirstChildElement("block-configuration")->FirstChildElement("alpha-block-configuration")->FirstChildElement("z")->GetText()));
+    elementsPerBlock.push_back(elementsPerBlockAlpha);
+
+    CVector<3, int> elementsPerBlockBeta(
+    		atoi(deviceChild->FirstChildElement("block-configuration")->FirstChildElement("beta-block-configuration")->FirstChildElement("x")->GetText()),
+    		atoi(deviceChild->FirstChildElement("block-configuration")->FirstChildElement("beta-block-configuration")->FirstChildElement("y")->GetText()),
+    		atoi(deviceChild->FirstChildElement("block-configuration")->FirstChildElement("beta-block-configuration")->FirstChildElement("z")->GetText()));
+    elementsPerBlock.push_back(elementsPerBlockBeta);
+}
+
+template <class T>
+void CConfiguration<T>::interpretGPUData(const tinyxml2::XMLNode* root)
+{
+    const tinyxml2::XMLNode* deviceChild = root->FirstChildElement(TAG_NAME_CHILD_GPU);
 
     dim3 configuration;
     configuration.x = atoi(deviceChild->FirstChildElement("grid-configuration")->FirstChildElement("init-grid-configuration")->FirstChildElement("x")->GetText());
@@ -149,7 +167,8 @@ void CConfiguration<T>::interpretXMLDoc()
     interpretPhysiscsData(root);
     interpretGridData(root);
     interpretSimulationData(root);
-    interpretDeviceData(root);
+    interpretCPUData(root);
+    interpretGPUData(root);
 }
 
 template <class T>
@@ -167,6 +186,8 @@ void CConfiguration<T>::checkParameters()
     assert(CMath<T>::abs(domainLength[1] / (T)domainSize[1] - domainLength[2] / (T)domainSize[2]) < std::numeric_limits<T>::epsilon());
     assert(CMath<T>::abs(domainLength[2] / (T)domainSize[2] - domainLength[0] / (T)domainSize[0]) < std::numeric_limits<T>::epsilon());
     assert(visualizationRate > 0);
+    assert(elementsPerBlock[0][0] > 0 && elementsPerBlock[0][1] > 0 && elementsPerBlock[0][2] > 0);
+    assert(elementsPerBlock[1][0] > 0 && elementsPerBlock[1][1] > 0 && elementsPerBlock[1][2] > 0);
     assert(threadsPerBlock[0].x > 0 && threadsPerBlock[0].y > 0 && threadsPerBlock[0].z > 0);
     assert(threadsPerBlock[1].x > 0 && threadsPerBlock[1].y > 0 && threadsPerBlock[1].z > 0);
     assert(threadsPerBlock[2].x > 0 && threadsPerBlock[2].y > 0 && threadsPerBlock[2].z > 0);
@@ -201,6 +222,9 @@ void CConfiguration<T>::print()
     std::cout << "validation directory:              " << validationOutputDir << std::endl;
     std::cout << "visualization directory:           " << visualizationOutputDir << std::endl;
     std::cout << "visualization rate:                " << visualizationRate << std::endl;
+    std::cout << "--------------------------------------" << std::endl;
+    std::cout << "alpha block configuration:         " << elementsPerBlock[0] << std::endl;
+    std::cout << "beta block configuration:          " << elementsPerBlock[1] << std::endl;
     std::cout << "--------------------------------------" << std::endl;
     std::cout << "init grid configuration:           [" << threadsPerBlock[0].x << ", " << threadsPerBlock[0].y << ", " << threadsPerBlock[0].z << "]" << std::endl;
     std::cout << "alpha grid configuration:          [" << threadsPerBlock[1].x << ", " << threadsPerBlock[1].y << ", " << threadsPerBlock[1].z << "]" << std::endl;

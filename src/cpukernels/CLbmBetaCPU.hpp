@@ -57,6 +57,7 @@ public:
             const T drivenCavityVelocity,
             CVector<3, int> origin,
             CVector<3, int> size,
+            CVector<3, int> blockDim,
             const bool isDomainPowOfTwo,
             const bool storeDensities,
             const bool storeVelocities);

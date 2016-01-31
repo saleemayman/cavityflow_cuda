@@ -6,7 +6,8 @@ root       = ET.Element("lbm-configuration")
 physics    = ET.SubElement(root, "physics")
 grid       = ET.SubElement(root, "grid")
 simulation = ET.SubElement(root, "simulation")
-device     = ET.SubElement(root, "device")
+cpu        = ET.SubElement(root, "cpu")
+gpu        = ET.SubElement(root, "gpu")
 
 velocity = ET.SubElement(physics, "velocity")
 ET.SubElement(velocity, "x").text = "1.0"
@@ -50,7 +51,17 @@ ET.SubElement(visualization, "do").text = str(sys.argv[14])
 ET.SubElement(visualization, "rate").text = str(sys.argv[15])
 ET.SubElement(visualization, "output-dir").text = str(sys.argv[18]) + "/dissertation/lbm/visualization"
 
-gridconfiguration = ET.SubElement(device, "grid-configuration")
+blockconfiguration = ET.SubElement(cpu, "block-configuration")
+alphablockconfiguration = ET.SubElement(blockconfiguration, "alpha-block-configuration")
+ET.SubElement(alphablockconfiguration, "x").text = "32"
+ET.SubElement(alphablockconfiguration, "y").text = "32"
+ET.SubElement(alphablockconfiguration, "z").text = "32"
+betablockconfiguration = ET.SubElement(blockconfiguration, "beta-block-configuration")
+ET.SubElement(betablockconfiguration, "x").text = "32"
+ET.SubElement(betablockconfiguration, "y").text = "32"
+ET.SubElement(betablockconfiguration, "z").text = "32"
+
+gridconfiguration = ET.SubElement(gpi, "grid-configuration")
 initgridconfiguration = ET.SubElement(gridconfiguration, "init-grid-configuration")
 ET.SubElement(initgridconfiguration, "x").text = "64"
 ET.SubElement(initgridconfiguration, "y").text = "1"

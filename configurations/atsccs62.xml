@@ -46,7 +46,7 @@
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>10</loops>
+    <loops>6400</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>0.01</timestep>
     <!--  -->
@@ -66,13 +66,31 @@
     </validation>
     <!--  -->
     <visualization>
-      <do>0</do>
-      <rate>1280</rate>
+      <do>1</do>
+      <rate>6400</rate>
       <output-dir>/work_fast/riesinge/workspace/lbm/visualization</output-dir>
     </visualization>
   </simulation>
-  <!-- configuration data related to computing device (e.g. GPU) -->
-  <device>
+  <!-- configuration data related to CPU -->
+  <cpu>
+    <!-- configuration data related to GPU kernel setup -->
+    <block-configuration>
+      <!-- Block configuration (number of elements per block) in x, y and z direction for kernel alphaKernelCPU() for better cache utilization -->
+      <alpha-block-configuration>
+        <x>32</x>
+        <y>32</y>
+        <z>32</z>
+      </alpha-block-configuration>
+      <!-- Block configuration (number of elements per block) in x, y and z direction for kernel betaKernelCPU() for better cache utilization -->
+      <beta-block-configuration>
+        <x>32</x>
+        <y>32</y>
+        <z>32</z>
+      </beta-block-configuration>
+    </block-configuration>
+  </cpu>
+  <!-- configuration data related to GPU -->
+  <gpu>
     <!-- configuration data related to GPU kernel setup -->
     <grid-configuration>
       <!-- Grid configuration (number of threads per block) in x, y and z direction for kernel lbm_init() -->
@@ -94,6 +112,6 @@
         <z>1</z>
       </beta-grid-configuration>
     </grid-configuration>
-  </device>
+  </gpu>
 </lbm-configuration>
 

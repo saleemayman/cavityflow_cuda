@@ -276,6 +276,7 @@ void CLbmSolverCPU<T>::simulationStepAlpha()
                     velocityDimLess[0],
                     CVector<3, int>(0, 0, 0),
                     domain.getSizeWithHalo(),
+                    configuration->elementsPerBlock[0],
                     storeDensities,
                     storeVelocities);
 
@@ -339,6 +340,7 @@ void CLbmSolverCPU<T>::simulationStepAlpha(CVector<3, int> origin, CVector<3, in
             velocityDimLess[0],
             origin,
             size,
+            configuration->elementsPerBlock[0],
             storeDensities,
             storeVelocities);
 
@@ -398,6 +400,7 @@ void CLbmSolverCPU<T>::simulationStepBeta()
             velocityDimLess[0],
             CVector<3, int>(0, 0, 0),
             domain.getSizeWithHalo(),
+            configuration->elementsPerBlock[1],
             isPowerOfTwo(domain.getNumOfCellsWithHalo()),
             storeDensities,
             storeVelocities);
@@ -462,6 +465,7 @@ void CLbmSolverCPU<T>::simulationStepBeta(CVector<3, int> origin, CVector<3, int
             velocityDimLess[0],
             origin,
             size,
+            configuration->elementsPerBlock[1],
             isPowerOfTwo(domain.getNumOfCellsWithHalo()),
             storeDensities,
             storeVelocities);

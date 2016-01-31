@@ -37,7 +37,8 @@
 #define TAG_NAME_CHILD_PHYSICS    "physics"
 #define TAG_NAME_CHILD_GRID       "grid"
 #define TAG_NAME_CHILD_SIMULATION "simulation"
-#define TAG_NAME_CHILD_DEVICE     "device"
+#define TAG_NAME_CHILD_CPU        "cpu"
+#define TAG_NAME_CHILD_GPU        "gpu"
 
 template <typename T>
 class CConfiguration
@@ -48,7 +49,8 @@ private:
     void interpretPhysiscsData(const tinyxml2::XMLNode* root);
     void interpretGridData(const tinyxml2::XMLNode* root);
     void interpretSimulationData(const tinyxml2::XMLNode* root);
-    void interpretDeviceData(const tinyxml2::XMLNode* root);
+    void interpretCPUData(const tinyxml2::XMLNode* root);
+    void interpretGPUData(const tinyxml2::XMLNode* root);
     void interpretXMLDoc();
     void checkParameters();
 
@@ -86,7 +88,12 @@ public:
     int visualizationRate;
 
     /*
-     * Device configuration data
+     * CPU configuration data
+     */
+    std::vector<CVector<3, int> > elementsPerBlock;
+
+    /*
+     * GPU configuration data
      */
     std::vector<dim3> threadsPerBlock;
 
