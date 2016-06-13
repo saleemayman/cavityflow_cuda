@@ -4,18 +4,16 @@
 
 CUDAINSTALLPATH		:=	$(CUDA_HOME)
 
-CCLIBDIR			:= -L$(NETCDF_HOME)/lib
-CXXLIBDIR			:= -L$(NETCDF_HOME)/lib
+CCLIBDIR			:=	-L$(NETCDF_HOME)/lib
+CXXLIBDIR			:=	-L$(NETCDF_HOME)/lib
 CUDALIBDIR			:=	
 
 CCINCLUDES			:=	-I$(NETCDF_HOME)/include
 CXXINCLUDES			:=	-I$(NETCDF_HOME)/include
 CUDAINCLUDES		:=	
 
-CCLIB				:=	-lgomp \
-						-lnetcdf
-CXXLIB				:=	-lgomp \
-						-lnetcdf
+CCLIB				:=	-lnetcdf
+CXXLIB				:=	-lnetcdf
 CUDALIB				:=	
 
 COMPUTE_CAPABILITY	:=	35
@@ -40,13 +38,13 @@ LINKER				+=	scorep
 endif
 
 ifeq ($(USE_MPI), 1)
-CC					+=	mpicc
-CXX					+=	mpicxx
-LINKER				+=	mpicxx
+CC					+=	mpiicc
+CXX					+=	mpiicpc
+LINKER				+=	mpiicpc
 else
-CC					+=	gcc
-CXX					+=	g++
-LINKER				+=	g++
+CC					:=	icc
+CXX					:=	icpc
+LINKER				:=	icpc
 endif
 
 NVCC				:=	$(CUDAINSTALLPATH)/bin/nvcc
@@ -57,10 +55,16 @@ NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 ################################################################################
 
 CCFLAGS				:=	-O3 \
-						-fopenmp \
+						-qopenmp \
+						-parallel \
+						-xHost \
+						-DMPICH_IGNORE_CXX_SEEK \
 #						-std=c11
 CXXFLAGS			:=	-O3 \
-						-fopenmp \
+						-qopenmp \
+						-parallel \
+						-xHost \
+						-DMPICH_IGNORE_CXX_SEEK \
 #						-std=c11
 
 # arch: specifies the compatibility from source code to PTX stage. Can be a
@@ -80,7 +84,7 @@ NVCCFLAGS			:=	-O3 \
 # linker arguments and flags
 ################################################################################
 
-LINKERFLAGS			:=	
+LINKERFLAGS			:=	-parallel
 
 # -dlink: Necessary linker option to link multiple CUDA object files together.
 NVCCLINKERFLAGS		:=	-arch=sm_$(COMPUTE_CAPABILITY)

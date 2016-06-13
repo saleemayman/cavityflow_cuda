@@ -18,8 +18,10 @@ CXXINCLUDES			+=	$(MPI_INC)
 endif
 CUDAINCLUDES		:=	
 
-CCLIB				:=	-lnetcdf
-CXXLIB				:=	-lnetcdf
+CCLIB				:=	-lgomp \
+						-lnetcdf
+CXXLIB				:=	-lgomp \
+						-lnetcdf
 CUDALIB				:=	
 
 COMPUTE_CAPABILITY	:=	20
@@ -48,9 +50,9 @@ CC					+=	mpicc
 CXX					+=	mpicxx
 LINKER				+=	mpicxx
 else
-CC					+=	gcc
-CXX					+=	g++
-LINKER				+=	g++
+CC					:=	gcc
+CXX					:=	g++
+LINKER				:=	g++
 endif
 
 NVCC				:=	$(CUDAINSTALLPATH)/bin/nvcc
@@ -61,9 +63,13 @@ NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 ################################################################################
 
 CCFLAGS				:=	-O3 \
-#						-std=c0x
+						-fopenmp \
+#						-xHost \
+#						-std=c11
 CXXFLAGS			:=	-O3 \
-#						-std=c++0x
+						-fopenmp \
+#						-xHost \
+#						-std=c11
 
 # arch: specifies the compatibility from source code to PTX stage. Can be a
 #       virtual (compute_*) or real (sm_*) compatibility.

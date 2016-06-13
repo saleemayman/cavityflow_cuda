@@ -26,42 +26,42 @@ ET.SubElement(domainsize, "x").text = str(sys.argv[1])
 ET.SubElement(domainsize, "y").text = str(sys.argv[2])
 ET.SubElement(domainsize, "z").text = str(sys.argv[3])
 domianlength = ET.SubElement(grid, "domian-length")
-ET.SubElement(domianlength, "x").text = str(sys.argv[4])
-ET.SubElement(domianlength, "y").text = str(sys.argv[5])
-ET.SubElement(domianlength, "z").text = str(sys.argv[6])
+ET.SubElement(domianlength, "x").text = str(float(sys.argv[1]) / float(sys.argv[1]))
+ET.SubElement(domianlength, "y").text = str(float(sys.argv[2]) / float(sys.argv[1]))
+ET.SubElement(domianlength, "z").text = str(float(sys.argv[3]) / float(sys.argv[1]))
 subdomainnum = ET.SubElement(grid, "subdomain-num")
-ET.SubElement(subdomainnum, "x").text = str(sys.argv[7])
-ET.SubElement(subdomainnum, "y").text = str(sys.argv[8])
-ET.SubElement(subdomainnum, "z").text = str(sys.argv[9])
-cpusubdomainratio = ET.SubElement(grid, "cpu-subdomain-ratio").text = "0.0"
+ET.SubElement(subdomainnum, "x").text = str(sys.argv[4])
+ET.SubElement(subdomainnum, "y").text = str(sys.argv[5])
+ET.SubElement(subdomainnum, "z").text = str(sys.argv[6])
+cpusubdomainratio = ET.SubElement(grid, "cpu-subdomain-ratio").text = "0.09"
 
-ET.SubElement(simulation, "loops").text = str(sys.argv[10])
+ET.SubElement(simulation, "loops").text = str(sys.argv[7])
 ET.SubElement(simulation, "timestep").text = "0.01"
 benchmark = ET.SubElement(simulation, "benchmark")
-ET.SubElement(benchmark, "do").text = str(sys.argv[11])
-ET.SubElement(benchmark, "output-dir").text = str(sys.argv[18]) + "/dissertation/lbm/benchmark"
+ET.SubElement(benchmark, "do").text = str(sys.argv[8])
+ET.SubElement(benchmark, "output-dir").text = str(sys.argv[15]) + "/workspace/lbm/benchmark"
 logging = ET.SubElement(simulation, "logging")
-ET.SubElement(logging, "do").text = str(sys.argv[12])
-ET.SubElement(logging, "output-dir").text = str(sys.argv[18]) + "/dissertation/lbm/log"
+ET.SubElement(logging, "do").text = str(sys.argv[9])
+ET.SubElement(logging, "output-dir").text = str(sys.argv[15]) + "/workspace/lbm/log"
 validation = ET.SubElement(simulation, "validation")
-ET.SubElement(validation, "do").text = str(sys.argv[13])
-ET.SubElement(validation, "output-dir").text = str(sys.argv[18]) + "/dissertation/lbm/validation"
+ET.SubElement(validation, "do").text = str(sys.argv[10])
+ET.SubElement(validation, "output-dir").text = str(sys.argv[15]) + "/workspace/lbm/validation"
 visualization = ET.SubElement(simulation, "visualization")
-ET.SubElement(visualization, "do").text = str(sys.argv[14])
-ET.SubElement(visualization, "rate").text = str(sys.argv[15])
-ET.SubElement(visualization, "output-dir").text = str(sys.argv[18]) + "/dissertation/lbm/visualization"
+ET.SubElement(visualization, "do").text = str(sys.argv[11])
+ET.SubElement(visualization, "rate").text = str(sys.argv[12])
+ET.SubElement(visualization, "output-dir").text = str(sys.argv[15]) + "/workspace/lbm/visualization"
 
 blockconfiguration = ET.SubElement(cpu, "block-configuration")
 alphablockconfiguration = ET.SubElement(blockconfiguration, "alpha-block-configuration")
-ET.SubElement(alphablockconfiguration, "x").text = "32"
-ET.SubElement(alphablockconfiguration, "y").text = "32"
-ET.SubElement(alphablockconfiguration, "z").text = "32"
+ET.SubElement(alphablockconfiguration, "x").text = "512"
+ET.SubElement(alphablockconfiguration, "y").text = "64"
+ET.SubElement(alphablockconfiguration, "z").text = "2"
 betablockconfiguration = ET.SubElement(blockconfiguration, "beta-block-configuration")
-ET.SubElement(betablockconfiguration, "x").text = "32"
-ET.SubElement(betablockconfiguration, "y").text = "32"
-ET.SubElement(betablockconfiguration, "z").text = "32"
+ET.SubElement(betablockconfiguration, "x").text = "512"
+ET.SubElement(betablockconfiguration, "y").text = "64"
+ET.SubElement(betablockconfiguration, "z").text = "2"
 
-gridconfiguration = ET.SubElement(gpi, "grid-configuration")
+gridconfiguration = ET.SubElement(gpu, "grid-configuration")
 initgridconfiguration = ET.SubElement(gridconfiguration, "init-grid-configuration")
 ET.SubElement(initgridconfiguration, "x").text = "64"
 ET.SubElement(initgridconfiguration, "y").text = "1"
@@ -76,5 +76,5 @@ ET.SubElement(betagridconfiguration, "y").text = "1"
 ET.SubElement(betagridconfiguration, "z").text = "1"
 
 tree = ET.ElementTree(root)
-tree.write(str(sys.argv[17]) + "/workspace/lbm/configurations/hydra_" + str(sys.argv[16]) + ".xml")
+tree.write(str(sys.argv[14]) + "/workspace/lbm/configurations/hydra_" + str(sys.argv[13]) + ".xml")
 

@@ -11,32 +11,26 @@
 # to llsubmit.
 
 let domainSizeX=512
-let domainSizeY=512
-let domainSizeZ=512
-let domainLengthX=1
-let domainLengthY=1
-let domainLengthZ=1
-let numOfSubdomainsX=4
+let domainSizeY=1024
+let domainSizeZ=128
+let numOfSubdomainsX=1
 let numOfSubdomainsY=2
-let numOfSubdomainsZ=2
-let loops=50000
+let numOfSubdomainsZ=1
+let loops=32
 let doBenchmark=1
-let doLogging=0
+let doLogging=1
 let doValidation=0
 let doVisualization=0
-let visualizationRate=16320
+let visualizationRate=5120
 
 let numOfGPUsPerNode=2
 let numOfRanksPerNode=${numOfGPUsPerNode}
-let numOfThreadsPerProcess=1
-let amountOfMemPerProcess=6
-let numOfThreadsPerNode=${numOfThreadsPerProcess}*${numOfRanksPerNode}
-let amountOfMemPerNode=${numOfGPUsPerNode}*${amountOfMemPerProcess}
+let numOfThreadsPerRank=10
+let numOfThreadsPerNode=numOfThreadsPerRank*numOfRanksPerNode
 let numOfNodes=(${numOfSubdomainsX}*${numOfSubdomainsY}*${numOfSubdomainsZ})/${numOfGPUsPerNode}
 let numOfGPUs=${numOfGPUsPerNode}*${numOfNodes}
 let numOfRanks=${numOfRanksPerNode}*${numOfNodes}
 let numOfThreads=${numOfThreadsPerNode}*${numOfNodes}
-let amountOfMem=${amountOfMemPerNode}*${numOfNodes}
 
 # The place option forces distribution of chunks among nodes even insufficient
 # data is offered 
@@ -47,28 +41,24 @@ let amountOfMem=${amountOfMemPerNode}*${numOfNodes}
 # pack:    At maximum, one node is allocated
 place="scatter"
 
-echo "domain size:                   ["${domainSizeX}", "${domainSizeY}", "${domainSizeZ}"]"
-echo "domain length:                 ["${domainLengthX}", "${domainLengthY}", "${domainLengthZ}"]"
-echo "number of subdomains:          ["${numOfSubdomainsX}", "${numOfSubdomainsY}", "${numOfSubdomainsZ}"]"
-echo "loops:                         "${loops}
-echo "do benchmark:                  "${doBenchmark}
-echo "do logging:                    "${doLogging}
-echo "do validation:                 "${doValidation}
-echo "do visualization:              "${doVisualization}
-echo "visualization rate:            "${visualizationRate}
-echo "GPUs per node:                 "${numOfGPUsPerNode}
-echo "ranks per node:                "${numOfRanksPerNode}
-echo "number of threads per process: "${numOfThreadsPerProcess}
-echo "number of threads per node:    "${numOfThreadsPerNode}
-echo "amount of memory per process:  "${amountOfMemPerProcess}"GB"
-echo "amount of memory per node:     "${amountOfMemPerNode}"GB"
-echo "number of nodes:               "${numOfNodes}
-echo "total number of GPUs:          "${numOfGPUs}
-echo "total number of ranks:         "${numOfRanks}
-echo "total number of threads:       "${numOfThreads}
-echo "total amount of memory:        "${amountOfMem}"GB"
+echo "domain size:                ["${domainSizeX}", "${domainSizeY}", "${domainSizeZ}"]"
+echo "number of subdomains:       ["${numOfSubdomainsX}", "${numOfSubdomainsY}", "${numOfSubdomainsZ}"]"
+echo "loops:                      "${loops}
+echo "do benchmark:               "${doBenchmark}
+echo "do logging:                 "${doLogging}
+echo "do validation:              "${doValidation}
+echo "do visualization:           "${doVisualization}
+echo "visualization rate:         "${visualizationRate}
+echo "GPUs per node:              "${numOfGPUsPerNode}
+echo "ranks per node:             "${numOfRanksPerNode}
+echo "number of threads per rank: "${numOfThreadsPerRank}
+echo "number of threads per node: "${numOfThreadsPerNode}
+echo "number of nodes:            "${numOfNodes}
+echo "total number of GPUs:       "${numOfGPUs}
+echo "total number of ranks:      "${numOfRanks}
+echo "total number of threads:    "${numOfThreads}
 
-python generate_configuration.py ${domainSizeX} ${domainSizeY} ${domainSizeZ} ${domainLengthX} ${domainLengthY} ${domainLengthZ} ${numOfSubdomainsX} ${numOfSubdomainsY} ${numOfSubdomainsZ} ${loops} ${doBenchmark} ${doLogging} ${doValidation} ${doVisualization} ${visualizationRate} ${numOfRanks} ${HOME} /ptmp/${USER}
-python generate_jobscript.py ${numOfNodes} ${numOfRanksPerNode} ${numOfThreadsPerProcess} ${amountOfMemPerProcess} ${HOME}
+python generate_configuration.py ${domainSizeX} ${domainSizeY} ${domainSizeZ} ${numOfSubdomainsX} ${numOfSubdomainsY} ${numOfSubdomainsZ} ${loops} ${doBenchmark} ${doLogging} ${doValidation} ${doVisualization} ${visualizationRate} ${numOfRanks} ${HOME} /ptmp/${USER}
+python generate_jobscript.py ${numOfNodes} ${numOfRanksPerNode} ${numOfThreadsPerRank} ${HOME}
 llsubmit jobscript.sh
 

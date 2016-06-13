@@ -4,8 +4,8 @@
 
 CUDAINSTALLPATH		:=	$(CUDA_HOME)
 
-CCLIBDIR			:= -L$(NETCDF_HOME)/lib
-CXXLIBDIR			:= -L$(NETCDF_HOME)/lib
+CCLIBDIR			:=	-L$(NETCDF_HOME)/lib
+CXXLIBDIR			:=	-L$(NETCDF_HOME)/lib
 CUDALIBDIR			:=	
 
 CCINCLUDES			:=	-I$(NETCDF_HOME)/include
@@ -23,13 +23,13 @@ COMPUTE_CAPABILITY	:=	35
 ################################################################################
 
 ifeq ($(USE_MPI), 1)
-CC					:=	mpicc
-CXX					:=	mpicxx
-LINKER				:=	mpicxx
+CC					:=	mpiicc
+CXX					:=	mpiicpc
+LINKER				:=	mpiicpc
 else
 CC					:=	icc
-CXX					:=	icc
-LINKER				:=	icc
+CXX					:=	icpc
+LINKER				:=	icpc
 endif
 
 NVCC				:=	$(CUDAINSTALLPATH)/bin/nvcc
@@ -40,14 +40,16 @@ NVCCLINKER			:=	$(CUDAINSTALLPATH)/bin/nvcc
 ################################################################################
 
 CCFLAGS				:=	-O3 \
-						-openmp \
+						-qopenmp \
 						-parallel \
-						-g \
+						-xHost \
+						-DMPICH_IGNORE_CXX_SEEK \
 #						-std=c11
 CXXFLAGS			:=	-O3 \
-						-openmp \
+						-qopenmp \
 						-parallel \
-						-g \
+						-xHost \
+						-DMPICH_IGNORE_CXX_SEEK \
 #						-std=c11
 
 # arch: specifies the compatibility from source code to PTX stage. Can be a

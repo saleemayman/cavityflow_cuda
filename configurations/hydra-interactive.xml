@@ -25,28 +25,28 @@
   <grid>
     <!-- grid size in x, y and z direction (unit: cells) -->
     <domain-size>
-      <x>128</x>
-      <y>128</y>
-      <z>128</z>
+      <x>512</x>
+      <y>1024</y>
+      <z>256</z>
     </domain-size>
     <!-- grid length in x, y and z direction (unit: meters) -->
     <domian-length>
       <x>1.0</x>
-      <y>1.0</y>
-      <z>1.0</z>
+      <y>2.0</y>
+      <z>0.5</z>
     </domian-length>
     <!-- number of subdomains in x, y and z direction (unit: scalar) -->
     <subdomain-num>
       <x>1</x>
-      <y>1</y>
+      <y>2</y>
       <z>1</z>
     </subdomain-num>
     <!-- ratio of the part of the subdomain which is processed by the CPU to the total size of the sub domain ([0.0, 1.0]) (unit: scalar factor) -->
-    <cpu-subdomain-ratio>1.0</cpu-subdomain-ratio>
+    <cpu-subdomain-ratio>0.09</cpu-subdomain-ratio>
   </grid>
   <!-- configuration data related to simulation process -->
   <simulation>
-    <loops>10</loops>
+    <loops>1024</loops>
     <!-- timestep size, -1 for automatic detection -->
     <timestep>0.01</timestep>
     <!--  -->
@@ -67,7 +67,7 @@
     <!--  -->
     <visualization>
       <do>0</do>
-      <rate>1</rate>
+      <rate>5120</rate>
       <output-dir>visualization</output-dir>
     </visualization>
   </simulation>
@@ -77,15 +77,15 @@
     <block-configuration>
       <!-- Block configuration (number of elements per block) in x, y and z direction for kernel alphaKernelCPU() for better cache utilization -->
       <alpha-block-configuration>
-        <x>32</x>
-        <y>32</y>
-        <z>32</z>
+        <x>512</x>
+        <y>64</y>
+        <z>2</z>
       </alpha-block-configuration>
       <!-- Block configuration (number of elements per block) in x, y and z direction for kernel betaKernelCPU() for better cache utilization -->
       <beta-block-configuration>
-        <x>32</x>
-        <y>32</y>
-        <z>32</z>
+        <x>512</x>
+        <y>64</y>
+        <z>2</z>
       </beta-block-configuration>
     </block-configuration>
   </cpu>
